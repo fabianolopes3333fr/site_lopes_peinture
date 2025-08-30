@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ projeto.get_type_projet_display }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <!-- Cabeçalho do Projeto -->
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800">
+                    {{ projeto.get_type_projet_display }}
+                </h1>
+                <span class="px-3 py-1 text-sm rounded-full 
+                    {% if projeto.status == 'en_cours' %}bg-blue-100 text-blue-800
+                    {% elif projeto.status == 'termine' %}bg-green-100 text-green-800
+                    {% elif projeto.status == 'annule' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ projeto.get_status_display }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Detalhes do Projeto -->
+        <div class="p-6 space-y-6">
+            <!-- Descrição -->
+            <div>
+                <h2 class="text-lg font-semibold text-gray-700 mb-2">Description</h2>
+                <p class="text-gray-600">{{ projeto.description }}</p>
+            </div>
+
+            <!-- Informações Principais -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Surface</h3>
+                    <p class="mt-1 text-gray-900">{{ projeto.surface }} m²</p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Budget estimé</h3>
+                    <p class="mt-1 text-gray-900">{{ projeto.budget_estime }} €</p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Date début souhaitée</h3>
+                    <p class="mt-1 text-gray-900">
+                        {{ projeto.date_debut_souhaitee|date:"d/m/Y"|default:"Non définie" }}
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Date fin souhaitée</h3>
+                    <p class="mt-1 text-gray-900">
+                        {{ projeto.date_fin_souhaitee|date:"d/m/Y"|default:"Non définie" }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Endereço -->
+            <div>
+                <h2 class="text-lg font-semibold text-gray-700 mb-2">Adresse des travaux</h2>
+                <address class="not-italic text-gray-600">
+                    {{ projeto.adresse_travaux }}<br>
+                    {% if projeto.complement_adresse %}
+                        {{ projeto.complement_adresse }}<br>
+                    {% endif %}
+                    {{ projeto.code_postal }} {{ projeto.ville }}<br>
+                    {{ projeto.pays }}
+                </address>
+            </div>
+        </div>
+
+        <!-- Ações -->
+        {% if can_edit %}
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-4">
+            <a href="{% url 'accounts:editar_projeto' projeto.id %}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                Modifier
+            </a>
+            <button onclick="if(confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) { 
+                window.location.href='{% url 'accounts:deletar_projeto' projeto.id %}';
+            }" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md">
+                Supprimer
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

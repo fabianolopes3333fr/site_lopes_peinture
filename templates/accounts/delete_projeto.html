@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}Supprimer le projet - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-8 px-4">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="px-6 py-4 bg-red-50 border-b border-red-200">
+            <h1 class="text-2xl font-bold text-red-700">Supprimer le projet</h1>
+        </div>
+
+        <div class="p-6">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p class="text-red-700 font-medium mb-2">Attention!</p>
+                <p class="text-red-600">
+                    Êtes-vous sûr de vouloir supprimer ce projet? Cette action est irréversible.
+                </p>
+            </div>
+
+            <div class="mb-6">
+                <h2 class="text-lg font-semibold text-gray-700 mb-2">Détails du projet:</h2>
+                <ul class="list-inside space-y-2 text-gray-600">
+                    <li><strong>Type:</strong> {{ projeto.get_type_projet_display }}</li>
+                    <li><strong>Surface:</strong> {{ projeto.surface }} m²</li>
+                    <li><strong>Adresse:</strong> {{ projeto.adresse_travaux }}</li>
+                    <li><strong>Ville:</strong> {{ projeto.ville }}</li>
+                </ul>
+            </div>
+
+            <form method="post" class="flex justify-end space-x-4">
+                {% csrf_token %}
+                <a href="{% url 'accounts:projeto_detail' projeto.id %}"
+                   class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    Annuler
+                </a>
+                <button type="submit"
+                        class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                    Confirmer la suppression
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
