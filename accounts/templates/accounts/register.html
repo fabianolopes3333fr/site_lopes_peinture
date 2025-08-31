@@ -1,0 +1,230 @@
+{% extends 'base_auth.html' %} 
+{% load static %}
+
+{% block title %}Inscription - Lopes Peinture{% endblock %}
+
+{% block content %}
+<div class="text-center mb-6">
+  <h2 class="text-2xl font-bold text-gray-800 mb-2">Créer un compte</h2>
+  <p class="text-gray-600">Rejoignez-nous pour vos projets de peinture</p>
+</div>
+
+{% if messages %}
+<script id="messages-json" type="application/json">
+    [
+        {% for message in messages %}
+        {"text": "{{ message }}", "tags": "{{ message.tags }}"}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]
+</script>
+{% endif %}
+
+<form method="post" class="space-y-4" id="register-form">
+  {% csrf_token %}
+
+  <div>
+    <label class="block text-sm font-medium text-gray-700 mb-2">
+      <i class="fas fa-user-tag mr-2"></i>Type de compte
+    </label>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="cursor-pointer">
+        <input
+          type="radio"
+          name="user_type"
+          value="client"
+          checked
+          class="sr-only peer"
+          onchange="toggleUserType()"
+        />
+        <div
+          class="p-3 border-2 border-gray-200 rounded-lg text-center peer-checked:border-blue-500 peer-checked:bg-blue-50 transition duration-200"
+        >
+          <i class="fas fa-user text-lg mb-1"></i>
+          <p class="text-sm font-medium">Client</p>
+        </div>
+      </label>
+      <label class="cursor-pointer">
+        <input
+          type="radio"
+          name="user_type"
+          value="collaborateur"
+          class="sr-only peer"
+          onchange="toggleUserType()"
+        />
+        <div
+          class="p-3 border-2 border-gray-200 rounded-lg text-center peer-checked:border-blue-500 peer-checked:bg-blue-50 transition duration-200"
+        >
+          <i class="fas fa-hard-hat text-lg mb-1"></i>
+          <p class="text-sm font-medium">Collaborateur</p>
+        </div>
+      </label>
+    </div>
+  </div>
+  
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <label
+        for="{{ form.first_name.id_for_label }}"
+        class="block text-sm font-medium text-gray-700 mb-2"
+      >
+        Prénom *
+      </label>
+      {{ form.first_name }} 
+      {% if form.first_name.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
+      {% endif %}
+    </div>
+    <div>
+      <label
+        for="{{ form.last_name.id_for_label }}"
+        class="block text-sm font-medium text-gray-700 mb-2"
+      >
+        Nom *
+      </label>
+      {{ form.last_name }} 
+      {% if form.last_name.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+      <i class="fas fa-envelope mr-2"></i>Email *
+    </label>
+    {{ form.email }} 
+    {% if form.email.errors %}
+    <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  <div>
+    <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+      <i class="fas fa-phone mr-2"></i>Téléphone
+    </label>
+    {{ form.phone }}
+    {% if form.phone.errors %}
+    <p class="mt-1 text-sm text-red-600">{{ form.phone.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  <div>
+    <label
+      for="{{ form.password.id_for_label }}"
+      class="block text-sm font-medium text-gray-700 mb-2"
+    >
+      <i class="fas fa-lock mr-2"></i>Mot de passe *
+    </label>
+    <div class="relative">
+      {{ form.password }}
+      <button
+        type="button"
+        onclick="togglePassword('id_password1')"
+        class="absolute inset-y-0 right-0 pr-3 flex items-center"
+      >
+        <i id="id_password1-icon" class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
+      </button>
+    </div>
+    {% if form.password.errors %}
+    <p class="mt-1 text-sm text-red-600">{{ form.password.errors.0 }}</p>
+    {% endif %}
+    <div class="mt-2">
+      <div class="text-xs text-gray-600">
+        <p>Le mot de passe doit contenir :</p>
+        <ul class="list-disc list-inside mt-1 space-y-1">
+          <li id="length-check" class="text-red-500">Au moins 8 caractères</li>
+          <li id="uppercase-check" class="text-red-500">Une lettre majuscule</li>
+          <li id="lowercase-check" class="text-red-500">Une lettre minuscule</li>
+          <li id="number-check" class="text-red-500">Un chiffre</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <label
+      for="{{ form.password2.id_for_label }}"
+      class="block text-sm font-medium text-gray-700 mb-2"
+    >
+      <i class="fas fa-lock mr-2"></i>Confirmer le mot de passe *
+    </label>
+    <div class="relative">
+      {{ form.password2 }}
+      <button
+        type="button"
+        onclick="togglePassword('id_password2')"
+        class="absolute inset-y-0 right-0 pr-3 flex items-center"
+      >
+        <i id="id_password2-icon" class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
+      </button>
+    </div>
+    {% if form.password2.errors %}
+    <p class="mt-1 text-sm text-red-600">{{ form.password2.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  <div class="flex items-start">
+    <input
+      id="terms"
+      name="terms"
+      type="checkbox"
+      required
+      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+    />
+    <label for="terms" class="ml-2 block text-sm text-gray-700">
+      J'accepte les
+      <a href="#" class="text-blue-600 hover:text-blue-500">conditions d'utilisation</a>
+      et la
+      <a href="#" class="text-blue-600 hover:text-blue-500">politique de confidentialité</a>
+    </label>
+  </div>
+
+  <div class="flex items-center">
+    <input
+      id="newsletter_consent"
+      name="newsletter_consent"
+      type="checkbox"
+      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+    />
+    <label for="newsletter_consent" class="ml-2 block text-sm text-gray-700">
+      Je souhaite recevoir les actualités et offres spéciales
+    </label>
+  </div>
+
+  <button
+    type="submit"
+    id="submit-btn"
+    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    <i class="fas fa-user-plus mr-2"></i>
+    Créer mon compte
+  </button>
+</form>
+
+<script>
+  function toggleUserType() {
+    const collaborateurRadio = document.querySelector('input[value="collaborateur"]');
+    const submitBtn = document.getElementById('submit-btn');
+
+    if (collaborateurRadio.checked) {
+      submitBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Demander l\'accès collaborateur';
+    } else {
+      submitBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Créer mon compte';
+    }
+  }
+</script>
+{% endblock %} 
+{% block navigation_links %}
+<p class="text-blue-100">
+  Déjà un compte ?
+  <a href="{% url 'accounts:login' %}" class="text-white font-medium hover:underline">
+    Se connecter
+  </a>
+</p>
+<p class="mt-2">
+  <a href="{% url 'pages:home' %}" class="text-blue-200 hover:text-white transition duration-200">
+    <i class="fas fa-arrow-left mr-1"></i>
+    Retour à l'accueil
+  </a>
+</p>
+{% endblock %}

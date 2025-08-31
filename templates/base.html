@@ -1,12 +1,11 @@
-{% load static %}
-{% load tailwind_tags %}
+{% load static tailwind_tags %}
 
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <!-- Meta tags para SEO -->
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Meta tags para SEO -->
     <meta
       name="description"
       content="{% block meta_description %}LOPES PEINTURE - Entreprise spécialisée en peinture intérieure et extérieure, décoration et rénovation à Paris et Île-de-France. Devis gratuit.{% endblock %}"
@@ -62,25 +61,29 @@
       sizes="16x16"
       href="{% static 'images/favicon-16x16.png' %}"
     />
-  <title>
-    {% block title %}LOPES PEINTURE - Spécialiste Des Services De Peinture {% endblock %}
-  </title>
-  {% tailwind_css %}
-  <link rel="stylesheet" href="{% static 'base/css/base.css' %}">
-  {% block extra_css %}{% endblock %}
-  {% if debug %}
-    <script defer src="{% url 'django_browser_reload:javascript' %}"></script>
-  {% endif %}
-</head>
-<body>
-  <!-- Header Component -->
-    {% include 'components/header.html' %}
-  <main class="container mx-auto px-4">
-    {% block content %}{% endblock  %}
+    <title>
+      {% block title %}LOPES PEINTURE - Spécialiste Des Services De Peinture {% endblock %}
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    {% tailwind_css %}
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="{% static 'base/css/base.css' %}" />
+    
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <!-- Header Component -->
+    {% include "components/header.html" %}
+    <main class=" mx-auto ">{% block content %}{% endblock %}</main>
 
-  </main>
-
-   <!-- WhatsApp Float Button -->
+    <!-- WhatsApp Float Button -->
     <div class="fixed bottom-6 right-6 z-50">
       <a
         href="https://wa.me/33634623320?text=Bonjour,%20je%20souhaite%20obtenir%20un%20devis%20pour%20des%20travaux%20de%20peinture."
@@ -99,7 +102,7 @@
       <i class="fas fa-chevron-up"></i>
     </button>
 
-  <!-- Scripts -->
+    <!-- Scripts -->
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         // Mobile menu toggle
@@ -178,7 +181,7 @@
         });
       });
     </script>
-  {% block extra_js %}{% endblock %}
-  <script src="{% static 'base/js/base.js' %}"></script>
-</body>
+    {% block extra_js %}{% endblock %}
+    <script src="{% static 'base/js/base.js' %}"></script>
+  </body>
 </html>

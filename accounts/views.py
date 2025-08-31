@@ -47,8 +47,9 @@ from django.core.serializers import serialize
 from django.utils.timezone import localtime
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+import logging
 
-
+logger = logging.getLogger(__name__)
 # Autenticação
 @csrf_protect
 @require_http_methods(["GET", "POST"])
@@ -62,6 +63,8 @@ def register_view(request):
             user = form.save(commit=False)
             user.is_active = False  # Aguarda verificação por email
             user.save()
+            
+            logger.info(f"Novo usuário registrado: {user.email}")
 
             # Envia email de verificação
             token = generate_verification_token(user)

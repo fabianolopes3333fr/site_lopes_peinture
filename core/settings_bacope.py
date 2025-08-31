@@ -5,12 +5,12 @@ Django settings for core project.
 import os
 from pathlib import Path
 from decouple import config
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Define o ambiente com valor padrão 'development'
-DJANGO_ENV = config("DJANGO_ENV", default="development")
 
 
 # Application definition
@@ -22,7 +22,10 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Debug tools
-    "django_browser_reload",  # Remova debug_toolbar daqui
+    "tailwind",
+    "whitenoise",
+    "theme",
+    "django_browser_reload",  
     # Third party apps
     "allauth",
     "allauth.account",
@@ -31,20 +34,22 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.facebook",
     # Local apps
     "accounts",
+    'pages.apps.PagesConfig',
 ]
 
 MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",  # Must be first
     "django_browser_reload.middleware.BrowserReloadMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
-    "django.middleware.security.SecurityMiddleware",
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",  # Add CSRF middleware
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",  # Add clickjacking protection
     "allauth.account.middleware.AccountMiddleware",
+    "requestlogs.middleware.RequestLogsMiddleware",
 ]
 TAILWIND_APP_NAME = "theme"
 INTERNAL_IPS = [
@@ -59,7 +64,9 @@ ROOT_URLCONF = "core.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [
+            BASE_DIR / "templates"
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -76,20 +83,6 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 # Configurar o modelo de usuário customizado
 AUTH_USER_MODEL = "accounts.User"
-
-if os.environ.get("DJANGO_ENV") == "production":
-    MAX_FAILED_LOGIN_ATTEMPTS = 5
-    SIREN_LENGTH = 9
-    VAT_NUMBER_LENGTH = 14
-    APE_CODE_LENGTH = 5
-    # Default country
-    DEFAULT_COUNTRY = "France"
-
-else:
-    MAX_FAILED_LOGIN_ATTEMPTS = 50
-    SIREN_LENGTH = 9
-    VAT_NUMBER_LENGTH = 14
-    APE_CODE_LENGTH = 5
 
 # URLs de redirecionamento após login/logout
 LOGIN_URL = "/accounts/login/"
@@ -178,7 +171,8 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-
+# Define o ambiente com valor padrão 'development'
+DJANGO_ENV = config("DJANGO_ENV", default="development")
 # aprarti daqui configuracoes de seguranca
 # Carrega as configurações apropriadas baseado no ambiente
 if DJANGO_ENV == "production":
@@ -188,7 +182,13 @@ if DJANGO_ENV == "production":
     # SECURITY WARNING: don't run with debug turned on in production!
     DEBUG = config("DEBUG", default=False, cast=bool)
 
-    ALLOWED_HOSTS = ["lopespeinture.fr", "www.lopespeinture.fr"]
+    # Permitir hosts do arquivo .env
+    ALLOWED_HOSTS = config(
+        "ALLOWED_HOSTS", default="lopespeinture.fr,www.lopespeinture.fr"
+    ).split(",")
+
+    if not ALLOWED_HOSTS:
+        raise ImproperlyConfigured("ALLOWED_HOSTS must not be empty in production.")
 
     # Database
     DATABASES = {
@@ -202,24 +202,40 @@ if DJANGO_ENV == "production":
         }
     }
 
-    # Security settings
+    MAX_FAILED_LOGIN_ATTEMPTS = 5
+    SIREN_LENGTH = 9
+    VAT_NUMBER_LENGTH = 14
+    APE_CODE_LENGTH = 5
+    # Default country
+    DEFAULT_COUNTRY = "France"
+
+    # Enhanced security settings
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_REDIRECT_EXEMPT = []
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    X_FRAME_OPTIONS = "DENY"
-
-    # Configurações adicionais de segurança
-    SECURE_HSTS_PRELOAD = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SESSION_COOKIE_HTTPONLY = True
+
+    # CSRF and Session settings
+    CSRF_COOKIE_SECURE = True
     CSRF_COOKIE_HTTPONLY = True
     CSRF_COOKIE_SAMESITE = "Strict"
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Strict"
+
+    # Frame options
+    X_FRAME_OPTIONS = "DENY"
+    
+    # Admin configuration
+    ADMINS = [
+        (
+            config('SUPER_USER', default='Admin'),
+            config('ADMIN_EMAIL', default='admin@lopespeinture.fr')
+        ),
+    ]
+    MANAGERS = ADMINS
 
     # Proteção contra ataques de força bruta
     AXES_ENABLED = True
@@ -252,7 +268,11 @@ if DJANGO_ENV == "production":
     # URL base do site para links nos emails
     SITE_URL = "http://lopespeinture.fr"
 
-    # Logging
+    # Criar diretório de logs se não existir
+    LOGS_DIR = BASE_DIR / "logs"
+    LOGS_DIR.mkdir(exist_ok=True)
+
+    # Logging Configuration
     LOGGING = {
         "version": 1,
         "disable_existing_loggers": False,
@@ -261,31 +281,78 @@ if DJANGO_ENV == "production":
                 "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
                 "style": "{",
             },
+            "simple": {
+                "format": "[{asctime}] {levelname} {message}",
+                "style": "{",
+                "datefmt": "%Y-%m-%d %H:%M:%S",
+            },
+        },
+        "filters": {
+            "require_debug_true": {
+                "()": "django.utils.log.RequireDebugTrue",
+            },
+            "require_debug_false": {
+                "()": "django.utils.log.RequireDebugFalse",
+            },
         },
         "handlers": {
-            "file": {
+            "console": {
                 "level": "INFO",
+                "filters": ["require_debug_true"],
+                "class": "logging.StreamHandler",
+                "formatter": "simple",
+            },
+            "file_debug": {
+                "level": "DEBUG",
                 "class": "logging.handlers.RotatingFileHandler",
-                "filename": BASE_DIR / "logs" / "django.log",
+                "filename": BASE_DIR / "logs" / "debug.log",
+                "maxBytes": 1024 * 1024 * 5,  # 5 MB
+                "backupCount": 5,
+                "formatter": "verbose",
+            },
+            "file_error": {
+                "level": "ERROR",
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": BASE_DIR / "logs" / "error.log",
                 "maxBytes": 1024 * 1024 * 5,  # 5 MB
                 "backupCount": 5,
                 "formatter": "verbose",
             },
             "mail_admins": {
                 "level": "ERROR",
+                "filters": ["require_debug_false"],
                 "class": "django.utils.log.AdminEmailHandler",
+                "formatter": "verbose",
+            },
+            "security": {
+                "level": "INFO",
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": BASE_DIR / "logs" / "security.log",
+                "maxBytes": 1024 * 1024 * 5,  # 5 MB
+                "backupCount": 5,
+                "formatter": "verbose",
             },
         },
         "loggers": {
             "django": {
-                "handlers": ["file"],
+                "handlers": ["console", "file_debug"],
                 "level": "INFO",
                 "propagate": True,
             },
             "django.request": {
-                "handlers": ["mail_admins"],
+                "handlers": ["file_error", "mail_admins"],
                 "level": "ERROR",
                 "propagate": False,
+            },
+            "django.security": {
+                "handlers": ["security", "mail_admins"],
+                "level": "INFO",
+                "propagate": False,
+            },
+            "accounts": {  # Para sua app de contas
+                "handlers": ["console", "file_debug", "file_error"],
+                "level": "INFO",
+                "propagate": True,
             },
         },
     }
@@ -319,8 +386,6 @@ else:
 
     # AVISO DE SEGURANÇA: não execute com debug ativado em produção!
     DEBUG = config("DEBUG", default=True, cast=bool)
-
-    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
     ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
@@ -364,21 +429,94 @@ else:
     MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
 
+    # Criar diretório de logs se não existir
+    LOGS_DIR = BASE_DIR / "logs"
+    LOGS_DIR.mkdir(exist_ok=True)
+
     # Configuração de logging
     LOGGING = {
         "version": 1,
         "disable_existing_loggers": False,
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
+        "formatters": {
+            "verbose": {
+                "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+                "style": "{",
+            },
+            "simple": {
+                "format": "[{asctime}] {levelname} {message}",
+                "style": "{",
+                "datefmt": "%Y-%m-%d %H:%M:%S",
             },
         },
-        "root": {
-            "handlers": ["console"],
-            "level": "INFO",
+        "filters": {
+            "require_debug_true": {
+                "()": "django.utils.log.RequireDebugTrue",
+            },
+            "require_debug_false": {
+                "()": "django.utils.log.RequireDebugFalse",
+            },
+        },
+        "handlers": {
+            "console": {
+                "level": "INFO",
+                "filters": ["require_debug_true"],
+                "class": "logging.StreamHandler",
+                "formatter": "simple",
+            },
+            "file_debug": {
+                "level": "DEBUG",
+                "class": "logging.FileHandler",
+                "filename": str(LOGS_DIR / "debug.log"),
+                "formatter": "verbose",
+            },
+            "file_error": {
+                "level": "ERROR",
+                "class": "logging.FileHandler",
+                "filename": str(LOGS_DIR / "error.log"),
+                "formatter": "verbose",
+            },
+            "security": {
+                "level": "INFO",
+                "class": "logging.FileHandler",
+                "filename": str(LOGS_DIR / "security.log"),
+                "formatter": "verbose",
+            },
+            "mail_admins": {
+                "level": "ERROR",
+                "filters": ["require_debug_false"],
+                "class": "django.utils.log.AdminEmailHandler",
+                "formatter": "verbose",
+            },
+        },
+        "loggers": {
+            "django": {
+                "handlers": ["console", "file_debug"],
+                "level": "INFO",
+                "propagate": True,
+            },
+            "django.request": {
+                "handlers": ["file_error", "mail_admins"],
+                "level": "ERROR",
+                "propagate": False,
+            },
+            "django.security": {
+                "handlers": ["security", "mail_admins"],
+                "level": "INFO",
+                "propagate": False,
+            },
+            "accounts": {
+                "handlers": ["console", "file_debug", "file_error"],
+                "level": "INFO",
+                "propagate": True,
+            },
         },
     }
 
     # Verifica se as configurações mínimas estão presentes
     if "DATABASES" not in locals():
         raise ImportError("DATABASES configuration is missing")
+
+    MAX_FAILED_LOGIN_ATTEMPTS = 50
+    SIREN_LENGTH = 9
+    VAT_NUMBER_LENGTH = 14
+    APE_CODE_LENGTH = 5

@@ -42,7 +42,13 @@ module.exports = {
         '../../**/*.py'
     ],
     theme: {
-        extend: {},
+        extend: {
+            fontFamily: {
+                'display': ['Playfair Display', 'serif'],
+                'sans': ['Poppins', 'sans-serif'],
+                'heading': ['Montserrat', 'sans-serif'],
+            },
+        },
     },
     plugins: [
         /**

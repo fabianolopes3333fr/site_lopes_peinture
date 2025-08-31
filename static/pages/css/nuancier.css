@@ -1,0 +1,204 @@
+.hero-gradient-text {
+  background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+  display: inline-block;
+  position: relative;
+}
+
+/* Fallback for browsers that don't support background-clip: text */
+@supports not (-webkit-background-clip: text) {
+  .hero-gradient-text {
+    color: #a855f7;
+    background: none;
+    -webkit-text-fill-color: initial;
+  }
+}
+
+.color-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.color-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.color-sample {
+  width: 100%;
+  height: 120px;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.color-card:hover .color-sample {
+  border-color: #3b82f6;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.color-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.color-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  transform: scale(0.8);
+  transition: transform 0.3s ease;
+}
+
+.color-modal.active .modal-content {
+  transform: scale(1);
+}
+
+.filter-dropdown-btn {
+  min-width: 200px;
+  justify-content: space-between;
+}
+
+.dropdown-menu-content {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.dropdown-menu-content.hidden {
+  animation: fadeOut 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.filter-option {
+  color: #333;
+}
+
+.filter-option.active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.filter-option.active:hover {
+  background-color: #2563eb;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    margin: 20px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .filter-dropdown-btn {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .dropdown-menu-content {
+    left: 0;
+    right: 0;
+    min-width: auto;
+  }
+
+  #colorsGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .hero-gradient-text {
+    font-size: 2.5rem;
+    line-height: 1.2;
+  }
+  .resp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+  }
+}
+
+@media (min-width: 640px) {
+  #colorsGrid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  #colorsGrid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  #colorsGrid {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  #colorsGrid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
+
+@media (min-width: 1536px) {
+  #colorsGrid {
+    grid-template-columns: repeat(10, 1fr);
+  }
+}
