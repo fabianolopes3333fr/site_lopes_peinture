@@ -122,7 +122,7 @@ def user_login_view(request):
 @login_required
 def user_logout_view(request):
     logout(request)
-    return redirect("home:home")
+    return redirect("pages:home")
 
 
 @login_required
@@ -318,11 +318,7 @@ def admin_toggle_user_status(request, user_id):
     return JsonResponse({"status": "success", "is_active": user.is_active})
 
 
-# Exportação de Dados
-@login_required
-def export_user_data(request):
-    response = export_user_data_to_csv(request.user)
-    return response
+
 
 
 # Verificação de Email
@@ -400,24 +396,7 @@ def change_password(request):
     )
 
 
-@login_required
-def delete_account(request):
-    if request.method == "POST":
-        # Armazena o usuário antes de deletar para mensagem
-        user_email = request.user.email
 
-        # Deleta o usuário
-        request.user.delete()
-
-        # Faz logout do usuário
-        logout(request)
-
-        messages.success(request, "Votre compte a été supprimé avec succès.")
-        return redirect("home")
-
-    return render(
-        request, "accounts/delete_account.html", {"title": "Supprimer le compte"}
-    )
 
 
 @login_required

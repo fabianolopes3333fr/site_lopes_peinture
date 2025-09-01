@@ -37,7 +37,6 @@ urlpatterns = [
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('change-password/', views.change_password, name='change_password'),
-    path('delete-account/', views.delete_account, name='delete_account'),
     # Projetos
     path('mes-projets/', views.mes_projets, name='mes_projets'),
     path('criar-projeto/', views.criar_projeto, name='criar_projeto'),
@@ -51,8 +50,7 @@ urlpatterns = [
     path('ajax/remove-avatar/', views.remove_avatar, name='remove_avatar'),
     path('ajax/check-email/', views.check_email_exists, name='check_email_exists'),
     
-    # Exportação de dados
-    path('export-data/', views.export_user_data, name='export_user_data'),
+    
     
     # Administração (apenas superadmin)
     path('admin/users/', views.admin_users_list, name='admin_users_list'),
