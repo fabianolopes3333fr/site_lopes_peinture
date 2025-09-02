@@ -27,6 +27,8 @@ urlpatterns = [
     path("__reload__/", include("django_browser_reload.urls")),
     path("accounts/", include("accounts.urls")),
     path("dashboard/", include("config.urls")),
+    path("profiles/", include("profiles.urls")),
+    path("projects/", include("projects.urls")),
 ]
 
 # Servir arquivos de mídia em desenvolvimento

@@ -25,16 +25,16 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Project
-from .decorators import can_edit_project
-from .models import User, UserProfile, Project
+from projects.models import Project
+
+from .models import User
+from projects.models import Project
 from .forms import (
     UserRegistrationForm,
     UserLoginForm,
-    UserProfileForm,
-    ProjectForm,
     PasswordResetForm,
 )
+from projects.forms import ProjectForm
 from .decorators import superuser_required, permission_required, can_edit_project
 from .utils import generate_verification_token, export_user_data_to_csv
 
@@ -50,6 +50,8 @@ from django.core.exceptions import ValidationError
 import logging
 
 logger = logging.getLogger(__name__)
+
+
 # Autenticação
 @csrf_protect
 @require_http_methods(["GET", "POST"])
@@ -63,7 +65,7 @@ def register_view(request):
             user = form.save(commit=False)
             user.is_active = False  # Aguarda verificação por email
             user.save()
-            
+
             logger.info(f"Novo usuário registrado: {user.email}")
 
             # Envia email de verificação
@@ -133,17 +135,6 @@ def ajax_logout_view(request):
 
 
 # Gerenciamento de Perfil
-class ProfileView(LoginRequiredMixin, UpdateView):
-    model = UserProfile
-    form_class = UserProfileForm
-    template_name = "accounts/profile.html"
-    success_url = reverse_lazy("accounts:profile")
-
-    def get_object(self):
-        return self.request.user.profile
-
-
-profile = ProfileView.as_view()
 
 
 @method_decorator(login_required, name="dispatch")
@@ -161,64 +152,6 @@ class DashboardView(ListView):
 
 
 dashboard = DashboardView.as_view()
-
-
-# Projetos
-@method_decorator(login_required, name="dispatch")
-class ProjectListView(ListView):
-    template_name = "accounts/project_list.html"
-    context_object_name = "projects"
-
-    def get_queryset(self):
-        return Project.objects.filter(user=self.request.user)
-
-
-mes_projets = ProjectListView.as_view()
-
-
-@method_decorator(login_required, name="dispatch")
-class ProjectCreateView(CreateView):
-    model = Project
-    form_class = ProjectForm
-    template_name = "accounts/project_form.html"
-    success_url = reverse_lazy("accounts:mes_projets")
-
-    def form_valid(self, form):
-        form.instance.user = self.request.user
-        return super().form_valid(form)
-
-
-criar_projeto = ProjectCreateView.as_view()
-
-
-# AJAX Endpoints
-@login_required
-@require_POST
-def upload_avatar(request):
-    if "avatar" not in request.FILES:
-        return JsonResponse({"error": "Aucune image n'a été fournie"}, status=400)
-
-    profile = request.user.profile
-    profile.avatar = request.FILES["avatar"]
-    profile.save()
-
-    return JsonResponse(
-        {
-            "status": "success",
-            "message": "Avatar mis à jour avec succès",
-            "avatar_url": profile.avatar.url,
-        }
-    )
-
-
-@login_required
-@require_POST
-def remove_avatar(request):
-    profile = request.user.profile
-    profile.avatar = None
-    profile.save()
-
-    return JsonResponse({"status": "success", "message": "Avatar supprimé avec succès"})
 
 
 @login_required
@@ -318,9 +251,6 @@ def admin_toggle_user_status(request, user_id):
     return JsonResponse({"status": "success", "is_active": user.is_active})
 
 
-
-
-
 # Verificação de Email
 def verify_email(request, token):
     try:
@@ -347,34 +277,6 @@ def user_list(request):
 
 
 @login_required
-@can_edit_project
-def editar_projeto(request, projeto_id):
-    """
-    View para editar um projeto existente.
-    Apenas o proprietário do projeto ou um administrador pode editar.
-    """
-    projeto = get_object_or_404(Project, id=projeto_id)
-
-    if request.method == "POST":
-        form = ProjectForm(request.POST, instance=projeto)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Projet mis à jour avec succès!")
-            return redirect("accounts:projeto_detail", projeto_id=projeto.id)
-    else:
-        form = ProjectForm(instance=projeto)
-
-    context = {
-        "form": form,
-        "projeto": projeto,
-        "title": "Modifier le projet",
-        "button_text": "Enregistrer les modifications",
-    }
-
-    return render(request, "accounts/edit_projeto.html", context)
-
-
-@login_required
 def change_password(request):
     if request.method == "POST":
         form = PasswordChangeForm(request.user, request.POST)
@@ -393,52 +295,6 @@ def change_password(request):
         request,
         "accounts/change_password.html",
         {"form": form, "title": "Changer le mot de passe"},
-    )
-
-
-
-
-
-@login_required
-def projeto_detail(request, projeto_id):
-    """
-    View para exibir os detalhes de um projeto específico.
-    Apenas o proprietário do projeto ou um administrador pode visualizar.
-    """
-    projeto = get_object_or_404(Project, id=projeto_id)
-
-    # Verifica se o usuário tem permissão para ver o projeto
-    if not (request.user.is_superuser or projeto.user == request.user):
-        messages.error(request, "Vous n'avez pas l'autorisation de voir ce projet.")
-        return redirect("accounts:mes_projets")
-
-    context = {
-        "projeto": projeto,
-        "can_edit": request.user.is_superuser or projeto.user == request.user,
-        "title": f"Projet: {projeto.type_projet}",
-    }
-
-    return render(request, "accounts/projeto_detail.html", context)
-
-
-@login_required
-@can_edit_project
-def deletar_projeto(request, projeto_id):
-    """
-    View para deletar um projeto existente.
-    Apenas o proprietário do projeto ou um administrador pode deletar.
-    """
-    projeto = get_object_or_404(Project, id=projeto_id)
-
-    if request.method == "POST":
-        projeto.delete()
-        messages.success(request, "Le projet a été supprimé avec succès.")
-        return redirect("accounts:mes_projets")
-
-    return render(
-        request,
-        "accounts/delete_projeto.html",
-        {"projeto": projeto, "title": "Supprimer le projet"},
     )
 
 

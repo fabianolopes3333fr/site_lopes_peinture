@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "tailwind",
     "theme",
     "whitenoise",
+    'corsheaders',
     # Third party apps
     "allauth",
     "allauth.account",
@@ -33,9 +34,12 @@ INSTALLED_APPS = [
     "accounts",
     "pages",
     "config",
+    "profiles",
+    "projects",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

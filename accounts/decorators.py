@@ -4,7 +4,8 @@ from django.contrib.auth.decorators import user_passes_test
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.conf import settings
-from .models import Project, UserProfile
+from projects.models import Project
+from profiles.models import UserProfile
 
 
 def superuser_required(

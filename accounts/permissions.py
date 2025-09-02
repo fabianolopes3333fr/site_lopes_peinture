@@ -2,7 +2,8 @@ from django.db.models import Q
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_user_model
-from .models import UserProfile, Project
+from projects.models import Project
+from profiles.models import UserProfile
 
 User = get_user_model()
 

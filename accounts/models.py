@@ -252,25 +252,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.account_type == self.AccountType.COLLABORATOR
 
 
-class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
-    phone = models.CharField(max_length=20, blank=True)
-    address = models.TextField(blank=True)
-    bio = models.TextField(blank=True)
-    date_of_birth = models.DateField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"Profile of {self.user.email}"
-
-    class Meta:
-        verbose_name = _("user profile")
-        verbose_name_plural = _("user profiles")
-
-
-class Project(models.Model):
     """Informações sobre projetos do cliente"""
 
     class ProjectType(models.TextChoices):
