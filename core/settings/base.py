@@ -1,6 +1,7 @@
 """
 Configurações base que são comuns a todos os ambientes
 """
+
 import os
 from pathlib import Path
 from decouple import config
@@ -9,7 +10,7 @@ from decouple import config
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = config("SECRET_KEY")
 
 # Application definition
 INSTALLED_APPS = [
@@ -23,7 +24,7 @@ INSTALLED_APPS = [
     "tailwind",
     "theme",
     "whitenoise",
-    'corsheaders',
+    "corsheaders",
     # Third party apps
     "allauth",
     "allauth.account",
@@ -49,6 +50,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    "django.middleware.locale.LocaleMiddleware",  # Adicionar para suporte a francês
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -107,3 +109,11 @@ LANGUAGE_CODE = "fr-fr"
 TIME_ZONE = "Europe/Paris"
 USE_I18N = True
 USE_TZ = True
+
+# Cache settings
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+    }
+}

@@ -1,37 +1,883 @@
 
 {% load static tailwind_tags %}
-
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %} Lopes Peinture{% endblock %}</title>
-  {% tailwind_css %}
-  <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+<html lang="fr" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>{% block title %}Authentification - Lopes Peinture{% endblock %}</title>
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="{% block meta_description %}Connectez-vous à votre espace client Lopes Peinture pour gérer vos projets de peinture et décoration.{% endblock %}"
     />
-  <link rel="stylesheet" href="{% static 'accounts/css/base_auth.css' %}">
-  {% block extra_css %}{% endblock %}
-</head>
-<body>
-  <section class="bg-gradient-auth min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md">
-        <div class="text-center mb-8">
-          <a href="{% url 'pages:home' %}" class="inline-block">
-            <h1 class="text-3xl font-bold text-white mb-2">Lopes Peinture</h1>
-            <p class="text-blue-100">Spécialiste en peinture</p>
-          </a>
+    <meta name="keywords" content="peinture, décoration, rénovation, devis, authentification" />
+    <meta name="author" content="Lopes Peinture" />
+
+    <!-- Favicon -->
+    {% load static %}
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
+    <!-- Tailwind CSS -->
+    {% tailwind_css %}
+
+    <!-- Custom Configuration -->
+    {% comment %} <!-- <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['Poppins', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                primary: '#2c5aa0',
+                secondary: '#1976d2',
+                tertiary: '#1565c0',
+              },
+            },
+            animation: {
+              float: 'float 6s ease-in-out infinite',
+              'fade-in': 'fadeIn 0.8s ease-out forwards',
+              'slide-up': 'slideUp 0.6s ease-out forwards',
+              'slide-right': 'slideRight 0.8s ease-out forwards',
+            },
+          },
+        },
+      };
+    </script> --> {% endcomment %}
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
+
+      .hero-gradient {
+        background: linear-gradient(135deg, #2c5aa0 0%, #1976d2 50%, #1565c0 100%);
+      }
+
+      .hero-overlay {
+        background: linear-gradient(
+          135deg,
+          rgba(44, 90, 160, 0.9) 0%,
+          rgba(25, 118, 210, 0.8) 100%
+        );
+      }
+
+      .form-scrollable {
+        height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+
+      .form-input {
+        @apply w-full px-4 py-3 text-gray-900 bg-white border-2 border-gray-300 rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:border-brand-secondary focus:ring-4 focus:ring-blue-100 transition-all duration-200 ease-in-out;
+      }
+
+      .form-input:hover {
+        @apply border-gray-400;
+      }
+
+      .form-input.error {
+        @apply border-red-500 focus:border-red-500 focus:ring-red-100;
+      }
+
+      .btn-primary {
+        @apply w-full flex items-center justify-center px-6 py-3 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+        background: linear-gradient(135deg, #2c5aa0 0%, #1976d2 50%, #1565c0 100%);
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        background: linear-gradient(135deg, #1565c0 0%, #1976d2 50%, #2c5aa0 100%);
+      }
+
+      .btn-primary:active:not(:disabled) {
+        @apply scale-95;
+      }
+
+      .floating-shapes {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .shape {
+        position: absolute;
+        opacity: 0.1;
+        animation: float 8s infinite ease-in-out;
+      }
+
+      .shape:nth-child(1) {
+        top: 20%;
+        left: 10%;
+        animation-delay: -2s;
+      }
+
+      .shape:nth-child(2) {
+        top: 60%;
+        right: 15%;
+        animation-delay: -4s;
+      }
+
+      .shape:nth-child(3) {
+        bottom: 30%;
+        left: 20%;
+        animation-delay: -6s;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px) rotate(0deg);
+          opacity: 0.1;
+        }
+        25% {
+          transform: translateY(-20px) rotate(5deg);
+          opacity: 0.2;
+        }
+        50% {
+          transform: translateY(-10px) rotate(-3deg);
+          opacity: 0.15;
+        }
+        75% {
+          transform: translateY(-30px) rotate(8deg);
+          opacity: 0.25;
+        }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideRight {
+        from {
+          opacity: 0;
+          transform: translateX(-30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .animate-delay-200 {
+        animation-delay: 200ms;
+      }
+      .animate-delay-400 {
+        animation-delay: 400ms;
+      }
+      .animate-delay-600 {
+        animation-delay: 600ms;
+      }
+      .animate-delay-800 {
+        animation-delay: 800ms;
+      }
+      .animate-delay-1000 {
+        animation-delay: 1000ms;
+      }
+
+      /* Custom scrollbar for form side */
+      .form-scrollable::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .form-scrollable::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+
+      .form-scrollable::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+      }
+
+      .form-scrollable::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+
+      /* Ensure no overflow on main container */
+      .auth-container {
+        height: 100vh;
+        overflow: hidden;
+      }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+  </head>
+
+  <body class="font-sans antialiased">
+    <!-- Main Container -->
+    <div class="auth-container flex">
+      <!-- Left Side - Brand Section (Fixed) -->
+      <div class="hidden lg:flex lg:w-1/2 hero-gradient relative overflow-hidden justify-center">
+        <!-- Floating Background Shapes -->
+        <div class="floating-shapes">
+          <div class="shape w-32 h-32 bg-white rounded-full"></div>
+          <div class="shape w-24 h-24 bg-white rounded-full"></div>
+          <div class="shape w-40 h-40 bg-white rounded-full"></div>
         </div>
-  
-        <div class="glass-effect rounded-2xl shadow-2xl p-8">{% block content %}{% endblock %}</div>
-  
-        <div class="text-center mt-6">{% block navigation_links %}{% endblock %}</div>
+
+        <!-- Hero Overlay -->
+        <div class="hero-overlay absolute inset-0"></div>
+
+        <!-- Content -->
+        <div
+          class="relative z-10 flex flex-col justify-center items-center text-center text-white px-12 py-8"
+        >
+          <!-- Logo Container -->
+          <div class="mb-12 animate-float">
+            <div class="relative">
+              <!-- Main Logo Circle -->
+              <div
+                class="  flex items-center justify-center  mb-4"
+              >
+                <img src="{% static 'base/images/logo_220x80_P_branco.svg' %}" alt="Lopes Peinture">
+              </div>
+
+              <!-- Floating Accent Dots -->
+              <div
+                class="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full animate-pulse"
+              ></div>
+              <div
+                class="absolute -bottom-1 -left-3 w-4 h-4 bg-white opacity-80 rounded-full animate-ping"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Brand Information -->
+          <div class="space-y-6 max-w-md">
+            <!-- Company Name -->
+            <h1 class="text-5xl font-display font-bold mb-4 animate-slide-right">Lopes Peinture</h1>
+
+            <!-- Tagline -->
+            <p class="text-xl font-light opacity-95 animate-slide-right animate-delay-200">
+              Votre Expert en Peinture & Décoration
+            </p>
+
+            <!-- Services Grid -->
+            <div class="grid grid-cols-3 gap-8 my-12 animate-fade-in animate-delay-400">
+              <div class="text-center group cursor-default">
+                <div
+                  class="w-16 h-16 bg-white bg-opacity-20 backdrop-blur-sm rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-opacity-30 transition-all duration-300"
+                >
+                  <i class="fas fa-home text-2xl"></i>
+                </div>
+                <p class="text-sm font-medium">Peinture Intérieure</p>
+              </div>
+
+              <div class="text-center group cursor-default">
+                <div
+                  class="w-16 h-16 bg-white bg-opacity-20 backdrop-blur-sm rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-opacity-30 transition-all duration-300"
+                >
+                  <i class="fas fa-building text-2xl"></i>
+                </div>
+                <p class="text-sm font-medium">Peinture Extérieure</p>
+              </div>
+
+              <div class="text-center group cursor-default">
+                <div
+                  class="w-16 h-16 bg-white bg-opacity-20 backdrop-blur-sm rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-opacity-30 transition-all duration-300"
+                >
+                  <i class="fas fa-palette text-2xl"></i>
+                </div>
+                <p class="text-sm font-medium">Décoration</p>
+              </div>
+            </div>
+
+            <!-- Statistics -->
+            <div
+              class="grid grid-cols-3 gap-6 py-8 border-t border-white border-opacity-20 animate-fade-in animate-delay-600"
+            >
+              <div class="text-center">
+                <div class="text-3xl font-bold mb-1">500+</div>
+                <div class="text-sm opacity-90">Projets Réalisés</div>
+              </div>
+              <div class="text-center">
+                <div class="text-3xl font-bold mb-1">15</div>
+                <div class="text-sm opacity-90">Ans d'Expérience</div>
+              </div>
+              <div class="text-center">
+                <div class="text-3xl font-bold mb-1">98%</div>
+                <div class="text-sm opacity-90">Clients Satisfaits</div>
+              </div>
+            </div>
+
+            <!-- Testimonial -->
+            <div
+              class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 animate-fade-in animate-delay-800"
+            >
+              <blockquote class="text-lg italic mb-4 leading-relaxed">
+                "Un travail impeccable et des conseils précieux pour notre rénovation complète."
+              </blockquote>
+              <div class="flex items-center justify-center space-x-1 mb-3">
+                {% for i in "12345" %}
+                <i class="fas fa-star text-yellow-300 text-lg"></i>
+                {% endfor %}
+              </div>
+              <p class="text-sm opacity-90">- Marie & Pierre Dubois, Paris</p>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- Right Side - Form Section (Scrollable) -->
+      <div class="flex-1 form-scrollable">
+        <div class="min-h-full flex flex-col justify-center px-6 py-12 lg:px-16 xl:px-20">
+          <!-- Mobile Logo -->
+          <div class="lg:hidden text-center mb-8 animate-fade-in">
+            <div
+              class="inline-flex items-center justify-center w-16 h-16 hero-gradient rounded-full mb-4 shadow-lg"
+            >
+              <i class="fas fa-paint-brush text-2xl text-white"></i>
+            </div>
+            <h1 class="text-2xl font-display font-bold text-gray-900">Lopes Peinture</h1>
+          </div>
+
+          <!-- Form Container -->
+          <div class="w-full max-w-md mx-auto animate-slide-up animate-delay-200">
+            {% block content %}{% endblock %}
+
+            <!-- Navigation Links -->
+                    <div class="mt-8 text-center space-y-4 animate-fade-in animate-delay-600">
+                        {% block navigation_links %}{% endblock %}
+                    </div>
+
+            <!-- Help & Support -->
+            <div class="mt-12 text-center animate-fade-in animate-delay-800">
+              <p class="text-sm text-gray-600 mb-4">
+                <i class="fas fa-question-circle mr-2"></i>
+                Besoin d'aide ? Notre équipe est là pour vous
+              </p>
+              <div class="flex justify-center space-x-8 text-sm">
+                <a
+                  href="tel:+33123456789"
+                  class="flex items-center text-brand-primary hover:text-brand-secondary transition duration-200 font-medium"
+                >
+                  <i class="fas fa-phone mr-2"></i>
+                  01 23 45 67 89
+                </a>
+                <a
+                  href="mailto:contact@lopespeinture.fr"
+                  class="flex items-center text-brand-primary hover:text-brand-secondary transition duration-200 font-medium"
+                >
+                  <i class="fas fa-envelope mr-2"></i>
+                  Contact
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="mt-12 text-center text-xs text-gray-500 animate-fade-in animate-delay-1000">
+            <p class="mb-3">&copy; {% now "Y" %} Lopes Peinture. Tous droits réservés.</p>
+            <div class="flex justify-center space-x-6">
+              <a href="#" class="hover:text-gray-700 transition duration-200">Mentions légales</a>
+              <a href="#" class="hover:text-gray-700 transition duration-200"
+                >Politique de confidentialité</a
+              >
+              <a href="#" class="hover:text-gray-700 transition duration-200">CGU</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div
+      id="toast-container"
+      class="fixed top-4 right-4 z-50 flex flex-col-reverse space-y-2 space-y-reverse"
+    ></div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('register-form');
+        const submitButton = document.getElementById('submit-button');
+        const submitText = document.getElementById('submit-text');
+        const termsCheckbox = document.getElementById('terms_conditions');
+
+        // Enable/disable submit button based on terms acceptance
+        function toggleSubmitButton() {
+          if (termsCheckbox && termsCheckbox.checked) {
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            submitButton.classList.add('hover:bg-blue-700', 'hover:shadow-lg');
+          } else {
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+            submitButton.classList.remove('hover:bg-blue-700', 'hover:shadow-lg');
+          }
+        }
+
+        // Password strength validation
+        function validatePasswordStrength(password) {
+          const requirements = {
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /\d/.test(password),
+          };
+
+          return requirements;
+        }
+
+        // Real-time password validation
+        const password1Field = document.getElementById('{{ form.password1.id_for_label }}');
+        const password2Field = document.getElementById('{{ form.password2.id_for_label }}');
+
+        if (password1Field) {
+          password1Field.addEventListener('input', function () {
+            const requirements = validatePasswordStrength(this.value);
+            updatePasswordRequirements(requirements);
+
+            // Remove error styling when typing
+            this.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+            this.classList.add('border-gray-300', 'focus:border-blue-500', 'focus:ring-blue-500');
+          });
+        }
+
+        if (password2Field) {
+          password2Field.addEventListener('input', function () {
+            checkPasswordMatch();
+
+            // Remove error styling when typing
+            this.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+            this.classList.add('border-gray-300', 'focus:border-blue-500', 'focus:ring-blue-500');
+          });
+        }
+
+        function updatePasswordRequirements(requirements) {
+          const indicators = {
+            'length-check': requirements.length,
+            'uppercase-check': requirements.uppercase,
+            'lowercase-check': requirements.lowercase,
+            'number-check': requirements.number,
+          };
+
+          Object.entries(indicators).forEach(([id, isValid]) => {
+            const element = document.getElementById(id);
+            if (element) {
+              const icon = element.querySelector('i');
+              const text = element.querySelector('span');
+
+              if (isValid) {
+                element.classList.remove('text-red-600');
+                element.classList.add('text-green-600');
+                icon.classList.remove('fa-times-circle');
+                icon.classList.add('fa-check-circle');
+              } else {
+                element.classList.remove('text-green-600');
+                element.classList.add('text-red-600');
+                icon.classList.remove('fa-check-circle');
+                icon.classList.add('fa-times-circle');
+              }
+            }
+          });
+        }
+
+        function checkPasswordMatch() {
+          const password1 = password1Field ? password1Field.value : '';
+          const password2 = password2Field ? password2Field.value : '';
+          const matchIndicator = document.getElementById('password-match-indicator');
+
+          if (password2 && password1 === password2) {
+            if (matchIndicator) {
+              matchIndicator.classList.remove('hidden', 'text-red-600');
+              matchIndicator.classList.add('text-green-600');
+              matchIndicator.innerHTML =
+                '<i class="fas fa-check-circle mr-2"></i>Les mots de passe correspondent';
+            }
+          } else if (password2) {
+            if (matchIndicator) {
+              matchIndicator.classList.remove('hidden', 'text-green-600');
+              matchIndicator.classList.add('text-red-600');
+              matchIndicator.innerHTML =
+                '<i class="fas fa-times-circle mr-2"></i>Les mots de passe ne correspondent pas';
+            }
+          } else {
+            if (matchIndicator) {
+              matchIndicator.classList.add('hidden');
+            }
+          }
+        }
+
+        // Terms checkbox listener
+        if (termsCheckbox) {
+          termsCheckbox.addEventListener('change', toggleSubmitButton);
+          toggleSubmitButton(); // Initial state
+        }
+
+        // Email validation
+        const emailField = document.getElementById('{{ form.email.id_for_label }}');
+        if (emailField) {
+          emailField.addEventListener('blur', function () {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (this.value && !emailRegex.test(this.value)) {
+              this.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+              this.classList.remove(
+                'border-gray-300',
+                'focus:border-blue-500',
+                'focus:ring-blue-500'
+              );
+            } else {
+              this.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+              this.classList.add('border-gray-300', 'focus:border-blue-500', 'focus:ring-blue-500');
+            }
+          });
+        }
+
+        // Form submission handling
+        if (form) {
+          form.addEventListener('submit', function (e) {
+            if (submitButton.disabled) {
+              e.preventDefault();
+              return false;
+            }
+
+            // Show loading state
+            submitButton.disabled = true;
+            submitText.textContent = 'Création en cours...';
+
+            const spinner = document.createElement('i');
+            spinner.className = 'fas fa-spinner fa-spin ml-2';
+            submitButton.appendChild(spinner);
+
+            // Prevent multiple submissions
+            setTimeout(() => {
+              if (submitButton.disabled) {
+                submitButton.disabled = false;
+                submitText.textContent = 'Créer mon compte';
+                const spinnerElement = submitButton.querySelector('.fa-spinner');
+                if (spinnerElement) {
+                  spinnerElement.remove();
+                }
+              }
+            }, 10000);
+          });
+        }
+
+        // Auto-focus first input or error field
+        const firstErrorField = document.querySelector('input.border-red-500');
+        const firstInput = document.querySelector(
+          'input:not([type="hidden"]):not([type="checkbox"])'
+        );
+
+        if (firstErrorField) {
+          firstErrorField.focus();
+        } else if (firstInput) {
+          firstInput.focus();
+        }
+
+        // Phone number formatting (French format)
+        const phoneField = document.getElementById('{{ form.phone.id_for_label }}');
+        if (phoneField) {
+          phoneField.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 0) {
+              if (value.length <= 10) {
+                value = value.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
+              }
+            }
+            e.target.value = value;
+          });
+        }
+      });
+
+      // Toast notification system
+      function showToast(message, type = 'info', duration = 5000) {
+        const toastContainer = document.getElementById('toast-container') || createToastContainer();
+
+        const toast = document.createElement('div');
+        const toastId = 'toast-' + Date.now();
+
+        const bgColors = {
+          success: 'bg-green-500',
+          error: 'bg-red-500',
+          warning: 'bg-yellow-500',
+          info: 'bg-blue-600',
+        };
+
+        const icons = {
+          success: 'fa-check-circle',
+          error: 'fa-exclamation-circle',
+          warning: 'fa-exclamation-triangle',
+          info: 'fa-info-circle',
+        };
+
+        toast.id = toastId;
+        toast.className = `${
+          bgColors[type] || bgColors.info
+        } text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 transform transition-all duration-300 translate-x-full opacity-0 mb-2 max-w-sm`;
+
+        toast.innerHTML = `
+        <div class="flex-shrink-0">
+            <i class="fas ${icons[type] || icons.info} text-lg"></i>
+        </div>
+        <div class="flex-1 text-sm font-medium">
+            ${message}
+        </div>
+        <button type="button" class="flex-shrink-0 text-white hover:text-gray-200 focus:outline-none focus:text-gray-200 transition duration-150 ease-in-out" onclick="removeToast('${toastId}')">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+
+        toastContainer.appendChild(toast);
+
+        // Animate in
+        requestAnimationFrame(() => {
+          toast.classList.remove('translate-x-full', 'opacity-0');
+        });
+
+        // Auto remove after duration
+        if (duration > 0) {
+          setTimeout(() => removeToast(toastId), duration);
+        }
+
+        return toastId;
+      }
+
+      function removeToast(toastId) {
+        const toast = document.getElementById(toastId);
+        if (toast) {
+          toast.classList.add('translate-x-full', 'opacity-0');
+          setTimeout(() => {
+            if (toast.parentNode) {
+              toast.parentNode.removeChild(toast);
+            }
+          }, 300);
+        }
+      }
+
+      function createToastContainer() {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'fixed top-4 right-4 z-50 flex flex-col-reverse';
+        document.body.appendChild(container);
+        return container;
+      }
+
+      // Password toggle function
+      function togglePassword(fieldId, button) {
+        const field = document.getElementById(fieldId);
+        const icon = button.querySelector('i');
+
+        if (field.type === 'password') {
+          field.type = 'text';
+          icon.classList.remove('fa-eye');
+          icon.classList.add('fa-eye-slash');
+          button.setAttribute('aria-label', 'Masquer le mot de passe');
+        } else {
+          field.type = 'password';
+          icon.classList.remove('fa-eye-slash');
+          icon.classList.add('fa-eye');
+          button.setAttribute('aria-label', 'Afficher le mot de passe');
+        }
+      }
+
+      // Utility function to validate email format
+      function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+      }
+
+      // Function to handle form errors
+      function handleFormErrors(errors) {
+        Object.entries(errors).forEach(([fieldName, fieldErrors]) => {
+          const field = document.querySelector(`[name="${fieldName}"]`);
+          if (field) {
+            field.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+            field.classList.remove(
+              'border-gray-300',
+              'focus:border-blue-500',
+              'focus:ring-blue-500'
+            );
+
+            // Show error message
+            fieldErrors.forEach((error) => {
+              showToast(error, 'error');
+            });
+          }
+        });
+      }
+    </script>
     
-  </section>
-  {% block extra_js %}{% endblock %}
-  <script src="{% static 'accounts/js/base_auth.js' %}"></script>
-</body>
+    <script>
+      // Additional JavaScript for enhanced UX
+      document.addEventListener('DOMContentLoaded', function () {
+        // Add smooth scroll behavior
+        document.documentElement.style.scrollBehavior = 'smooth';
+
+        // Add focus-visible polyfill behavior
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Tab') {
+            document.body.classList.add('using-keyboard');
+          }
+        });
+
+        document.addEventListener('mousedown', function () {
+          document.body.classList.remove('using-keyboard');
+        });
+
+        // Enhanced form validation feedback
+        const form = document.getElementById('register-form');
+        if (form) {
+          const inputs = form.querySelectorAll('input[required]');
+
+          inputs.forEach((input) => {
+            input.addEventListener('invalid', function (e) {
+              e.preventDefault();
+              this.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+
+              const fieldName = this.getAttribute('name');
+              let message = 'Ce champ est requis.';
+
+              if (this.type === 'email') {
+                message = 'Veuillez entrer une adresse email valide.';
+              } else if (this.type === 'password') {
+                message = 'Veuillez entrer un mot de passe valide.';
+              }
+
+              showToast(`${this.labels?.[0]?.textContent || fieldName}: ${message}`, 'error', 4000);
+            });
+
+            input.addEventListener('input', function () {
+              if (this.checkValidity()) {
+                this.classList.remove(
+                  'border-red-500',
+                  'focus:border-red-500',
+                  'focus:ring-red-500'
+                );
+                this.classList.add(
+                  'border-gray-300',
+                  'focus:border-blue-500',
+                  'focus:ring-blue-500'
+                );
+              }
+            });
+          });
+        }
+
+        // Add loading states to all buttons
+        const buttons = document.querySelectorAll('button[type="submit"]');
+        buttons.forEach((button) => {
+          button.addEventListener('click', function () {
+            const form = this.closest('form');
+            if (form && form.checkValidity()) {
+              this.classList.add('opacity-75');
+              this.style.pointerEvents = 'none';
+            }
+          });
+        });
+
+        // Auto-resize textareas
+        const textareas = document.querySelectorAll('textarea');
+        textareas.forEach((textarea) => {
+          textarea.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+          });
+        });
+
+        // Add ripple effect to buttons
+        const rippleButtons = document.querySelectorAll('.btn-primary, button[type="submit"]');
+        rippleButtons.forEach((button) => {
+          button.addEventListener('click', function (e) {
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            ripple.classList.add('ripple');
+
+            this.appendChild(ripple);
+
+            setTimeout(() => {
+              ripple.remove();
+            }, 600);
+          });
+        });
+      });
+
+      // Add CSS for ripple effect
+      const style = document.createElement('style');
+      style.textContent = `
+    .ripple {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        transform: scale(0);
+        animation: ripple-animation 0.6s ease-out;
+        pointer-events: none;
+    }
+    
+    @keyframes ripple-animation {
+        to {
+            transform: scale(2);
+            opacity: 0;
+        }
+    }
+    
+    .using-keyboard *:focus {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+    }
+    
+    :not(.using-keyboard) *:focus {
+        outline: none;
+    }
+`;
+      document.head.appendChild(style);
+    </script>
+
+    {% block extra_js %} {% endblock %}
+  </body>
 </html>

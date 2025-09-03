@@ -1,105 +1,316 @@
-{% extends 'base_auth.html' %}
-{% load socialaccount %}
-
-{% block title %}Connexion - Lopes Peinture{% endblock %}
+{% extends 'base_auth.html' %} 
+{% load i18n %} 
+{% block title %} Connexion - Lopes Peinture {% endblock %} 
+{% block meta_description %}
+  Connectez-vous à votre espace client Lopes Peinture pour
+  gérer vos projets de peinture et suivre vos devis personnalisés.
+{% endblock %}
 
 {% block content %}
-<div class="text-center mb-6">
-  <h2 class="text-2xl font-bold text-gray-800 mb-2">Se connecter</h2>
-  <p class="text-gray-600">Entrez vos identifiants pour accéder à votre compte</p>
+<!-- Header -->
+<div class="text-center mb-8">
+  <h2 class="text-3xl font-bold text-gray-900 mb-3">Bon retour !</h2>
+  <p class="text-gray-600 text-lg">Connectez-vous à votre espace personnel</p>
 </div>
 
+<!-- Messages d'alerte -->
 {% if messages %}
-<script id="messages-json" type="application/json">
-    [
-        {% for message in messages %}
-        {"text": "{{ message }}", "tags": "{{ message.tags }}"}{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ]
-</script>
+<div class="mb-6 space-y-3" role="alert">
+  {% for message in messages %}
+  <div
+    class="p-4 rounded-xl border-l-4 {% if message.tags == 'error' %}bg-red-50 border-red-400 text-red-800{% elif message.tags == 'warning' %}bg-yellow-50 border-yellow-400 text-yellow-800{% elif message.tags == 'success' %}bg-green-50 border-green-400 text-green-800{% else %}bg-blue-50 border-blue-400 text-blue-800{% endif %} shadow-sm"
+  >
+    <div class="flex items-center">
+      <i
+        class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-3 text-lg flex-shrink-0"
+      ></i>
+      <div class="flex-1 font-medium">{{ message }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
 {% endif %}
 
-<form method="post" class="space-y-4">
+<!-- Erreurs non liées aux champs -->
+{% if form.non_field_errors %}
+<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm" role="alert">
+  <div class="flex items-start text-red-800">
+    <i class="fas fa-exclamation-circle mr-3 mt-1 text-lg flex-shrink-0"></i>
+    <div class="flex-1">
+      {% for error in form.non_field_errors %}
+      <p class="font-medium {% if not forloop.first %}mt-2{% endif %}">{{ error }}</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Formulaire de connexion -->
+<form method="post" class="space-y-6" id="login-form" novalidate autocomplete="on">
   {% csrf_token %}
 
-  <div>
-    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-      <i class="fas fa-envelope mr-2"></i>Email
+  <!-- Champ Email -->
+  <div class="space-y-2">
+    <label for="{{ form.username.id_for_label }}" class="block text-sm font-semibold text-gray-700">
+      <i class="fas fa-envelope mr-2 text-brand-primary"></i>
+      Adresse email
     </label>
-    {{ form.username }}
+
+    <div class="relative">
+      <input
+        type="email"
+        id="{{ form.username.id_for_label }}"
+        name="{{ form.username.html_name }}"
+        value="{{ form.username.value|default:'' }}"
+        placeholder="votre.email@exemple.com"
+        autocomplete="email"
+        required
+        class="form-input w-full px-4 py-3 text-gray-900 bg-white border-2 border-gray-300 rounded-xl shadow-sm placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-brand-primary transition-all duration-200 {% if form.username.errors %}error{% endif %}"
+        aria-describedby="{% if form.username.errors %}{{ form.username.id_for_label }}-error{% endif %}"
+      />
+
+      <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+        <i class="fas fa-at text-gray-400 text-sm"></i>
+      </div>
+    </div>
+
     {% if form.username.errors %}
-    <p class="mt-1 text-sm text-red-600">{{ form.username.errors.0 }}</p>
+    <div
+      id="{{ form.username.id_for_label }}-error"
+      class="flex items-center text-sm text-red-600 mt-2"
+      role="alert"
+    >
+      <i class="fas fa-exclamation-circle mr-2 flex-shrink-0"></i>
+      <div>
+        {% for error in form.username.errors %}
+        <span class="block font-medium">{{ error }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %} {% if form.username.help_text %}
+    <p class="text-sm text-gray-600 mt-1">{{ form.username.help_text }}</p>
     {% endif %}
   </div>
 
-  <div>
-    <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-      <i class="fas fa-lock mr-2"></i>Mot de passe
+  <!-- Champ Mot de passe -->
+  <div class="space-y-2">
+    <label for="{{ form.password.id_for_label }}" class="block text-sm font-semibold text-gray-700">
+      <i class="fas fa-lock mr-2 text-brand-primary"></i>
+      Mot de passe
     </label>
-    {{ form.password }}
+
+    <div class="relative">
+      <input
+        type="password"
+        id="{{ form.password.id_for_label }}"
+        name="{{ form.password.html_name }}"
+        placeholder="Entrez votre mot de passe"
+        autocomplete="current-password"
+        required
+        class="form-input w-full px-4 py-3 pr-12 text-gray-900 bg-white border-2 border-gray-300 rounded-xl shadow-sm placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-brand-primary transition-all duration-200 {% if form.password.errors %}error{% endif %}"
+        aria-describedby="{% if form.password.errors %}{{ form.password.id_for_label }}-error{% endif %}"
+      />
+
+      <button
+        type="button"
+        class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none focus:text-brand-primary transition-colors duration-200"
+        onclick="togglePassword('{{ form.password.id_for_label }}', this)"
+        aria-label="Afficher le mot de passe"
+        tabindex="-1"
+      >
+        <i class="fas fa-eye text-sm"></i>
+      </button>
+    </div>
+
     {% if form.password.errors %}
-    <p class="mt-1 text-sm text-red-600">{{ form.password.errors.0 }}</p>
+    <div
+      id="{{ form.password.id_for_label }}-error"
+      class="flex items-center text-sm text-red-600 mt-2"
+      role="alert"
+    >
+      <i class="fas fa-exclamation-circle mr-2 flex-shrink-0"></i>
+      <div>
+        {% for error in form.password.errors %}
+        <span class="block font-medium">{{ error }}</span>
+        {% endfor %}
+      </div>
+    </div>
     {% endif %}
   </div>
 
-  <div class="flex items-center justify-between">
+  <!-- Options -->
+  <div class="flex items-center justify-between text-sm">
     <div class="flex items-center">
-      <input id="remember_me" name="remember_me" type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
-      <label for="remember_me" class="ml-2 block text-sm text-gray-900">
+      <input
+        id="remember_me"
+        name="remember_me"
+        type="checkbox"
+        class="h-4 w-4 text-brand-primary focus:ring-brand-primary focus:ring-offset-0 border-gray-300 rounded transition-colors duration-200"
+      />
+      <label for="remember_me" class="ml-3 block font-medium text-gray-700 cursor-pointer">
         Se souvenir de moi
       </label>
     </div>
-    <div class="text-sm">
-      <a href="{% url 'accounts:password_reset' %}" class="font-medium text-blue-600 hover:text-blue-500">
-        Mot de passe oublié ?
-      </a>
-    </div>
+
+    <a
+      href="{% url 'accounts:password_reset' %}"
+      class="font-semibold text-brand-primary hover:text-brand-secondary focus:outline-none focus:underline transition-colors duration-200"
+    >
+      Mot de passe oublié ?
+    </a>
   </div>
 
+  <!-- Bouton de soumission -->
   <button
     type="submit"
-    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
+    class="btn-primary w-full flex justify-center items-center py-4 px-6 text-white font-semibold text-base rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-brand-primary focus:ring-opacity-50 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
+    id="submit-button"
   >
-    <i class="fas fa-sign-in-alt mr-2"></i>
-    Se connecter
+    <i class="fas fa-sign-in-alt mr-3 text-lg"></i>
+    <span id="submit-text">Se connecter</span>
   </button>
 </form>
 
-<div class="mt-6 text-center text-sm">
+<!-- Séparateur -->
+<div class="mt-8">
   <div class="relative">
     <div class="absolute inset-0 flex items-center" aria-hidden="true">
       <div class="w-full border-t border-gray-300"></div>
     </div>
     <div class="relative flex justify-center text-sm">
-      <span class="px-2 bg-white text-gray-500">ou</span>
+      <span class="px-4 bg-gray-50 text-gray-500 font-medium">Ou continuez avec</span>
     </div>
   </div>
-  {% comment %} <a 
-    href="{% provider_login_url 'google' %}" 
-    class="mt-4 w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
-  >
-    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-    </svg>
-    Se connecter avec Google
-  </a> {% endcomment %}
-</div>
-{% endblock %}
 
+  <!-- Connexions sociales (placeholder) -->
+  <div class="mt-6 grid grid-cols-2 gap-4">
+    <button
+      type="button"
+      class="w-full inline-flex justify-center items-center py-3 px-4 border-2 border-gray-300 rounded-xl shadow-sm bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-4 focus:ring-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      disabled
+    >
+      <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+        <path
+          fill="#4285F4"
+          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        />
+        <path
+          fill="#34A853"
+          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+        />
+        <path
+          fill="#EA4335"
+          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+        />
+      </svg>
+      Google
+    </button>
+
+    <button
+      type="button"
+      class="w-full inline-flex justify-center items-center py-3 px-4 border-2 border-gray-300 rounded-xl shadow-sm bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-4 focus:ring-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      disabled
+    >
+      <i class="fab fa-microsoft text-blue-600 text-lg mr-2"></i>
+      Microsoft
+    </button>
+  </div>
+
+  <p class="mt-3 text-xs text-gray-500 text-center">
+    <i class="fas fa-clock mr-1"></i>
+    Connexions sociales disponibles prochainement
+  </p>
+</div>
+{% endblock %} 
 {% block navigation_links %}
-<p class="text-blue-100">
-  Pas encore de compte ?
-  <a href="{% url 'accounts:register' %}" class="text-white font-medium hover:underline">
-    S'inscrire
-  </a>
-</p>
-<p class="mt-2">
-  <a href="{% url 'pages:home' %}" class="text-blue-200 hover:text-white transition duration-200">
-    <i class="fas fa-arrow-left mr-1"></i>
-    Retour à l'accueil
-  </a>
-</p>
+<div class="text-center space-y-4">
+  <div class="p-6 bg-gray-100 rounded-xl">
+    <p class="text-gray-700 font-medium mb-3">
+      <i class="fas fa-user-plus mr-2 text-brand-primary"></i>
+      Nouveau client ?
+    </p>
+    <p class="text-gray-600 text-sm mb-4">
+      Créez votre compte pour demander des devis personnalisés et suivre vos projets de peinture.
+    </p>
+    <a
+      href="{% url 'accounts:register' %}"
+      class="inline-flex items-center justify-center px-6 py-3 border-2 border-brand-primary text-brand-primary font-semibold rounded-xl hover:bg-brand-primary hover:text-white focus:outline-none focus:ring-4 focus:ring-brand-primary focus:ring-opacity-50 transition-all duration-200"
+    >
+      <i class="fas fa-arrow-right mr-2"></i>
+      Créer un compte gratuit
+    </a>
+  </div>
+
+  <div class="pt-4 border-t border-gray-200">
+    <a
+      href="/"
+      class="inline-flex items-center text-gray-500 hover:text-brand-primary focus:outline-none focus:text-brand-primary transition-colors duration-200 font-medium"
+    >
+      <i class="fas fa-arrow-left mr-2"></i>
+      Retour à l'accueil
+    </a>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('login-form');
+    const submitButton = document.getElementById('submit-button');
+    const submitText = document.getElementById('submit-text');
+
+    // Enhanced form submission
+    form.addEventListener('submit', function (e) {
+      if (submitButton.disabled) {
+        e.preventDefault();
+        return false;
+      }
+
+      // Client-side validation
+      const emailField = document.getElementById('{{ form.username.id_for_label }}');
+      const passwordField = document.getElementById('{{ form.password.id_for_label }}');
+
+      let hasError = false;
+
+      // Validate email
+      if (!emailField.value.trim()) {
+        emailField.classList.add('error');
+        hasError = true;
+      } else if (!validateEmail(emailField.value.trim())) {
+        emailField.classList.add('error');
+        hasError = true;
+      }
+
+      // Validate password
+      if (!passwordField.value.trim()) {
+        passwordField.classList.add('error');
+        hasError = true;
+      }
+
+      if (hasError) {
+        e.preventDefault();
+        showToast('Veuillez vérifier les informations saisies', 'error');
+        return false;
+      }
+
+      // Show loading state
+      submitButton.disabled = true;
+      submitText.textContent = 'Connexion en cours...';
+
+      const spinner = document.createElement('i');
+      spinner.className = 'fas fa-spinner fa-spin mr-3 text-lg';
+      submitButton.insertBefore(spinner, submitText);
+    });
+
+    // Focus management for accessibility
+    const errorField = document.querySelector('.error');
+    if (errorField) {
+      errorField.focus();
+      errorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+</script>
 {% endblock %}

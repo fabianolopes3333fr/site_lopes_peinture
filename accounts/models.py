@@ -17,7 +17,26 @@ from django.utils.functional import cached_property
 
 
 class CustomUserManager(BaseUserManager):
+    """
+    Gerenciador personalizado para o modelo User.
+    Responsável por criar usuários e superusuários com validações adequadas.
+    """
+
     def create_user(self, email, password=None, **extra_fields):
+        """
+        Cria e salva um usuário regular com email e senha.
+
+        Args:
+            email (str): Email do usuário (obrigatório)
+            password (str): Senha do usuário
+            **extra_fields: Campos adicionais do usuário
+
+        Returns:
+            User: Instância do usuário criado
+
+        Raises:
+            ValueError: Se o email não for fornecido
+        """
         if not email:
             raise ValueError(_("The Email field must be set"))
         email = self.normalize_email(email)
@@ -28,9 +47,24 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
+        """
+        Cria e salva um superusuário com permissões administrativas.
+
+        Args:
+            email (str): Email do superusuário
+            password (str): Senha do superusuário
+            **extra_fields: Campos adicionais do usuário
+
+        Returns:
+            User: Instância do superusuário criado
+
+        Raises:
+            ValueError: Se is_staff ou is_superuser não forem True
+        """
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
+        extra_fields.setdefault("account_type", "ADMINISTRATOR")
 
         if extra_fields.get("is_staff") is not True:
             raise ValueError(_("Superuser must have is_staff=True."))
@@ -41,13 +75,34 @@ class CustomUserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    """
+    Modelo de usuário personalizado que utiliza email como identificador único.
+    Suporta diferentes tipos de conta (Cliente, Colaborador, Administrador).
+    Focado apenas na autenticação e informações básicas do usuário.
+    """
 
     class AccountType(models.TextChoices):
+        """Tipos de conta disponíveis no sistema."""
+
         CLIENT = "CLIENT", _("Client")
         COLLABORATOR = "COLLABORATOR", _("Collaborateur")
         ADMINISTRATOR = "ADMINISTRATOR", _("Administrateur")
 
-    # Adicione este campo ao modelo User
+    # Campos principais de autenticação
+    email = models.EmailField(
+        _("email address"),
+        unique=True,
+        db_index=True,
+        error_messages={
+            "unique": _("A user with that email already exists."),
+        },
+    )
+    # Adicionar validação de formato de telefone
+    # phone = models.CharField(
+    #     max_length=20,
+    #     validators=[phone_regex]  # Adicionar validator
+    # )
+
     account_type = models.CharField(
         _("type de compte"),
         max_length=20,
@@ -56,66 +111,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text=_("Définit le niveau d'accès de l'utilisateur"),
     )
 
-    email = models.EmailField(
-        _("email address"),
-        unique=True,
-        db_index=True,  # Add index
-        error_messages={
-            "unique": _("A user with that email already exists."),
-        },
-    )
-
-    # User Type Choice
-    class UserType(models.TextChoices):
-        INDIVIDUAL = "PARTICULAR", _("Particulier")
-        PROFESSIONAL = "PROFESSIONAL", _("Professionnel")
-
-    # Civility Choice
-    class Civility(models.TextChoices):
-        MR = "M", _("M")
-        MRS = "MME", _("Mme")
-        OTHER = "OTHER", _("Autre")
-
-    # New fields for user type and personal info
-    user_type = models.CharField(
-        _("type d'utilisateur"),
-        max_length=20,
-        choices=UserType.choices,
-        default=UserType.INDIVIDUAL,
-    )
-    civility = models.CharField(
-        _("civilité"), max_length=5, choices=Civility.choices, default=Civility.MR
-    )
-
-    # Professional specific fields
-    company_name = models.CharField(_("raison sociale"), max_length=255, blank=True)
-    trading_name = models.CharField(_("nom commercial"), max_length=255, blank=True)
-    siren = models.CharField(
-        _("SIREN"), max_length=9, blank=True, help_text=_("9 caractères numériques")
-    )
-    vat_number = models.CharField(
-        _("TVA Intracommunautaire"),
-        max_length=14,
-        blank=True,
-        help_text=_("Format: FR + 11 caractères"),
-    )
-    legal_form = models.CharField(_("forme juridique"), max_length=100, blank=True)
-    activity_type = models.CharField(_("type d'activité"), max_length=100, blank=True)
-    ape_code = models.CharField(
-        _("code APE"),
-        max_length=5,
-        blank=True,
-        help_text=_("Code NAF/APE (5 caractères)"),
-    )
-    # Address fields
-    billing_address = models.TextField(_("adresse de facturation"), blank=True)
-    address_complement = models.CharField(
-        _("complément d'adresse"), max_length=255, blank=True
-    )
-    country = models.CharField(_("pays"), max_length=100, default="France")
-
+    # Informações pessoais básicas
     first_name = models.CharField(_("first name"), max_length=150, blank=True)
     last_name = models.CharField(_("last name"), max_length=150, blank=True)
+
+    # Campos de status e controle do Django
     is_staff = models.BooleanField(
         _("staff status"),
         default=False,
@@ -129,262 +129,233 @@ class User(AbstractBaseUser, PermissionsMixin):
             "Unselect this instead of deleting accounts."
         ),
     )
+
+    # Campos de auditoria e segurança
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
     verification_token = models.UUIDField(
-        default=uuid.uuid4, editable=False, null=True, blank=True
+        default=uuid.uuid4,
+        editable=False,
+        null=True,
+        blank=True,
+        help_text=_("Token para verificação de email"),
     )
-    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
-    failed_login_attempts = models.PositiveIntegerField(default=0)
-    last_failed_login = models.DateTimeField(null=True, blank=True)
-    password_changed_at = models.DateTimeField(null=True, blank=True)
+    is_verified = models.BooleanField(
+        _("email verified"),
+        default=False,
+        help_text=_("Indica se o email foi verificado"),
+    )
+
+    # Campos de segurança para controle de login
+    last_login_ip = models.GenericIPAddressField(
+        _("last login IP"),
+        null=True,
+        blank=True,
+        help_text=_("Último endereço IP de login"),
+    )
+    failed_login_attempts = models.PositiveIntegerField(
+        _("failed login attempts"),
+        default=0,
+        help_text=_("Número de tentativas de login falhadas"),
+    )
+    last_failed_login = models.DateTimeField(
+        _("last failed login"),
+        null=True,
+        blank=True,
+        help_text=_("Data da última tentativa de login falhada"),
+    )
+    password_changed_at = models.DateTimeField(
+        _("password changed at"),
+        null=True,
+        blank=True,
+        help_text=_("Data da última alteração de senha"),
+    )
 
     objects = CustomUserManager()
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ["first_name", "last_name"]
 
-    # Add field dependencies
     class Meta:
         verbose_name = _("user")
         verbose_name_plural = _("users")
         ordering = ["-date_joined"]
-        constraints = [
-            # Professional fields are required for professional accounts
-            models.CheckConstraint(
-                check=(
-                    models.Q(user_type="PARTICULAR")
-                    | (
-                        models.Q(user_type="PROFESSIONAL")
-                        & ~models.Q(company_name="")
-                        & ~models.Q(siren="")
-                    )
-                ),
-                name="professional_fields_required",
-            )
+        indexes = [
+            models.Index(fields=["email"]),
+            models.Index(fields=["account_type"]),
+            models.Index(fields=["is_active"]),
+        ]
+        permissions = [
+            ("can_view_dashboard", "Peut afficher le tableau de bord"),
+            ("can_manage_users", "Peut gérer les utilisateurs"),
         ]
 
     def __str__(self):
+        """Representação string do usuário."""
         return self.email
 
-    # Add validators for specific fields
-    def clean(self):
-        super().clean()
-        self.email = self.__class__.objects.normalize_email(self.email)
-
-        # Validate SIREN format
-        if self.siren and not self.siren.isdigit():
-            raise ValidationError(
-                {"siren": _("Le SIREN doit contenir uniquement des chiffres.")}
-            )
-
-        # Validate VAT number format
-        if self.vat_number and not self.vat_number.startswith("FR"):
-            raise ValidationError(
-                {"vat_number": _("Le numéro de TVA doit commencer par FR.")}
-            )
-
-    def is_professional(self):
-        """Check if user is a professional account"""
-        return self.user_type == self.UserType.PROFESSIONAL
-
-    # Update the get_full_name method to include civility
     def get_full_name(self):
-        """Return the full name, including civility"""
-        parts = [self.get_civility_display()]
-        if self.first_name:
-            parts.append(self.first_name)
-        if self.last_name:
-            parts.append(self.last_name)
-        return " ".join(parts).strip()
+        """
+        Retorna o nome completo do usuário.
+
+        Returns:
+            str: Nome completo (primeiro nome + sobrenome) ou email se não houver nome
+        """
+        full_name = f"{self.first_name} {self.last_name}".strip()
+        return full_name if full_name else self.email
 
     def get_short_name(self):
-        """Return the short name for the user."""
-        return self.first_name
+        """
+        Retorna o primeiro nome do usuário.
+
+        Returns:
+            str: Primeiro nome do usuário ou email se não houver primeiro nome
+        """
+        return self.first_name or self.email
 
     def email_user(self, subject, message, from_email=None, **kwargs):
-        """Send an email to this user."""
+        """
+        Envia um email para este usuário.
+
+        Args:
+            subject (str): Assunto do email
+            message (str): Conteúdo do email
+            from_email (str): Email do remetente
+            **kwargs: Argumentos adicionais para send_mail
+        """
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
-    def increment_failed_login(self, ip_address):
-        """Increment failed login attempts and log IP"""
+    def increment_failed_login(self, ip_address=None):
+        """
+        Incrementa o contador de tentativas de login falhadas.
+
+        Args:
+            ip_address (str, optional): Endereço IP da tentativa de login
+        """
         self.failed_login_attempts += 1
         self.last_failed_login = timezone.now()
-        self.last_login_ip = ip_address
-        self.save(
-            update_fields=[
-                "failed_login_attempts",
-                "last_failed_login",
-                "last_login_ip",
-            ]
-        )
+        if ip_address:
+            self.last_login_ip = ip_address
+
+        update_fields = ["failed_login_attempts", "last_failed_login"]
+        if ip_address:
+            update_fields.append("last_login_ip")
+
+        self.save(update_fields=update_fields)
 
     def reset_failed_login(self):
-        """Reset failed login attempts counter"""
+        """Reseta o contador de tentativas de login falhadas."""
         self.failed_login_attempts = 0
-        self.save(update_fields=["failed_login_attempts"])
+        self.last_failed_login = None
+        self.save(update_fields=["failed_login_attempts", "last_failed_login"])
 
     def is_locked_out(self):
-        """Check if user is locked out due to too many failed attempts"""
-        if self.failed_login_attempts >= settings.MAX_FAILED_LOGIN_ATTEMPTS:
+        """
+        Verifica se o usuário está bloqueado devido a muitas tentativas falhadas.
+
+        Returns:
+            bool: True se o usuário estiver bloqueado
+        """
+        max_attempts = getattr(settings, "MAX_FAILED_LOGIN_ATTEMPTS", 5)
+
+        if self.failed_login_attempts >= max_attempts:
             if self.last_failed_login:
                 lockout_period = timezone.now() - timezone.timedelta(minutes=30)
                 return self.last_failed_login >= lockout_period
         return False
 
+    def set_password(self, raw_password):
+        """
+        Override para registrar quando a senha foi alterada.
+
+        Args:
+            raw_password (str): Nova senha em texto plano
+        """
+        super().set_password(raw_password)
+        self.password_changed_at = timezone.now()
+
     @cached_property
     def full_name(self):
-        """Cached property for full name to avoid multiple db calls"""
+        """
+        Propriedade cached para o nome completo.
+
+        Returns:
+            str: Nome completo do usuário
+        """
         return self.get_full_name()
 
+    def clean(self):
+        """
+        Validações customizadas do modelo.
+
+        Raises:
+            ValidationError: Se alguma validação falhar
+        """
+        super().clean()
+
+        # Validar email
+        if self.email:
+            self.email = self.email.lower().strip()
+
     def save(self, *args, **kwargs):
-        """Override save to perform cleaning before saving"""
+        """
+        Override do método save para executar validações antes de salvar.
+        """
         self.clean()
         super().save(*args, **kwargs)
 
+    # Propriedades de conveniência para verificar tipo de conta
     @property
     def is_admin(self):
-        """Check if user is an administrator"""
+        """
+        Verifica se o usuário é um administrador.
+
+        Returns:
+            bool: True se for administrador
+        """
         return self.account_type == self.AccountType.ADMINISTRATOR
 
     @property
     def is_collaborator(self):
-        """Check if user is a collaborator"""
+        """
+        Verifica se o usuário é um colaborador.
+
+        Returns:
+            bool: True se for colaborador
+        """
         return self.account_type == self.AccountType.COLLABORATOR
 
-
-
-    """Informações sobre projetos do cliente"""
-
-    class ProjectType(models.TextChoices):
-        INTERIOR = "peinture_interieure", _("Peinture Intérieure")
-        EXTERIOR = "peinture_exterieure", _("Peinture Extérieure")
-        DECORATION = "decoration", _("Décoration")
-        RENOVATION = "renovation", _("Rénovation")
-        WALL_COVERING = "revetement_mural", _("Revêtement Mural")
-        COMMERCIAL = "commercial", _("Peinture Commerciale")
-        OTHER = "autre", _("Autre")
-
-    class Status(models.TextChoices):
-        THINKING = "en_reflexion", _("En réflexion")
-        QUOTE_REQUESTED = "devis_demande", _("Devis demandé")
-        QUOTE_RECEIVED = "devis_recu", _("Devis reçu")
-        ACCEPTED = "accepte", _("Accepté")
-        IN_PROGRESS = "en_cours", _("En cours")
-        COMPLETED = "termine", _("Terminé")
-        CANCELLED = "annule", _("Annulé")
-
-    class Urgency(models.TextChoices):
-        LOW = "faible", _("Faible")
-        NORMAL = "normale", _("Normale")
-        HIGH = "elevee", _("Élevée")
-        URGENT = "urgente", _("Urgente")
-
-    user = models.ForeignKey(
-        "accounts.User",
-        on_delete=models.CASCADE,
-        related_name="projects",
-        verbose_name=_("Utilisateur"),
-    )
-    type_projet = models.CharField(
-        _("Type de projet"),
-        max_length=50,
-        choices=ProjectType.choices,
-    )
-    description = models.TextField(
-        _("Description"), help_text=_("Décrivez votre projet en détail")
-    )
-    surface = models.DecimalField(
-        _("Surface (m²)"),
-        max_digits=8,
-        decimal_places=2,
-        null=True,
-        blank=True,
-    )
-    date_debut_souhaitee = models.DateField(
-        _("Date de début souhaitée"), null=True, blank=True
-    )
-    date_fin_souhaitee = models.DateField(
-        _("Date de fin souhaitée"), null=True, blank=True
-    )
-    urgence = models.CharField(
-        _("Urgence"),
-        max_length=20,
-        choices=Urgency.choices,
-        default=Urgency.NORMAL,
-    )
-    adresse_travaux = models.CharField(
-        _("Adresse des travaux"),  # This is the verbose_name
-        max_length=255,
-        # Remove duplicate verbose_name="Adresse du projet"
-    )
-    complement_adresse = models.CharField(
-        _("Complément d'adresse"), max_length=255, blank=True
-    )
-    code_postal = models.CharField(
-        _("Code postal"),
-        max_length=10,
-        # Remove duplicate verbose_name="Code postal"
-    )
-    ville = models.CharField(
-        _("Ville"),
-        max_length=100,
-        # Remove duplicate verbose_name="Ville du projet"
-    )
-    pays = models.CharField(
-        _("Pays"),
-        max_length=100,
-        default="France",
-        # Remove duplicate verbose_name="Pays"
-    )
-    budget_estime = models.DecimalField(
-        _("Budget estimé (€)"),
-        max_digits=10,
-        decimal_places=2,
-        null=True,
-        blank=True,
-    )
-    status = models.CharField(
-        _("Statut"),
-        max_length=20,
-        choices=Status.choices,
-        default=Status.THINKING,
-    )
-    created_at = models.DateTimeField(
-        _("Créé le"),
-        auto_now_add=True,
-        # Remove duplicate verbose_name="Date de création"
-    )
-    updated_at = models.DateTimeField(
-        _("Mis à jour le"),
-        auto_now=True,
-        # Remove duplicate verbose_name="Dernière modification"
-    )
-
-    class Meta:
-        verbose_name = _("projet")
-        verbose_name_plural = _("projets")
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.type_projet} - {self.user.get_full_name()} - {self.ville}"
-
     @property
-    def is_active(self):
-        """Check if project is currently active"""
-        return self.status in [self.Status.ACCEPTED, self.Status.IN_PROGRESS]
+    def is_client(self):
+        """
+        Verifica se o usuário é um cliente.
 
-    def can_be_edited(self):
-        """Check if project can still be edited"""
-        return self.status not in [self.Status.COMPLETED, self.Status.CANCELLED]
+        Returns:
+            bool: True se for cliente
+        """
+        return self.account_type == self.AccountType.CLIENT
 
-    def clean(self):
-        """Validate project dates"""
-        if self.date_fin_souhaitee and self.date_debut_souhaitee:
-            if self.date_fin_souhaitee < self.date_debut_souhaitee:
-                raise ValidationError(
-                    {
-                        "date_fin_souhaitee": _(
-                            "La date de fin ne peut pas être antérieure à la date de début."
-                        )
-                    }
-                )
+    def has_permission(self, permission_name):
+        """
+        Verifica se o usuário tem uma permissão específica baseada no tipo de conta.
+
+        Args:
+            permission_name (str): Nome da permissão a verificar
+
+        Returns:
+            bool: True se o usuário tiver a permissão
+        """
+        if self.is_admin:
+            return True
+
+        # Definir permissões específicas por tipo de conta
+        collaborator_permissions = ["view_projects", "edit_projects", "view_clients"]
+
+        if self.is_collaborator and permission_name in collaborator_permissions:
+            return True
+
+        return False
+
+    def get_profile(self):
+        from profiles.models import UserProfile
+
+        return self.profile
