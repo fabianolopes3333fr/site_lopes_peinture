@@ -16,8 +16,13 @@
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}" />
 
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <!-- CSS -->
-    <link rel="stylesheet" href="{% static 'config/css/dashboard.css' %}" />
+    
     <link rel="stylesheet" href="{% static 'config/css/base_dashboard.css' %}" />
     <link rel="stylesheet" href="{% static 'config/css/components/logout-modal.css' %}">
     {% tailwind_css %}
@@ -173,6 +178,16 @@
           ></i>
           <span class="sidebar-text">Projets</span>
           <div class="sidebar-tooltip">Projets</div>
+        </a>
+        <a
+          href="{% url 'profiles:detail'  %}"
+          class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 group"
+        >
+          <i
+            class="sidebar-icon fas fa-user mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"
+          ></i>
+          <span class="sidebar-text">Profils</span>
+          <div class="sidebar-tooltip">Profils</div>
         </a>
 
         <a

@@ -1,0 +1,2 @@
+# Pasta para arquivos de log
+# Os arquivos .log não vão para o commit (definido no .gitignore)

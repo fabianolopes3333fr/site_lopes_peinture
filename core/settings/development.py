@@ -30,19 +30,39 @@ DATABASES = {
     }
 }
 
+# ✅ Configurações específicas para testes
+if 'test' in sys.argv:
+    # Usar base de dados em memória para testes
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    }
+    
+    # Desabilitar migrações para acelerar testes
+    class DisableMigrations:
+        def __contains__(self, item):
+            return True
+        def __getitem__(self, item):
+            return None
+    
+    MIGRATION_MODULES = DisableMigrations()
+    
+    # Usar diretório temporário para media nos testes
+    import tempfile
+    MEDIA_ROOT = tempfile.mkdtemp()
 # Email
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Debug toolbar
 INSTALLED_APPS += [
-    "debug_toolbar",
+    # "debug_toolbar",
     "django_extensions",
     "django_browser_reload",
 ]
 
 MIDDLEWARE = [
     "django_browser_reload.middleware.BrowserReloadMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",
 ] + MIDDLEWARE
 
 INTERNAL_IPS = ["127.0.0.1"]

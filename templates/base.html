@@ -64,10 +64,14 @@
     <title>
       {% block title %}LOPES PEINTURE - Spécialiste Des Services De Peinture {% endblock %}
     </title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
     {% tailwind_css %}
     <!-- Font Awesome -->
     <link
@@ -75,13 +79,13 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <link rel="stylesheet" href="{% static 'base/css/base.css' %}" />
-    
+
     {% block extra_css %}{% endblock %}
   </head>
   <body>
     <!-- Header Component -->
     {% include "components/header.html" %}
-    <main class=" mx-auto ">{% block content %}{% endblock %}</main>
+    <main class="mx-auto">{% block content %}{% endblock %}</main>
 
     <!-- WhatsApp Float Button -->
     <div class="fixed bottom-6 right-6 z-50">

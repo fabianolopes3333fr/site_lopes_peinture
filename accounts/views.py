@@ -1,71 +1,41 @@
 import logging
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.tokens import default_token_generator
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.views.generic import (
-    ListView,
-    DetailView,
-    CreateView,
-    UpdateView,
-    DeleteView,
-    TemplateView,
-)
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.generic import CreateView
+from django.urls import reverse_lazy, reverse
 from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.cache import cache_control, never_cache
-from django.http import JsonResponse, HttpResponseForbidden, Http404
-from django.urls import reverse, reverse_lazy
-from django.core.mail import send_mail
-from django.conf import settings
-from django.utils.decorators import method_decorator
-from django.db.models import Q, Count
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
+from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.tokens import default_token_generator
+from utils.emails.sistema_email import (
+    send_password_reset_email,
+    send_password_changed_email,
+)
+from django.contrib.auth import (
+    update_session_auth_hash,
+)
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from django.core.serializers import serialize
-from django.utils.timezone import localtime, now
-from django.core.validators import validate_email
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db import transaction
-from django.utils.translation import gettext_lazy as _
 
 from .models import User
 from .forms import (
     UserRegistrationForm,
-    PasswordChangeForm,
-    UserLoginForm,
+    EmailLoginForm,
     PasswordResetForm,
-    UserProfileForm,
+    PasswordChangeForm,
+    PasswordResetConfirmForm,
 )
-from .decorators import superuser_required, permission_required
-from .utils import generate_verification_token, export_user_data_to_csv
+
 
 logger = logging.getLogger(__name__)
 
 
-def get_client_ip(request):
-    """Obtém o IP do cliente."""
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(",")[0]
-    else:
-        ip = request.META.get("REMOTE_ADDR")
-    return ip
-
-
-# ==================== VIEWS DE AUTENTICAÇÃO ====================
-
-
-@method_decorator([csrf_protect, never_cache], name="dispatch")
+# ==================== REGISTRO ====================
 class RegisterView(CreateView):
-    """
-    View para registro de novos usuários com verificação por email.
-    """
+    """View de registro com criação automática de perfil e grupos"""
 
     model = User
     form_class = UserRegistrationForm
@@ -73,300 +43,202 @@ class RegisterView(CreateView):
     success_url = reverse_lazy("accounts:login")
 
     def dispatch(self, request, *args, **kwargs):
+        """Redireciona usuários já autenticados"""
         if request.user.is_authenticated:
+            messages.info(request, "Você já está conectado.")
             return redirect("accounts:dashboard")
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        """
-        Processa o registro do usuário e envia email de verificação.
-        """
+        """Processa formulário válido e cria usuário com perfil"""
         try:
-            with transaction.atomic():
-                user = form.save(commit=False)
-                user.is_active = False  # Aguarda verificação por email
-                user.save()
+            # Salvar usuário (signals criarão perfil e grupos automaticamente)
+            user = form.save()
 
-                # Log do registro
-                logger.info(
-                    f"Novo usuário registrado: {user.email} - IP: {get_client_ip(self.request)}"
-                )
+            # Log da criação
+            logger.info(
+                f"Novo usuário criado: {user.email} - Tipo: {user.account_type}"
+            )
 
-                # Envia email de verificação
-                self.send_verification_email(user)
+            # Mensagem de sucesso
+            messages.success(
+                self.request,
+                f"Compte créé avec succès! Bienvenue {user.first_name}. Vous pouvez maintenant vous connecter.",
+            )
 
-                messages.success(
-                    self.request,
-                    _(
-                        "Compte créé avec succès! Veuillez vérifier votre email pour activer votre compte."
-                    ),
-                )
-
-                return redirect(self.success_url)
+            return redirect(self.success_url)
 
         except Exception as e:
-            logger.error(
-                f"Erro no registro do usuário {form.cleaned_data.get('email')}: {str(e)}"
-            )
+            logger.error(f"Erro ao criar usuário: {e}")
             messages.error(
                 self.request,
-                _(
-                    "Une erreur s'est produite lors de la création du compte. Veuillez réessayer."
-                ),
+                "Erreur lors de la création du compte. Veuillez réessayer.",
             )
             return self.form_invalid(form)
 
-    def send_verification_email(self, user):
-        """
-        Envia email de verificação para o usuário.
-        """
-        try:
-            token = generate_verification_token(user)
-            verification_url = self.request.build_absolute_uri(
-                reverse("accounts:verify_email", kwargs={"token": token})
-            )
-
-            # Renderizar template HTML
-            html_message = render_to_string(
-                "accounts/emails/verification_email.html",
-                {
-                    "user": user,
-                    "verification_url": verification_url,
-                    "site_name": "Lopes Peinture",
-                },
-            )
-            plain_message = strip_tags(html_message)
-
-            send_mail(
-                subject=_("Vérifiez votre adresse email - Lopes Peinture"),
-                message=plain_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                html_message=html_message,
-                fail_silently=False,
-            )
-
-            logger.info(f"Email de verificação enviado para: {user.email}")
-
-        except Exception as e:
-            logger.error(
-                f"Erro ao enviar email de verificação para {user.email}: {str(e)}"
-            )
-            raise
+    def form_invalid(self, form):
+        """Trata formulário inválido"""
+        messages.error(
+            self.request,
+            "Il y a des erreurs dans le formulaire. Veuillez les corriger.",
+        )
+        return super().form_invalid(form)
 
 
 register = RegisterView.as_view()
 
 
+# ==================== LOGIN ====================
 @csrf_protect
-@never_cache
 @require_http_methods(["GET", "POST"])
 def user_login(request):
-    """
-    View de login com proteção contra ataques de força bruta.
-    """
+    """✅ CORRIGIDO: View de login por email com redirecionamento inteligente"""
+
+    # Redirecionar se já autenticado
     if request.user.is_authenticated:
+        messages.info(request, "Vous êtes déjà connecté.")
         return redirect("accounts:dashboard")
 
     if request.method == "POST":
-        form = UserLoginForm(request, data=request.POST)
+        # ✅ CORRIGIDO: Usar EmailLoginForm com logging detalhado
+        form = EmailLoginForm(request, data=request.POST)
+
+        # ✅ DEBUG: Log dos dados recebidos
+        email_submitted = request.POST.get(
+            "username", ""
+        )  # O campo é username mas contém email
+        logger.debug(f"Tentativa de login para: {email_submitted}")
 
         if form.is_valid():
+            # Fazer login
             user = form.get_user()
-
-            # Verificar se o usuário não está bloqueado (se implementado no modelo)
-            if hasattr(user, "is_locked_out") and user.is_locked_out():
-                messages.error(
-                    request,
-                    _(
-                        "Votre compte est temporairement verrouillé en raison de trop nombreuses tentatives de connexion échouées."
-                    ),
-                )
-                return render(request, "accounts/login.html", {"form": form})
-
-            # Login bem-sucedido
             login(request, user)
 
             # Log do login
-            logger.info(
-                f"Login bem-sucedido: {user.email} - IP: {get_client_ip(request)}"
-            )
+            logger.info(f"Login realizado: {user.email} (username: {user.username})")
 
-            # Reset tentativas falhadas (se implementado)
-            if hasattr(user, "reset_failed_login"):
-                user.reset_failed_login()
+            # Mensagem de boas-vindas
+            messages.success(request, f"Bienvenue, {user.first_name}!")
 
-            # Redirecionamento
+            # Redirecionamento baseado no tipo de usuário
             next_url = request.GET.get("next")
-            if next_url and next_url.startswith("/"):
+            if next_url and next_url.startswith("/") and not next_url.startswith("//"):
                 return redirect(next_url)
 
-            return redirect("accounts:dashboard")
-
+            # Redirecionamento padrão baseado no tipo
+            if user.account_type == "ADMINISTRATOR":
+                return redirect("admin:index")
+            else:
+                return redirect("accounts:dashboard")
         else:
-            # Log da tentativa de login falhada
-            email = request.POST.get("username", "")
+            # ✅ DEBUG: Log dos erros do formulário
             logger.warning(
-                f"Tentativa de login falhada para: {email} - IP: {get_client_ip(request)}"
+                f"Erro no formulário de login para {email_submitted}: {form.errors}"
             )
 
-            messages.error(request, _("Email ou mot de passe invalide."))
-
+            # Formulário inválido
+            messages.error(request, "Email ou mot de passe invalide.")
+            logger.warning(f"Tentativa de login falhada para: {email_submitted}")
     else:
-        form = UserLoginForm()
+        # ✅ CORRIGIDO: Usar EmailLoginForm
+        form = EmailLoginForm()
 
     return render(request, "accounts/login.html", {"form": form})
 
 
-@login_required
-@require_POST
+# ==================== LOGOUT ====================
+@csrf_protect
+@require_http_methods(["GET", "POST"])
 def user_logout(request):
-    """
-    View de logout com log de segurança.
-    """
+    """View de logout com log de segurança"""
+
+    if not request.user.is_authenticated:
+        messages.info(request, "Vous n'êtes pas connecté.")
+        return redirect("pages:home")
+
+    # Capturar dados antes do logout
     user_email = request.user.email
-    logger.info(f"Logout: {user_email} - IP: {get_client_ip(request)}")
 
+    # Realizar logout
     logout(request)
-    messages.success(request, _("Vous avez été déconnecté avec succès."))
 
-    return redirect("home:home")
+    # Log do logout
+    logger.info(f"Logout realizado: {user_email}")
+
+    # Mensagem de confirmação
+    messages.success(request, "Vous avez été déconnecté avec succès.")
+
+    # Redirecionamento
+    next_url = request.POST.get("next") or request.GET.get("next")
+    if next_url and next_url.startswith("/") and not next_url.startswith("//"):
+        return redirect(next_url)
+
+    return redirect("pages:home")
 
 
+# ==================== DASHBOARD ====================
 @login_required
-@require_POST
-def ajax_logout(request):
-    """
-    Logout via AJAX.
-    """
-    user_email = request.user.email
-    logger.info(f"Logout AJAX: {user_email} - IP: {get_client_ip(request)}")
+def dashboard(request):
+    """Dashboard principal do usuário"""
 
-    logout(request)
-    return JsonResponse({"status": "success", "message": _("Déconnexion réussie")})
+    user = request.user
 
+    # Dados do contexto
+    context = {
+        "user": user,
+        "groups": user.groups.all(),
+        "profile": getattr(user, "profile", None),
+        "account_type_display": user.get_account_type_display(),
+        "is_profile_complete": (
+            getattr(user.profile, "is_complete", False)
+            if hasattr(user, "profile")
+            else False
+        ),
+    }
 
-# ==================== VERIFICAÇÃO DE EMAIL ====================
-
-
-@never_cache
-def verify_email(request, token):
-    """
-    Verifica o email do usuário através do token.
-    """
-    try:
-        user = User.objects.get(verification_token=token)
-
-        if user.is_active:
-            messages.info(request, _("Votre email est déjà vérifié."))
-            return redirect("accounts:login")
-
-        # Ativar usuário
-        user.is_active = True
-        if hasattr(user, "email_verified"):
-            user.email_verified = True
-        user.verification_token = ""
-        user.save()
-
-        logger.info(f"Email verificado com sucesso: {user.email}")
-
-        messages.success(
+    # Verificar se perfil existe
+    if not hasattr(user, "profile"):
+        messages.warning(
             request,
-            _("Email vérifié avec succès! Vous pouvez maintenant vous connecter."),
+            "Votre profil n'a pas été créé automatiquement. Contactez l'administrateur.",
         )
+        logger.warning(f"Usuário {user.email} sem perfil!")
 
-        return redirect("accounts:login")
-
-    except User.DoesNotExist:
-        logger.warning(f"Token de verificação inválido: {token}")
-        messages.error(request, _("Lien de vérification invalide ou expiré."))
-        return redirect("accounts:register")
+    return render(request, "dashboard/dashboard.html", context)
 
 
-# ==================== DASHBOARD E PERFIL ====================
-
-
-@method_decorator(login_required, name="dispatch")
-class DashboardView(LoginRequiredMixin, TemplateView):
-    """
-    Dashboard básico do usuário - pode ser estendido por outras apps.
-    """
-
-    template_name = "accounts/dashboard.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-
-        context.update(
-            {
-                "user": user,
-                "account_created": user.date_joined,
-                "last_login": user.last_login,
-                "user_projects": self.request.user.client_projects.select_related(
-                    "category"
-                ).all(),
-            }
-        )
-
-        return context
-
-
-dashboard = DashboardView.as_view()
-
-
-@method_decorator([login_required, never_cache], name="dispatch")
-class ProfileView(UpdateView):
-    """
-    View para visualização e edição do perfil do usuário.
-    """
-
-    model = User
-    form_class = UserProfileForm
-    template_name = "accounts/profile.html"
-    success_url = reverse_lazy("accounts:profile")
-
-    @method_decorator(cache_control(private=True, no_cache=True))
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
-
-    def get_object(self):
-        return self.request.user
-
-    def form_valid(self, form):
-        messages.success(self.request, _("Profil mis à jour avec succès!"))
-        logger.info(f"Perfil atualizado: {self.request.user.email}")
-        return super().form_valid(form)
-
-
-profile = ProfileView.as_view()
+# ==================== ALTERAÇÃO DE SENHA ====================
 
 
 @login_required
-def change_password(request):
+@csrf_protect
+@require_http_methods(["GET", "POST"])
+def password_change_view(request):
     """
-    View para alteração de senha.
+    View para alteração de senha do usuário logado.
     """
     if request.method == "POST":
         form = PasswordChangeForm(request.user, request.POST)
 
         if form.is_valid():
-            user = form.save()
+            form.save()
 
-            # Atualiza a sessão para manter o usuário logado
-            update_session_auth_hash(request, user)
+            # Enviar email de notificação usando o sistema separado
+            send_password_changed_email(request.user, request)
 
-            # Log da alteração de senha
-            logger.info(f"Senha alterada: {user.email} - IP: {get_client_ip(request)}")
+            # Atualizar sessão para não deslogar o usuário
+            update_session_auth_hash(request, request.user)
 
-            messages.success(request, _("Votre mot de passe a été changé avec succès!"))
+            logger.info(f"Senha alterada com sucesso para: {request.user.email}")
+
+            messages.success(
+                request, _("Votre mot de passe a été modifié avec succès!")
+            )
             return redirect("accounts:profile")
-        else:
-            messages.error(request, _("Veuillez corriger les erreurs ci-dessous."))
     else:
         form = PasswordChangeForm(request.user)
 
-    return render(request, "accounts/change_password.html", {"form": form})
+    return render(request, "accounts/password_change.html", {"form": form})
 
 
 # ==================== RESET DE SENHA ====================
@@ -399,25 +271,8 @@ def password_reset_view(request):
                     )
                 )
 
-                # Enviar email
-                html_message = render_to_string(
-                    "accounts/emails/password_reset_email.html",
-                    {
-                        "user": user,
-                        "reset_url": reset_url,
-                        "site_name": "Lopes Peinture",
-                    },
-                )
-                plain_message = strip_tags(html_message)
-
-                send_mail(
-                    subject=_("Réinitialisation de mot de passe - Lopes Peinture"),
-                    message=plain_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    html_message=html_message,
-                    fail_silently=False,
-                )
+                # Enviar email usando sistema centralizado
+                send_password_reset_email(user, reset_url, request)
 
                 logger.info(f"Email de reset de senha enviado para: {email}")
 
@@ -438,13 +293,6 @@ def password_reset_view(request):
     return render(request, "accounts/password_reset.html", {"form": form})
 
 
-def password_reset_done_view(request):
-    """
-    View de confirmação de envio do email de reset.
-    """
-    return render(request, "accounts/password_reset_done.html")
-
-
 @csrf_protect
 @require_http_methods(["GET", "POST"])
 def password_reset_confirm_view(request, uidb64, token):
@@ -459,12 +307,13 @@ def password_reset_confirm_view(request, uidb64, token):
 
     if user is not None and default_token_generator.check_token(user, token):
         if request.method == "POST":
-            form = PasswordResetForm(request.POST)
+            form = PasswordResetConfirmForm(user, request.POST)
 
             if form.is_valid():
-                new_password = form.cleaned_data["new_password1"]
-                user.set_password(new_password)
-                user.save()
+                form.save()
+
+                # Enviar email de confirmação usando o sistema separado
+                send_password_changed_email(user, request)
 
                 logger.info(f"Senha resetada com sucesso para: {user.email}")
 
@@ -473,7 +322,7 @@ def password_reset_confirm_view(request, uidb64, token):
                 )
                 return redirect("accounts:password_reset_complete")
         else:
-            form = PasswordResetForm()
+            form = PasswordResetConfirmForm(user)
 
         return render(
             request,
@@ -487,612 +336,83 @@ def password_reset_confirm_view(request, uidb64, token):
         )
 
 
+@require_http_methods(["GET"])
+def password_reset_done_view(request):
+    """
+    View que mostra mensagem após solicitação de reset de senha.
+    """
+    return render(request, "accounts/password_reset_done.html")
+
+
+@require_http_methods(["GET"])
 def password_reset_complete_view(request):
     """
-    View de confirmação de reset completo.
+    View que confirma que a senha foi resetada com sucesso.
     """
     return render(request, "accounts/password_reset_complete.html")
 
 
-# ==================== GERENCIAMENTO DE CONTA ====================
-
-
+# ==================== PROFILE ====================
 @login_required
-@require_POST
-def delete_account(request):
-    """
-    View para exclusão de conta do usuário.
-    """
+def profile(request):
+    """View do perfil do usuário"""
+
     user = request.user
 
-    # Verificar senha antes de deletar
-    password = request.POST.get("password")
-    if not user.check_password(password):
-        messages.error(request, _("Mot de passe incorrect."))
-        return redirect("accounts:profile")
+    # Verificar se perfil existe, criar se necessário
+    if not hasattr(user, "profile"):
+        from profiles.models import Profile
 
-    # Log da exclusão
-    logger.info(f"Conta deletada: {user.email} - IP: {get_client_ip(request)}")
+        Profile.objects.create(user=user)
+        messages.info(request, "Profil créé automatiquement.")
+        logger.info(f"Perfil criado manualmente para {user.email}")
 
-    # Logout e deletar
+    context = {"user": user, "profile": user.profile, "groups": user.groups.all()}
+
+    return render(request, "accounts/profile.html", context)
+
+
+# ==================== AJAX VIEWS ====================
+@login_required
+@require_http_methods(["POST"])
+def ajax_logout(request):
+    """Logout via AJAX"""
+
+    user_email = request.user.email
     logout(request)
-    user.delete()
 
-    messages.success(request, _("Votre compte a été supprimé avec succès."))
-    return redirect("home:home")
-
-
-@login_required
-def export_user_data(request):
-    """
-    Exporta os dados do usuário em formato CSV (GDPR compliance).
-    """
-    user = request.user
-
-    try:
-        response = export_user_data_to_csv(user)
-        logger.info(f"Dados exportados para: {user.email}")
-        return response
-    except Exception as e:
-        logger.error(f"Erro na exportação de dados para {user.email}: {str(e)}")
-        messages.error(request, _("Erreur lors de l'exportation des données."))
-        return redirect("accounts:profile")
-
-
-# ==================== VIEWS AJAX ====================
-
-
-@login_required
-@require_POST
-def upload_avatar(request):
-    """
-    Upload de avatar via AJAX.
-    """
-    if "avatar" not in request.FILES:
-        return JsonResponse({"error": _("Aucun fichier sélectionné")}, status=400)
-
-    avatar_file = request.FILES["avatar"]
-
-    # Validações básicas
-    if avatar_file.size > 5 * 1024 * 1024:  # 5MB
-        return JsonResponse(
-            {"error": _("Fichier trop volumineux (max 5MB)")}, status=400
-        )
-
-    if not avatar_file.content_type.startswith("image/"):
-        return JsonResponse({"error": _("Format de fichier invalide")}, status=400)
-
-    try:
-        user = request.user
-        user.avatar = avatar_file
-        user.save()
-
-        logger.info(f"Avatar atualizado para: {user.email}")
-
-        return JsonResponse(
-            {
-                "success": True,
-                "avatar_url": user.avatar.url if user.avatar else None,
-                "message": _("Avatar mis à jour avec succès!"),
-            }
-        )
-    except Exception as e:
-        logger.error(f"Erro no upload de avatar para {request.user.email}: {str(e)}")
-        return JsonResponse({"error": _("Erreur lors du téléchargement")}, status=500)
-
-
-@login_required
-@require_POST
-def remove_avatar(request):
-    """
-    Remove o avatar do usuário via AJAX.
-    """
-    try:
-        user = request.user
-        if user.avatar:
-            user.avatar.delete()
-            user.save()
-
-        logger.info(f"Avatar removido para: {user.email}")
-
-        return JsonResponse(
-            {"success": True, "message": _("Avatar supprimé avec succès!")}
-        )
-    except Exception as e:
-        logger.error(f"Erro na remoção de avatar para {request.user.email}: {str(e)}")
-        return JsonResponse({"error": _("Erreur lors de la suppression")}, status=500)
-
-
-@login_required
-def get_user_data(request):
-    """
-    Retorna dados do usuário em formato JSON.
-    """
-    user = request.user
-
-    data = {
-        "id": user.id,
-        "email": user.email,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "date_joined": user.date_joined.isoformat() if user.date_joined else None,
-        "last_login": user.last_login.isoformat() if user.last_login else None,
-        "avatar_url": user.avatar.url if user.avatar else None,
-    }
-
-    return JsonResponse(data)
-
-
-@require_POST
-def check_email_exists(request):
-    """
-    Verifica se um email já existe no sistema (para validação em tempo real).
-    """
-    email = request.POST.get("email", "").lower().strip()
-
-    if not email:
-        return JsonResponse({"error": _("Email requis")}, status=400)
-
-    try:
-        validate_email(email)
-    except ValidationError:
-        return JsonResponse({"error": _("Format d'email invalide")}, status=400)
-
-    exists = User.objects.filter(email=email).exists()
+    logger.info(f"Logout AJAX: {user_email}")
 
     return JsonResponse(
         {
-            "exists": exists,
-            "message": (
-                _("Cet email est déjà utilisé") if exists else _("Email disponible")
-            ),
+            "status": "success",
+            "message": "Déconnexion réussie",
+            "redirect_url": "/accounts/login/",
         }
     )
 
 
-# ==================== VIEWS DE ADMINISTRAÇÃO ====================
+@require_http_methods(["GET"])
+def check_email_availability(request):
+    """Verificar disponibilidade de email via AJAX"""
 
+    email = request.GET.get("email", "").strip().lower()
 
-@superuser_required
-def admin_users_list(request):
-    """
-    Lista de usuários para administradores.
-    """
-    search_query = request.GET.get("search", "")
-    status_filter = request.GET.get("status", "")
+    if not email:
+        return JsonResponse({"available": False, "message": "Email requis"})
 
-    users = User.objects.all().order_by("-date_joined")
+    if User.objects.filter(email=email).exists():
+        return JsonResponse({"available": False, "message": "Email déjà utilisé"})
 
-    # Filtros
-    if search_query:
-        users = users.filter(
-            Q(email__icontains=search_query)
-            | Q(first_name__icontains=search_query)
-            | Q(last_name__icontains=search_query)
-        )
+    return JsonResponse({"available": True, "message": "Email disponible"})
 
-    if status_filter == "active":
-        users = users.filter(is_active=True)
-    elif status_filter == "inactive":
-        users = users.filter(is_active=False)
 
-    # Paginação
-    paginator = Paginator(users, 25)
-    page = request.GET.get("page")
-
-    try:
-        users = paginator.page(page)
-    except PageNotAnInteger:
-        users = paginator.page(1)
-    except EmptyPage:
-        users = paginator.page(paginator.num_pages)
-
-    context = {
-        "users": users,
-        "search_query": search_query,
-        "status_filter": status_filter,
-        "total_users": User.objects.count(),
-        "active_users": User.objects.filter(is_active=True).count(),
-        "inactive_users": User.objects.filter(is_active=False).count(),
-    }
-
-    return render(request, "accounts/admin/users_list.html", context)
-
-
-@superuser_required
-@require_POST
-def admin_toggle_user_status(request, user_id):
-    """
-    Ativa/desativa um usuário (apenas para superusuários).
-    """
-    try:
-        user = get_object_or_404(User, id=user_id)
-
-        # Não permitir desativar o próprio usuário
-        if user == request.user:
-            return JsonResponse(
-                {"error": _("Vous ne pouvez pas désactiver votre propre compte")},
-                status=400,
-            )
-
-        user.is_active = not user.is_active
-        user.save()
-
-        action = "ativado" if user.is_active else "desativado"
-        logger.info(
-            f"Usuário {action} por admin: {user.email} - Admin: {request.user.email}"
-        )
-
-        return JsonResponse(
-            {
-                "success": True,
-                "is_active": user.is_active,
-                "message": _("Statut de l'utilisateur mis à jour avec succès!"),
-            }
-        )
-
-    except Exception as e:
-        logger.error(f"Erro ao alterar status do usuário {user_id}: {str(e)}")
-        return JsonResponse({"error": _("Erreur lors de la mise à jour")}, status=500)
-
-
-# ==================== VIEWS AUXILIARES ====================
-
-
-def is_superuser(user):
-    """
-    Verifica se o usuário é superusuário.
-    """
-    return user.is_authenticated and user.is_superuser
-
-
-@user_passes_test(is_superuser)
-def admin_dashboard(request):
-    """
-    Dashboard administrativo com estatísticas básicas.
-    """
-    context = {
-        "total_users": User.objects.count(),
-        "active_users": User.objects.filter(is_active=True).count(),
-        "inactive_users": User.objects.filter(is_active=False).count(),
-        "recent_users": User.objects.filter(is_active=True).order_by("-date_joined")[
-            :10
-        ],
-        "staff_users": User.objects.filter(is_staff=True).count(),
-    }
-
-    return render(request, "accounts/admin/dashboard.html", context)
-
-
-# ==================== VIEWS DE FUNÇÃO (COMPATIBILIDADE) ====================
-
-
-def register_view(request):
-    """
-    View de função para registro (compatibilidade com URLs antigas).
-    """
-    return RegisterView.as_view()(request)
-
-
-def profile_view(request):
-    """
-    View de função para perfil (compatibilidade com URLs antigas).
-    """
-    return ProfileView.as_view()(request)
-
-
-def dashboard_view(request):
-    """
-    View de função para dashboard (compatibilidade com URLs antigas).
-    """
-    return DashboardView.as_view()(request)
-
-
-# ==================== VIEWS DE ERRO PERSONALIZADAS ====================
-
-
-def account_locked_view(request):
-    """
-    View para conta bloqueada.
-    """
-    return render(request, "accounts/account_locked.html", status=423)
-
-
-def email_not_verified_view(request):
-    """
-    View para email não verificado.
-    """
-    return render(request, "accounts/email_not_verified.html")
-
-
-# ==================== VIEWS DE NOTIFICAÇÕES ====================
-
-
-@login_required
-def resend_verification_email(request):
-    """
-    Reenvia email de verificação.
-    """
-    user = request.user
-
-    if user.is_active and hasattr(user, "email_verified") and user.email_verified:
-        messages.info(request, _("Votre email est déjà vérifié."))
-        return redirect("accounts:dashboard")
-
-    try:
-        # Gerar novo token
-        token = generate_verification_token(user)
-        user.verification_token = token
-        user.save()
-
-        # Enviar email
-        verification_url = request.build_absolute_uri(
-            reverse("accounts:verify_email", kwargs={"token": token})
-        )
-
-        html_message = render_to_string(
-            "accounts/emails/verification_email.html",
-            {
-                "user": user,
-                "verification_url": verification_url,
-                "site_name": "Lopes Peinture",
-            },
-        )
-        plain_message = strip_tags(html_message)
-
-        send_mail(
-            subject=_("Vérifiez votre adresse email - Lopes Peinture"),
-            message=plain_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-
-        logger.info(f"Email de verificação reenviado para: {user.email}")
-        messages.success(request, _("Email de vérification renvoyé avec succès!"))
-
-    except Exception as e:
-        logger.error(
-            f"Erro ao reenviar email de verificação para {user.email}: {str(e)}"
-        )
-        messages.error(request, _("Erreur lors de l'envoi de l'email."))
-
-    return redirect("accounts:dashboard")
-
-
-# ==================== VIEWS DE CONFIGURAÇÕES ====================
-
-
-@login_required
-def account_settings(request):
-    """
-    View para configurações da conta.
-    """
-    user = request.user
-
-    context = {
-        "user": user,
-        "can_delete_account": True,  # Pode ser baseado em regras de negócio
-        "email_verified": getattr(user, "email_verified", True),
-        "two_factor_enabled": getattr(user, "two_factor_enabled", False),
-    }
-
-    return render(request, "accounts/settings.html", context)
-
-
-@login_required
-@require_POST
-def update_email(request):
-    """
-    Atualiza o email do usuário com verificação.
-    """
-    new_email = request.POST.get("email", "").lower().strip()
-
-    if not new_email:
-        messages.error(request, _("Email requis."))
-        return redirect("accounts:settings")
-
-    try:
-        validate_email(new_email)
-    except ValidationError:
-        messages.error(request, _("Format d'email invalide."))
-        return redirect("accounts:settings")
-
-    # Verificar se o email já existe
-    if User.objects.filter(email=new_email).exclude(id=request.user.id).exists():
-        messages.error(request, _("Cet email est déjà utilisé."))
-        return redirect("accounts:settings")
-
-    # Verificar senha atual
-    current_password = request.POST.get("current_password")
-    if not request.user.check_password(current_password):
-        messages.error(request, _("Mot de passe actuel incorrect."))
-        return redirect("accounts:settings")
-
-    try:
-        user = request.user
-        old_email = user.email
-        user.email = new_email
-
-        # Marcar email como não verificado se implementado
-        if hasattr(user, "email_verified"):
-            user.email_verified = False
-
-        user.save()
-
-        logger.info(f"Email alterado de {old_email} para {new_email}")
-
-        # Enviar email de verificação para o novo email
-        if hasattr(user, "email_verified"):
-            token = generate_verification_token(user)
-            user.verification_token = token
-            user.save()
-
-            verification_url = request.build_absolute_uri(
-                reverse("accounts:verify_email", kwargs={"token": token})
-            )
-
-            html_message = render_to_string(
-                "accounts/emails/email_change_verification.html",
-                {
-                    "user": user,
-                    "verification_url": verification_url,
-                    "old_email": old_email,
-                    "new_email": new_email,
-                    "site_name": "Lopes Peinture",
-                },
-            )
-            plain_message = strip_tags(html_message)
-
-            send_mail(
-                subject=_("Vérifiez votre nouvelle adresse email - Lopes Peinture"),
-                message=plain_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[new_email],
-                html_message=html_message,
-                fail_silently=False,
-            )
-
-        messages.success(
-            request,
-            _(
-                "Email mis à jour avec succès! Veuillez vérifier votre nouvelle adresse."
-            ),
-        )
-
-    except Exception as e:
-        logger.error(f"Erro ao alterar email para {request.user.email}: {str(e)}")
-        messages.error(request, _("Erreur lors de la mise à jour de l'email."))
-
-    return redirect("accounts:settings")
-
-
-# ==================== VIEWS DE SEGURANÇA ====================
-
-
-@login_required
-def security_log(request):
-    """
-    Exibe log de atividades de segurança do usuário.
-    """
-    # Esta view pode ser expandida para mostrar logs de login, alterações, etc.
-    # Por enquanto, mostra informações básicas
-
-    user = request.user
-
-    context = {
-        "user": user,
-        "last_login": user.last_login,
-        "date_joined": user.date_joined,
-        "password_changed": getattr(user, "password_changed_at", None),
-        "login_attempts": getattr(user, "failed_login_attempts", 0),
-    }
-
-    return render(request, "accounts/security_log.html", context)
-
-
-# ==================== VIEWS DE API (JSON) ====================
-
-
-@login_required
-def api_user_profile(request):
-    """
-    API endpoint para dados do perfil do usuário.
-    """
-    user = request.user
-
-    data = {
-        "id": user.id,
-        "email": user.email,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "full_name": user.get_full_name(),
-        "date_joined": user.date_joined.isoformat() if user.date_joined else None,
-        "last_login": user.last_login.isoformat() if user.last_login else None,
-        "is_active": user.is_active,
-        "is_staff": user.is_staff,
-        "avatar_url": (
-            user.avatar.url if hasattr(user, "avatar") and user.avatar else None
-        ),
-        "email_verified": getattr(user, "email_verified", True),
-    }
-
-    return JsonResponse(data)
-
-
-@superuser_required
-def api_users_stats(request):
-    """
-    API endpoint para estatísticas de usuários (apenas superusuários).
-    """
-    from django.db.models import Count
-    from django.utils import timezone
-    from datetime import timedelta
-
-    now = timezone.now()
-    last_30_days = now - timedelta(days=30)
-
-    stats = {
-        "total_users": User.objects.count(),
-        "active_users": User.objects.filter(is_active=True).count(),
-        "inactive_users": User.objects.filter(is_active=False).count(),
-        "staff_users": User.objects.filter(is_staff=True).count(),
-        "superusers": User.objects.filter(is_superuser=True).count(),
-        "new_users_last_30_days": User.objects.filter(
-            date_joined__gte=last_30_days
-        ).count(),
-        "users_with_avatar": (
-            User.objects.exclude(avatar="").count() if hasattr(User, "avatar") else 0
-        ),
-    }
-
-    return JsonResponse(stats)
-
-
-# ==================== HANDLERS DE ERRO ====================
-
-
-def handle_user_not_found(request, exception=None):
-    """
-    Handler para usuário não encontrado.
-    """
-    messages.error(request, _("Utilisateur non trouvé."))
-    return redirect("accounts:dashboard")
-
-
-def handle_permission_denied(request, exception=None):
-    """
-    Handler para permissão negada.
-    """
-    messages.error(request, _("Vous n'avez pas la permission d'accéder à cette page."))
-    return redirect("accounts:dashboard")
-
-
-class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    """
-    View para atualização de perfil com verificação de permissão.
-    """
-
-    model = User
-    form_class = UserProfileForm
-    template_name = "accounts/profile_update.html"
-    success_url = reverse_lazy("accounts:profile")
-
-    def test_func(self):
-        """
-        Verifica se o usuário tem permissão para acessar esta view.
-        """
-        return self.request.user.is_authenticated
-
-    def form_valid(self, form):
-        messages.success(self.request, _("Profil mis à jour avec succès!"))
-        logger.info(f"Profil mis à jour: {self.request.user.email}")
-        return super().form_valid(form)
-
-    def get_object(self):
-        return self.request.user
-
-    @method_decorator(never_cache)
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
+# ==================== UTILITY VIEWS ====================
+def get_client_ip(request):
+    """Obter IP do cliente"""
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(",")[0]
+    else:
+        ip = request.META.get("REMOTE_ADDR")
+    return ip

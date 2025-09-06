@@ -5,6 +5,7 @@ Configurações base que são comuns a todos os ambientes
 import os
 from pathlib import Path
 from decouple import config
+import sys
 
 # Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -74,16 +75,26 @@ TEMPLATES = [
 
 # Tailwind
 TAILWIND_APP_NAME = "theme"
-NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
+NPM_BIN_PATH = r"C:\\Program Files\\nodejs\\npm.cmd"
 
-# Auth settings
-AUTH_USER_MODEL = "accounts.User"
-LOGIN_URL = "/accounts/login/"
-LOGIN_REDIRECT_URL = "/accounts/dashboard/"
-LOGOUT_REDIRECT_URL = "/"
+# ==================== AUTENTICAÇÃO ====================
+# URLs de redirecionamento após login/logout
+LOGIN_URL = 'accounts:login'
+LOGIN_REDIRECT_URL = 'accounts:dashboard'
+LOGOUT_REDIRECT_URL = 'pages:home'
 
+# Email como username
+AUTH_USER_MODEL = 'accounts.User'
+
+# Configurações de sessão
+SESSION_COOKIE_AGE = 86400  # 24 horas
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Configurações de segurança para autenticação
 AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
+    'accounts.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
@@ -111,9 +122,49 @@ USE_I18N = True
 USE_TZ = True
 
 # Cache settings
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+# Para testes, usar cache dummy
+if "test" in sys.argv:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        }
     }
+else:
+    # Cache normal para produção
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379/1",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+            "KEY_PREFIX": "lopes_peinture",
+            "TIMEOUT": 300,
+        }
+    }
+# ✅ MELHORADO: Logging para debug
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'debug.log',
+        },
+    },
+    'loggers': {
+        'profiles': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
 }
+

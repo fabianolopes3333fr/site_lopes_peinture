@@ -1,18 +1,25 @@
+# filepath: c:\Users\fabia\OneDrive\todos os projetos\Projetos\site_lopes_peinture\profiles\urls.py
 from django.urls import path
 from . import views
 
 app_name = "profiles"
 
 urlpatterns = [
-    # Profile views
-    path("", views.ProfileView.as_view(), name="profile"),
+    # ==================== PERFIL ====================
+    # Visualizar perfil
+    path("", views.profile_detail, name="detail"),
+    path("detail/", views.profile_detail, name="detail"),
+    # Editar perfil
+    path("edit/", views.profile_edit, name="edit"),
+    # ==================== AJAX ENDPOINTS ====================
+    # Status de completude do perfil
     path(
-        "public/<str:username>/",
-        views.PublicProfileView.as_view(),
-        name="public_profile",
+        "ajax/completion-status/",
+        views.ajax_profile_completion_status,
+        name="completion_status",
     ),
-    # AJAX endpoints
-    path("ajax/upload-avatar/", views.upload_avatar, name="upload_avatar"),
-    path("ajax/remove-avatar/", views.remove_avatar, name="remove_avatar"),
-    path("ajax/get-profile-data/", views.get_profile_data, name="get_profile_data"),
+    # ✅ NOVO: Upload de avatar via AJAX
+    path("ajax/upload-avatar/", views.ajax_upload_avatar, name="upload_avatar"),
+    # Teste de salvamento de perfil
+    path("test-save/", views.test_profile_save, name="test_save"),
 ]

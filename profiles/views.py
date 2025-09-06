@@ -1,232 +1,227 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_http_methods, require_POST
-from django.http import JsonResponse, HttpResponseForbidden
-from django.urls import reverse_lazy
-from django.contrib import messages
-from django.views.generic import UpdateView, DetailView
-from django.core.exceptions import PermissionDenied
-from django.utils.translation import gettext_lazy as _
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_protect
 import logging
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
+from django.core.exceptions import ValidationError
+from django.db import transaction
 
-from .models import UserProfile
-from .forms import UserProfileForm, AvatarUploadForm
+from .models import Profile
+from .forms import ProfileForm
 
 logger = logging.getLogger(__name__)
 
 
-class ProfileView(LoginRequiredMixin, UpdateView):
-    """View para visualização e edição do perfil do usuário."""
-
-    model = UserProfile
-    form_class = UserProfileForm
-    template_name = "profiles/profile.html"
-    success_url = reverse_lazy("profiles:profile")
-    context_object_name = "profile"
-
-    def get_object(self):
-        """Retorna o perfil do usuário logado."""
-        profile, created = UserProfile.objects.get_or_create(user=self.request.user)
-        if created:
-            logger.info(f"Perfil criado para o usuário {self.request.user.email}")
-        return profile
-
-    def get_form_kwargs(self):
-        """Adiciona o usuário aos argumentos do formulário."""
-        kwargs = super().get_form_kwargs()
-        kwargs["user"] = self.request.user
-        return kwargs
-
-    def form_valid(self, form):
-        """Processa o formulário válido."""
-        response = super().form_valid(form)
-        messages.success(self.request, _("Votre profil a été mis à jour avec succès."))
-        logger.info(f"Perfil atualizado para o usuário {self.request.user.email}")
-        return response
-
-    def form_invalid(self, form):
-        """Processa o formulário inválido."""
-        messages.error(
-            self.request,
-            _(
-                "Erreur lors de la mise à jour du profil. Veuillez corriger les erreurs."
-            ),
-        )
-        return super().form_invalid(form)
-
-    def get_context_data(self, **kwargs):
-        """Adiciona contexto extra."""
-        context = super().get_context_data(**kwargs)
-        context.update(
-            {
-                "user": self.request.user,
-                "avatar_form": AvatarUploadForm(instance=self.get_object()),
-                "page_title": _("Mon Profil"),
-            }
-        )
-        return context
-
-
-class PublicProfileView(DetailView):
-    """View para visualização pública do perfil (se implementado futuramente)."""
-
-    model = UserProfile
-    template_name = "profiles/public_profile.html"
-    context_object_name = "profile"
-    slug_field = "user__username"
-    slug_url_kwarg = "username"
-
-    def get_queryset(self):
-        """Retorna apenas perfis de usuários ativos."""
-        return UserProfile.objects.select_related("user").filter(user__is_active=True)
-
-
-# AJAX Views
+# ==================== PROFILE VIEWS ====================
 @login_required
-@require_POST
-def upload_avatar(request):
-    """Endpoint AJAX para upload de avatar."""
+def profile_detail(request):
+    """✅ CORRIGIDO: Visualizar perfil do usuário"""
+    user = request.user
+
+    # Criar ou obter perfil
     try:
-        profile = get_object_or_404(UserProfile, user=request.user)
-        form = AvatarUploadForm(request.POST, request.FILES, instance=profile)
+        profile = user.profile
+        logger.info(f"Perfil encontrado para {user.email}")
+    except Profile.DoesNotExist:
+        profile = Profile.objects.create(user=user)
+        messages.info(request, "Profil créé automatiquement.")
+        logger.info(f"Perfil criado para {user.email}")
+
+    # Calcular dados de completude
+    completion_data = {
+        "percentage": profile.completion_percentage,
+        "is_complete": profile.is_complete,
+        "missing_fields": _get_missing_fields(profile),
+    }
+
+    # ✅ LOG para debug
+    logger.info(
+        f"Profile detail para {user.email}: completude={completion_data['percentage']}%"
+    )
+
+    context = {
+        "user": user,
+        "profile": profile,
+        "groups": user.groups.all(),
+        "completion": completion_data,
+    }
+
+    return render(request, "profiles/detail.html", context)
+
+
+@login_required
+@csrf_protect
+@require_http_methods(["GET", "POST"])
+def profile_edit(request):
+    """Editar perfil - VERSÃO LIMPA"""
+    user = request.user
+    profile = user.profile
+
+    if request.method == "POST":
+        form = ProfileForm(request.POST, request.FILES, instance=profile)
 
         if form.is_valid():
-            # Remove avatar antigo se existir
-            if profile.avatar:
-                try:
-                    profile.avatar.delete(save=False)
-                except Exception as e:
-                    logger.warning(f"Erro ao remover avatar antigo: {e}")
-
-            form.save()
-
-            logger.info(f"Avatar atualizado para o usuário {request.user.email}")
-
-            return JsonResponse(
-                {
-                    "status": "success",
-                    "message": _("Avatar mis à jour avec succès"),
-                    "avatar_url": profile.get_avatar_url(),
-                }
-            )
-        else:
-            errors = []
-            for field, field_errors in form.errors.items():
-                for error in field_errors:
-                    errors.append(str(error))
-
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "message": _("Erreur lors du téléchargement"),
-                    "errors": errors,
-                },
-                status=400,
-            )
-
-    except Exception as e:
-        logger.error(f"Erro no upload de avatar para {request.user.email}: {e}")
-        return JsonResponse(
-            {
-                "status": "error",
-                "message": _("Une erreur inattendue s'est produite"),
-            },
-            status=500,
-        )
-
-
-@login_required
-@require_POST
-def remove_avatar(request):
-    """Endpoint AJAX para remoção de avatar."""
-    try:
-        profile = get_object_or_404(UserProfile, user=request.user)
-
-        if profile.avatar:
             try:
-                profile.avatar.delete()
-                logger.info(f"Avatar removido para o usuário {request.user.email}")
-
-                return JsonResponse(
-                    {
-                        "status": "success",
-                        "message": _("Avatar supprimé avec succès"),
-                        "avatar_url": profile.get_avatar_url(),  # URL padrão
-                    }
+                saved_profile = form.save()
+                messages.success(
+                    request,
+                    f"✅ Profil mis à jour avec succès! Complétude: {saved_profile.completion_percentage}%",
                 )
+                return redirect("profiles:detail")
+
             except Exception as e:
-                logger.error(f"Erro ao remover avatar: {e}")
-                return JsonResponse(
-                    {
-                        "status": "error",
-                        "message": _("Erreur lors de la suppression de l'avatar"),
-                    },
-                    status=500,
-                )
+                messages.error(request, f"Erreur lors de la sauvegarde: {str(e)}")
         else:
-            return JsonResponse(
-                {
-                    "status": "info",
-                    "message": _("Aucun avatar à supprimer"),
-                }
-            )
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
 
-    except Exception as e:
-        logger.error(f"Erro na remoção de avatar para {request.user.email}: {e}")
-        return JsonResponse(
-            {
-                "status": "error",
-                "message": _("Une erreur inattendue s'est produite"),
-            },
-            status=500,
-        )
+    else:
+        form = ProfileForm(instance=profile)
+
+    context = {
+        "form": form,
+        "user": user,
+        "profile": profile,
+        "completion_percentage": profile.completion_percentage,
+    }
+
+    return render(request, "profiles/edit.html", context)
 
 
 @login_required
-def get_profile_data(request):
-    """Endpoint AJAX para obter dados do perfil."""
-    try:
-        profile = get_object_or_404(UserProfile, user=request.user)
+@require_http_methods(["GET"])
+def ajax_profile_completion_status(request):
+    """✅ CORRIGIDO: Verificar status de completude do perfil via AJAX"""
+    user = request.user
 
-        data = {
-            "user": {
-                "email": request.user.email,
-                "first_name": request.user.first_name,
-                "last_name": request.user.last_name,
-                "full_name": request.user.get_full_name(),
-                "is_verified": request.user.is_verified,
-                "date_joined": request.user.date_joined.isoformat(),
-            },
-            "profile": {
-                "avatar_url": profile.get_avatar_url(),
-                "phone": profile.phone,
-                "address": profile.address,
-                "bio": profile.bio,
-                "date_of_birth": (
-                    profile.date_of_birth.isoformat() if profile.date_of_birth else None
-                ),
-                "age": profile.age,
-                "created_at": profile.created_at.isoformat(),
-                "updated_at": profile.updated_at.isoformat(),
-            },
+    try:
+        profile = user.profile
+        completion_data = {
+            "is_complete": profile.is_complete,
+            "completion_percentage": profile.completion_percentage,
+            "missing_fields": _get_missing_fields(profile),
+            "message": "Profil complet" if profile.is_complete else "Profil incomplet",
+        }
+    except Profile.DoesNotExist:
+        completion_data = {
+            "is_complete": False,
+            "completion_percentage": 0,
+            "missing_fields": ["phone", "address", "city", "postal_code"],
+            "message": "Profil non créé",
         }
 
+    return JsonResponse(completion_data)
+
+
+@login_required
+@require_http_methods(["POST"])
+def ajax_upload_avatar(request):
+    """✅ NOVO: Upload de avatar via AJAX"""
+    try:
+        profile = request.user.profile
+    except Profile.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "error": "Profil non trouvé"}, status=404
+        )
+
+    if "avatar" not in request.FILES:
+        return JsonResponse(
+            {"success": False, "error": "Aucun fichier fourni"}, status=400
+        )
+
+    avatar_file = request.FILES["avatar"]
+
+    # Validações
+    if avatar_file.size > 2097152:  # 2MB
+        return JsonResponse(
+            {"success": False, "error": "Fichier trop volumineux (max 2MB)"}, status=400
+        )
+
+    allowed_types = ["image/jpeg", "image/png", "image/gif"]
+    if avatar_file.content_type not in allowed_types:
+        return JsonResponse(
+            {"success": False, "error": "Type de fichier non autorisé"}, status=400
+        )
+
+    try:
+        # Deletar avatar antigo
+        if profile.avatar:
+            profile.delete_old_avatar()
+
+        # Salvar novo avatar
+        profile.avatar = avatar_file
+        profile.save()
+
         return JsonResponse(
             {
-                "status": "success",
-                "data": data,
+                "success": True,
+                "avatar_url": profile.avatar.url,
+                "message": "Avatar mis à jour avec succès",
             }
         )
 
     except Exception as e:
-        logger.error(f"Erro ao obter dados do perfil para {request.user.email}: {e}")
+        logger.error(f"Erro ao fazer upload de avatar para {request.user.email}: {e}")
         return JsonResponse(
-            {
-                "status": "error",
-                "message": _("Erreur lors de la récupération des données"),
-            },
-            status=500,
+            {"success": False, "error": "Erreur lors du téléchargement"}, status=500
         )
+
+
+@login_required
+def test_profile_save(request):
+    """✅ TESTE: View para testar salvamento direto"""
+    if request.method == "POST":
+        try:
+            profile = request.user.profile
+
+            # ✅ SAVE DIRETO SEM FORM
+            profile.phone = "+33 1 23 45 67 89"
+            profile.city = "Test City"
+            profile.address = "Test Address"
+            profile.postal_code = "75001"
+            profile.save()
+
+            # Verificar se salvou
+            profile.refresh_from_db()
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "phone": profile.phone,
+                    "city": profile.city,
+                    "message": "Save direto funcionou!",
+                }
+            )
+
+        except Exception as e:
+            logger.error(f"Erro no teste de save: {e}", exc_info=True)
+            return JsonResponse({"success": False, "error": str(e)})
+
+    return JsonResponse({"error": "Método não permitido"})
+
+
+# ==================== UTILITY FUNCTIONS ====================
+def _get_missing_fields(profile):
+    """✅ NOVO: Obter campos faltantes do perfil"""
+    missing = []
+
+    if not (profile.phone and profile.phone.strip()):
+        missing.append("phone")
+    if not (profile.address and profile.address.strip()):
+        missing.append("address")
+    if not (profile.city and profile.city.strip()):
+        missing.append("city")
+    if not (profile.postal_code and profile.postal_code.strip()):
+        missing.append("postal_code")
+    if not profile.avatar:
+        missing.append("avatar")
+
+    return missing
+
+
+def calculate_profile_completion(profile):
+    """✅ MANTIDO: Função para compatibilidade (usar profile.completion_percentage)"""
+    return profile.completion_percentage
