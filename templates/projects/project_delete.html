@@ -1,0 +1,528 @@
+{% extends 'base_dashboard.html' %} {% load static %} {% block title %}Supprimer {{ project.title }}
+- LOPES PEINTURE{% endblock %} {% block extra_css %}
+<style>
+  .danger-zone {
+    @apply bg-red-50 border border-red-200 rounded-lg p-6 mb-8;
+  }
+  .warning-banner {
+    @apply bg-orange-50 border-l-4 border-orange-400 p-4 mb-6;
+  }
+  .info-banner {
+    @apply bg-blue-50 border-l-4 border-blue-400 p-4 mb-6;
+  }
+  .project-preview {
+    @apply bg-white border border-gray-200 rounded-lg p-6 shadow-sm;
+  }
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .action-btn {
+    @apply px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2;
+  }
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-md;
+  }
+  .btn-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700;
+  }
+  .confirmation-card {
+    @apply bg-white border border-gray-200 rounded-lg shadow-lg max-w-2xl mx-auto;
+  }
+  .impact-list {
+    @apply space-y-3 mb-6;
+  }
+  .impact-item {
+    @apply flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg;
+  }
+  .impact-icon {
+    @apply w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-red-600 flex-shrink-0 mt-0.5;
+  }
+  .checkbox-confirm {
+    @apply w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2;
+  }
+  .dependencies-list {
+    @apply bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6;
+  }
+  .dependency-item {
+    @apply flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0;
+  }
+  .animate-pulse-danger {
+    @apply animate-pulse bg-red-100;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="p-6 max-w-4xl mx-auto">
+  <!-- Header avec navigation -->
+  <div class="mb-8">
+    <div class="flex items-center gap-3 mb-4">
+      <a
+        href="{% url 'projects:detail' pk=project.pk %}"
+        class="text-gray-600 hover:text-blue-600 transition-colors duration-200"
+        title="Retour au projet"
+      >
+        <i class="fas fa-arrow-left text-lg"></i>
+      </a>
+      <h1 class="text-3xl font-bold text-red-600 flex items-center gap-3">
+        <i class="fas fa-exclamation-triangle"></i>
+        Supprimer le Projet
+      </h1>
+    </div>
+    <p class="text-gray-600">
+      Vous êtes sur le point de supprimer définitivement ce projet. Cette action est irréversible.
+    </p>
+  </div>
+
+  <!-- Alertes et avertissements -->
+  {% if not project.can_be_deleted %}
+  <div class="warning-banner">
+    <div class="flex items-start">
+      <i class="fas fa-exclamation-triangle text-orange-600 mt-1 mr-3"></i>
+      <div>
+        <h3 class="font-medium text-orange-800 mb-1">Suppression non autorisée</h3>
+        <p class="text-sm text-orange-700">Ce projet ne peut pas être supprimé car :</p>
+        <ul class="text-sm text-orange-700 mt-2 list-disc list-inside">
+          {% if project.status != 'brouillon' %}
+          <li>Le projet n'est pas en brouillon (statut: {{ project.get_status_display }})</li>
+          {% endif %} {% if project.devis.exists %}
+          <li>Des devis sont associés à ce projet</li>
+          {% endif %} {% if project.status == 'en_cours' %}
+          <li>Le projet est actuellement en cours d'exécution</li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endif %} {% if project.status == 'brouillon' and project.can_be_deleted %}
+  <div class="info-banner">
+    <div class="flex items-start">
+      <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+      <div>
+        <h3 class="font-medium text-blue-800 mb-1">Projet en brouillon</h3>
+        <p class="text-sm text-blue-700">
+          Ce projet est encore en brouillon et peut être supprimé sans impact majeur.
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Aperçu du projet à supprimer -->
+  <div class="project-preview mb-8">
+    <div class="flex items-start justify-between mb-4">
+      <div class="flex-1">
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">{{ project.title }}</h2>
+        <p class="text-gray-600 mb-3">{{ project.description|truncatewords:20 }}</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <span class="text-gray-500">Référence:</span>
+            <span class="font-mono ml-2">{{ project.reference }}</span>
+          </div>
+          <div>
+            <span class="text-gray-500">Type:</span>
+            <span class="ml-2">{{ project.get_type_projet_display }}</span>
+          </div>
+          <div>
+            <span class="text-gray-500">Surface:</span>
+            <span class="ml-2">{{ project.surface_totale }}m²</span>
+          </div>
+          <div>
+            <span class="text-gray-500">Ville:</span>
+            <span class="ml-2">{{ project.ville }}</span>
+          </div>
+          <div>
+            <span class="text-gray-500">Créé le:</span>
+            <span class="ml-2">{{ project.created_at|date:"d/m/Y" }}</span>
+          </div>
+          <div>
+            <span class="text-gray-500">Statut:</span>
+            <span
+              class="status-badge ml-2 {% if project.status == 'brouillon' %}bg-gray-100 text-gray-800 {% elif project.status == 'soumis' %}bg-blue-100 text-blue-800 {% elif project.status == 'en_examen' %}bg-yellow-100 text-yellow-800 {% elif project.status == 'devis_demande' %}bg-orange-100 text-orange-800 {% elif project.status == 'en_cours' %}bg-green-100 text-green-800 {% else %}bg-gray-100 text-gray-800{% endif %}"
+            >
+              {{ project.get_status_display }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Photo du projet (si disponible) -->
+      {% if project.photos.first %}
+      <div class="ml-6 flex-shrink-0">
+        <img
+          src="{{ project.photos.first.image.url }}"
+          alt="Photo du projet"
+          class="w-24 h-24 object-cover rounded-lg border border-gray-200"
+        />
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Éléments associés qui seront supprimés -->
+  {% if project.can_be_deleted %}
+  <div class="dependencies-list">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <i class="fas fa-link text-red-600"></i>
+      Éléments qui seront supprimés
+    </h3>
+
+    <div class="space-y-2">
+      <!-- Photos -->
+      {% if project.photos.exists %}
+      <div class="dependency-item">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-images text-gray-500"></i>
+          <span>{{ project.photos.count }} photo{{ project.photos.count|pluralize }}</span>
+        </div>
+        <span class="text-red-600 text-sm">Supprimée{{ project.photos.count|pluralize }}</span>
+      </div>
+      {% endif %}
+
+      <!-- Commentaires -->
+      {% if project.comments.exists %}
+      <div class="dependency-item">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-comments text-gray-500"></i>
+          <span
+            >{{ project.comments.count }} commentaire{{ project.comments.count|pluralize }}</span
+          >
+        </div>
+        <span class="text-red-600 text-sm">Supprimé{{ project.comments.count|pluralize }}</span>
+      </div>
+      {% endif %}
+
+      <!-- Devis (si en brouillon) -->
+      {% if project.devis.filter:status='brouillon'.exists %}
+      <div class="dependency-item">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-file-invoice-dollar text-gray-500"></i>
+          <span>{{ project.devis.filter:status='brouillon'.count }} devis en brouillon</span>
+        </div>
+        <span class="text-red-600 text-sm"
+          >Supprimé{{ project.devis.filter:status='brouillon'.count|pluralize }}</span
+        >
+      </div>
+      {% endif %}
+
+      <!-- Historique -->
+      <div class="dependency-item">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-history text-gray-500"></i>
+          <span>Historique complet du projet</span>
+        </div>
+        <span class="text-red-600 text-sm">Supprimé</span>
+      </div>
+
+      <!-- Notifications -->
+      <div class="dependency-item">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-bell text-gray-500"></i>
+          <span>Notifications associées</span>
+        </div>
+        <span class="text-red-600 text-sm">Supprimées</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zone de danger -->
+  <div class="danger-zone">
+    <div class="text-center">
+      <i class="fas fa-skull-crossbones text-red-600 text-4xl mb-4"></i>
+      <h2 class="text-2xl font-bold text-red-800 mb-4">Zone de Danger</h2>
+
+      <!-- Impact de la suppression -->
+      <div class="impact-list text-left">
+        <div class="impact-item">
+          <div class="impact-icon">
+            <i class="fas fa-ban"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-red-800">Suppression définitive</h4>
+            <p class="text-sm text-red-700">
+              Le projet sera définitivement supprimé de la base de données et ne pourra pas être
+              récupéré.
+            </p>
+          </div>
+        </div>
+
+        <div class="impact-item">
+          <div class="impact-icon">
+            <i class="fas fa-database"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-red-800">Perte de données</h4>
+            <p class="text-sm text-red-700">
+              Toutes les données associées (photos, commentaires, historique) seront perdues.
+            </p>
+          </div>
+        </div>
+
+        <div class="impact-item">
+          <div class="impact-icon">
+            <i class="fas fa-link-slash"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-red-800">Liens brisés</h4>
+            <p class="text-sm text-red-700">
+              Les liens vers ce projet dans l'historique ou les rapports ne fonctionneront plus.
+            </p>
+          </div>
+        </div>
+
+        {% if not user.is_staff %}
+        <div class="impact-item">
+          <div class="impact-icon">
+            <i class="fas fa-user-times"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-red-800">Notification équipe</h4>
+            <p class="text-sm text-red-700">
+              L'équipe LOPES PEINTURE sera notifiée de cette suppression.
+            </p>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Formulaire de confirmation -->
+      <form method="post" id="delete-form" class="mt-8">
+        {% csrf_token %}
+
+        <!-- Confirmations obligatoires -->
+        <div class="bg-white border border-red-200 rounded-lg p-6 mb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Confirmations obligatoires</h3>
+
+          <div class="space-y-4 text-left">
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                id="confirm-understand"
+                class="checkbox-confirm mt-1"
+                required
+              />
+              <span class="text-sm text-gray-700">
+                Je comprends que cette action est <strong>irréversible</strong> et que toutes les
+                données seront définitivement perdues.
+              </span>
+            </label>
+
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" id="confirm-backup" class="checkbox-confirm mt-1" required />
+              <span class="text-sm text-gray-700">
+                J'ai sauvegardé toutes les informations importantes de ce projet si nécessaire.
+              </span>
+            </label>
+
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                id="confirm-responsibility"
+                class="checkbox-confirm mt-1"
+                required
+              />
+              <span class="text-sm text-gray-700">
+                J'accepte la pleine responsabilité de cette suppression.
+              </span>
+            </label>
+
+            <!-- Confirmation par saisie du titre -->
+            <div class="pt-4 border-t border-gray-200">
+              <label for="confirm-title" class="block text-sm font-medium text-gray-700 mb-2">
+                Pour confirmer, tapez le titre exact du projet :
+              </label>
+              <input
+                type="text"
+                id="confirm-title"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="{{ project.title }}"
+                required
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                Titre attendu: <span class="font-mono">{{ project.title }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="{% url 'projects:detail' pk=project.pk %}"
+            class="action-btn btn-secondary justify-center"
+          >
+            <i class="fas fa-times"></i>
+            Annuler
+          </a>
+
+          <button
+            type="submit"
+            id="delete-button"
+            class="action-btn btn-danger justify-center"
+            disabled
+          >
+            <i class="fas fa-trash"></i>
+            <span id="delete-text">Supprimer définitivement</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Message si suppression non autorisée -->
+  {% if not project.can_be_deleted %}
+  <div class="text-center">
+    <div class="bg-white border border-gray-200 rounded-lg p-8">
+      <i class="fas fa-shield-alt text-gray-400 text-4xl mb-4"></i>
+      <h2 class="text-xl font-semibold text-gray-900 mb-2">Suppression protégée</h2>
+      <p class="text-gray-600 mb-6">
+        Ce projet ne peut pas être supprimé en raison de son statut ou des éléments qui lui sont
+        associés.
+      </p>
+
+      <div class="flex justify-center gap-4">
+        <a href="{% url 'projects:detail' pk=project.pk %}" class="action-btn btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Retour au projet
+        </a>
+
+        {% if user.is_staff %}
+        <a
+          href="{% url 'admin:projects_project_change' project.pk %}"
+          class="action-btn btn-primary"
+          target="_blank"
+        >
+          <i class="fas fa-cog"></i>
+          Administration
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const deleteForm = document.getElementById('delete-form');
+    const deleteButton = document.getElementById('delete-button');
+    const deleteText = document.getElementById('delete-text');
+    const confirmTitle = document.getElementById('confirm-title');
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+    const projectTitle = '{{ project.title|escapejs }}';
+
+    // Fonction de validation
+    function validateForm() {
+      const allChecked = Array.from(checkboxes).every((cb) => cb.checked);
+      const titleMatches = confirmTitle.value.trim() === projectTitle;
+
+      if (allChecked && titleMatches) {
+        deleteButton.disabled = false;
+        deleteButton.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        deleteButton.disabled = true;
+        deleteButton.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    // Event listeners
+    checkboxes.forEach((checkbox) => {
+      checkbox.addEventListener('change', validateForm);
+    });
+
+    if (confirmTitle) {
+      confirmTitle.addEventListener('input', validateForm);
+
+      // Visual feedback for title matching
+      confirmTitle.addEventListener('input', function () {
+        if (this.value.trim() === projectTitle) {
+          this.classList.remove('border-red-300');
+          this.classList.add('border-green-300', 'bg-green-50');
+        } else if (this.value.trim().length > 0) {
+          this.classList.remove('border-green-300', 'bg-green-50');
+          this.classList.add('border-red-300');
+        } else {
+          this.classList.remove('border-red-300', 'border-green-300', 'bg-green-50');
+        }
+      });
+    }
+
+    // Form submission with countdown
+    if (deleteForm) {
+      deleteForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        let countdown = 5;
+        deleteButton.disabled = true;
+
+        const countdownInterval = setInterval(() => {
+          deleteText.textContent = `Suppression dans ${countdown}s...`;
+          deleteButton.classList.add('animate-pulse-danger');
+          countdown--;
+
+          if (countdown < 0) {
+            clearInterval(countdownInterval);
+            deleteText.textContent = 'Suppression en cours...';
+            deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Suppression...';
+
+            // Submit the form
+            this.submit();
+          }
+        }, 1000);
+      });
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function (e) {
+      // Escape pour annuler
+      if (e.key === 'Escape') {
+        window.location.href = "{% url 'projects:detail' pk=project.pk %}";
+      }
+
+      // Empêcher Ctrl+S (sauvegarde accidentelle)
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+      }
+    });
+
+    // Warn before leaving page
+    let formModified = false;
+    document.querySelectorAll('input, textarea, select').forEach((input) => {
+      input.addEventListener('change', () => {
+        formModified = true;
+      });
+    });
+
+    window.addEventListener('beforeunload', function (e) {
+      if (formModified && !deleteButton.disabled) {
+        e.preventDefault();
+        e.returnValue = 'Êtes-vous sûr de vouloir quitter cette page ?';
+      }
+    });
+
+    // Auto-focus on first checkbox
+    const firstCheckbox = document.getElementById('confirm-understand');
+    if (firstCheckbox) {
+      setTimeout(() => {
+        firstCheckbox.focus();
+      }, 500);
+    }
+
+    // Initial validation
+    validateForm();
+
+    // Show project data summary on hover
+    const projectPreview = document.querySelector('.project-preview');
+    if (projectPreview) {
+      projectPreview.addEventListener('mouseenter', function () {
+        this.classList.add('scale-105', 'shadow-lg');
+      });
+
+      projectPreview.addEventListener('mouseleave', function () {
+        this.classList.remove('scale-105', 'shadow-lg');
+      });
+    }
+  });
+</script>
+{% endblock %}

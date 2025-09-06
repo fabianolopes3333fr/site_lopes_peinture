@@ -1,0 +1,1021 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Mes Projets - LOPES PEINTURE{% endblock %}
+
+{% block extra_css %}
+<style>
+  .project-card {
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden;
+  }
+  .project-card:hover {
+    @apply transform -translate-y-1 shadow-lg;
+  }
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .priority-badge {
+    @apply inline-flex items-center px-2 py-1 rounded text-xs font-medium;
+  }
+  .filter-sidebar {
+    @apply bg-white border border-gray-200 rounded-lg p-6 sticky top-4 shadow-sm;
+  }
+  .search-input {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 transition-colors duration-200;
+  }
+  .filter-select {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 transition-colors duration-200;
+  }
+  .filter-input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200;
+  }
+  .action-btn {
+    @apply px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2;
+  }
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md;
+  }
+  .btn-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700;
+  }
+  .btn-success {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+  }
+  .btn-warning {
+    @apply bg-orange-600 hover:bg-orange-700 text-white;
+  }
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white;
+  }
+  .progress-bar {
+    @apply w-full bg-gray-200 rounded-full h-2;
+  }
+  .progress-fill {
+    @apply h-2 rounded-full transition-all duration-500;
+  }
+  .view-toggle {
+    @apply flex bg-gray-100 rounded-lg p-1;
+  }
+  .view-btn {
+    @apply px-3 py-1 rounded text-sm font-medium transition-all duration-200 cursor-pointer;
+  }
+  .view-btn.active {
+    @apply bg-blue-600 text-white shadow-sm;
+  }
+  .view-btn.inactive {
+    @apply text-gray-600 hover:text-gray-900 hover:bg-gray-200;
+  }
+  .pagination-link {
+    @apply px-3 py-2 text-sm text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300 transition-colors duration-200;
+  }
+  .pagination-current {
+    @apply px-3 py-2 text-sm text-white bg-blue-600 border border-blue-600 rounded-lg;
+  }
+  .empty-state {
+    @apply text-center py-16;
+  }
+  .empty-icon {
+    @apply w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center;
+  }
+  .card-header {
+    @apply p-4 border-b border-gray-100;
+  }
+  .card-content {
+    @apply p-4;
+  }
+  .card-footer {
+    @apply px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between;
+  }
+  .icon-btn {
+    @apply p-2 rounded transition-colors duration-200 text-sm;
+  }
+  .icon-btn:hover {
+    @apply transform scale-110;
+  }
+  .filter-label {
+    @apply block text-sm font-medium text-gray-700 mb-2;
+  }
+  .stats-item {
+    @apply flex justify-between items-center py-1 text-sm;
+  }
+  .mobile-filter-btn {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 lg:hidden transition-colors duration-200;
+  }
+  .results-info {
+    @apply flex items-center justify-between mb-6 pb-4 border-b border-gray-200;
+  }
+  .grid-view {
+    @apply grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6;
+  }
+  .list-view {
+    @apply space-y-4;
+  }
+  .card-animate {
+    @apply opacity-0 transform translate-y-4;
+  }
+  .card-animate.show {
+    @apply opacity-100 transform translate-y-0 transition-all duration-500;
+  }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+      <div class="flex-1">
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <i class="fas fa-paint-brush text-blue-600"></i>
+          Mes Projets
+        </h1>
+        <p class="text-gray-600 mt-2">
+          Gérez tous vos projets de peinture en un seul endroit.
+        </p>
+      </div>
+      
+      <!-- Actions header -->
+      <div class="flex items-center gap-3">
+        <button
+          onclick="toggleFilters()"
+          class="mobile-filter-btn"
+        >
+          <i class="fas fa-filter"></i>
+          Filtres
+        </button>
+        
+        <button
+          onclick="exportProjects()"
+          class="action-btn btn-secondary"
+          title="Exporter en CSV"
+        >
+          <i class="fas fa-download"></i>
+          Exporter
+        </button>
+        
+        <a
+          href="{% url 'projects:create' %}"
+          class="action-btn btn-primary"
+        >
+          <i class="fas fa-plus"></i>
+          Nouveau Projet
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layout principal -->
+  <div class="flex flex-col lg:flex-row gap-8">
+    
+    <!-- Sidebar Filtros -->
+    <div id="filters-sidebar" class="lg:w-80 hidden lg:block">
+      <div class="filter-sidebar">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+          <i class="fas fa-filter text-blue-600"></i>
+          Filtres
+        </h3>
+        
+        <form method="get" id="filter-form" class="space-y-6">
+          <!-- Recherche -->
+          <div>
+            <label class="filter-label">
+              <i class="fas fa-search text-gray-400 mr-2"></i>
+              Recherche
+            </label>
+            <input
+              type="text"
+              name="search"
+              value="{{ filter_form.search.value|default:'' }}"
+              placeholder="Titre, ville, référence..."
+              class="search-input"
+            />
+          </div>
+
+          <!-- Status -->
+          <div>
+            <label class="filter-label">
+              <i class="fas fa-flag text-gray-400 mr-2"></i>
+              Statut
+            </label>
+            <select name="status" class="filter-select">
+              <option value="">Tous les statuts</option>
+              {% for value, label in filter_form.status.field.choices %}
+                {% if value %}
+                <option value="{{ value }}" {% if filter_form.status.value == value %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Type de projet -->
+          <div>
+            <label class="filter-label">
+              <i class="fas fa-home text-gray-400 mr-2"></i>
+              Type de projet
+            </label>
+            <select name="type_projet" class="filter-select">
+              <option value="">Tous les types</option>
+              {% for value, label in filter_form.type_projet.field.choices %}
+                {% if value %}
+                <option value="{{ value }}" {% if filter_form.type_projet.value == value %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Priorité -->
+          <div>
+            <label class="filter-label">
+              <i class="fas fa-exclamation-triangle text-gray-400 mr-2"></i>
+              Priorité
+            </label>
+            <select name="priority" class="filter-select">
+              <option value="">Toutes les priorités</option>
+              {% for value, label in filter_form.priority.field.choices %}
+                {% if value %}
+                <option value="{{ value }}" {% if filter_form.priority.value == value %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Surface -->
+          <div>
+            <label class="filter-label">
+              <i class="fas fa-ruler-combined text-gray-400 mr-2"></i>
+              Surface (m²)
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <input
+                type="number"
+                name="surface_min"
+                value="{{ filter_form.surface_min.value|default:'' }}"
+                placeholder="Min"
+                class="filter-input"
+                min="0"
+              />
+              <input
+                type="number"
+                name="surface_max"
+                value="{{ filter_form.surface_max.value|default:'' }}"
+                placeholder="Max"
+                class="filter-input"
+                min="0"
+              />
+            </div>
+          </div>
+
+          <!-- Dates -->
+          <div>
+            <label class="filter-label">
+              <i class="fas fa-calendar text-gray-400 mr-2"></i>
+              Période de création
+            </label>
+            <div class="space-y-2">
+              <input
+                type="date"
+                name="date_from"
+                value="{{ filter_form.date_from.value|default:'' }}"
+                class="filter-input"
+                placeholder="Date début"
+              />
+              <input
+                type="date"
+                name="date_to"
+                value="{{ filter_form.date_to.value|default:'' }}"
+                class="filter-input"
+                placeholder="Date fin"
+              />
+            </div>
+          </div>
+
+          <!-- Ville -->
+          <div>
+            <label class="filter-label">
+              <i class="fas fa-map-marker-alt text-gray-400 mr-2"></i>
+              Ville
+            </label>
+            <input
+              type="text"
+              name="ville"
+              value="{{ filter_form.ville.value|default:'' }}"
+              placeholder="Nom de la ville"
+              class="filter-input"
+            />
+          </div>
+
+          <!-- Botões de ação -->
+          <div class="flex flex-col gap-2 pt-4">
+            <button
+              type="submit"
+              class="action-btn btn-primary justify-center"
+            >
+              <i class="fas fa-search"></i>
+              Filtrer
+            </button>
+            <a
+              href="{% url 'projects:list' %}"
+              class="action-btn btn-secondary justify-center"
+            >
+              <i class="fas fa-refresh"></i>
+              Réinitialiser
+            </a>
+          </div>
+        </form>
+
+        <!-- Statistiques résumé -->
+        <div class="mt-8 pt-6 border-t border-gray-200">
+          <h4 class="font-medium text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fas fa-chart-bar text-blue-600"></i>
+            Résumé
+          </h4>
+          <div class="space-y-2">
+            <div class="stats-item">
+              <span class="text-gray-600">Total projets:</span>
+              <span class="font-medium text-gray-900">{{ total_projects }}</span>
+            </div>
+            <div class="stats-item">
+              <span class="text-gray-600">Projets actifs:</span>
+              <span class="font-medium text-green-600">{{ active_projects }}</span>
+            </div>
+            <div class="stats-item">
+              <span class="text-gray-600">En attente:</span>
+              <span class="font-medium text-orange-600">{{ pending_projects }}</span>
+            </div>
+            <div class="stats-item">
+              <span class="text-gray-600">Terminés:</span>
+              <span class="font-medium text-blue-600">{{ completed_projects }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtres rapides -->
+        <div class="mt-6 pt-6 border-t border-gray-200">
+          <h4 class="font-medium text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fas fa-lightning text-blue-600"></i>
+            Filtres rapides
+          </h4>
+          <div class="space-y-2">
+            <a
+              href="?status=en_cours"
+              class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors duration-200"
+            >
+              <i class="fas fa-play-circle mr-2"></i>
+              Projets en cours
+            </a>
+            <a
+              href="?priority=urgente"
+              class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors duration-200"
+            >
+              <i class="fas fa-exclamation-circle mr-2"></i>
+              Projets urgents
+            </a>
+            <a
+              href="?status=devis_demande"
+              class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded-lg transition-colors duration-200"
+            >
+              <i class="fas fa-file-invoice mr-2"></i>
+              Devis demandés
+            </a>
+            <a
+              href="?date_from={{ last_week }}"
+              class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-lg transition-colors duration-200"
+            >
+              <i class="fas fa-clock mr-2"></i>
+              Projets récents
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="flex-1 min-w-0">
+      
+      <!-- Barre de résultats -->
+      <div class="results-info">
+        <div>
+          <p class="text-gray-700 font-medium">
+            {% if projects %}
+              {{ paginator.count }} projet{{ paginator.count|pluralize }} trouvé{{ paginator.count|pluralize }}
+              {% if request.GET %}
+              <span class="text-sm text-gray-500 ml-2">
+                (filtré{{ projects.count|pluralize }} sur {{ total_projects }})
+              </span>
+              {% endif %}
+            {% else %}
+              Aucun projet trouvé
+            {% endif %}
+          </p>
+          {% if request.GET %}
+          <p class="text-sm text-gray-500 mt-1">
+            <i class="fas fa-filter mr-1"></i>
+            Filtres actifs
+            <a href="{% url 'projects:list' %}" class="text-blue-600 hover:text-blue-700 ml-2">
+              Supprimer tous les filtres
+            </a>
+          </p>
+          {% endif %}
+        </div>
+        
+        <!-- Toggle de vue et tri -->
+        <div class="flex items-center gap-4">
+          <!-- Tri -->
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600">Trier par:</span>
+            <select
+              name="ordering"
+              onchange="changeSorting(this.value)"
+              class="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="-created_at" {% if request.GET.ordering == '-created_at' %}selected{% endif %}>Plus récent</option>
+              <option value="created_at" {% if request.GET.ordering == 'created_at' %}selected{% endif %}>Plus ancien</option>
+              <option value="title" {% if request.GET.ordering == 'title' %}selected{% endif %}>Titre A-Z</option>
+              <option value="-title" {% if request.GET.ordering == '-title' %}selected{% endif %}>Titre Z-A</option>
+              <option value="priority" {% if request.GET.ordering == 'priority' %}selected{% endif %}>Priorité</option>
+              <option value="surface_totale" {% if request.GET.ordering == 'surface_totale' %}selected{% endif %}>Surface</option>
+            </select>
+          </div>
+
+          <!-- Toggle de vue -->
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600">Vue:</span>
+            <div class="view-toggle">
+              <button
+                onclick="setView('grid')"
+                id="grid-view"
+                class="view-btn active"
+                title="Vue grille"
+              >
+                <i class="fas fa-th-large"></i>
+              </button>
+              <button
+                onclick="setView('list')"
+                id="list-view"
+                class="view-btn inactive"
+                title="Vue liste"
+              >
+                <i class="fas fa-list"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid/Liste de Projetos -->
+      {% if projects %}
+      <div id="projects-container" class="grid-view">
+        {% for project in projects %}
+        <div class="project-card card-animate">
+          
+          <!-- Header do Card -->
+          <div class="card-header">
+            <div class="flex items-start justify-between">
+              <div class="flex-1 min-w-0">
+                <h3 class="font-semibold text-gray-900 mb-1 truncate">
+                  <a
+                    href="{% url 'projects:detail' pk=project.pk %}"
+                    class="hover:text-blue-600 transition-colors duration-200"
+                    title="{{ project.title }}"
+                  >
+                    {{ project.title|truncatechars:45 }}
+                  </a>
+                </h3>
+                <p class="text-sm text-gray-500 font-mono">{{ project.reference }}</p>
+              </div>
+              
+              <!-- Status Badge -->
+              <span class="status-badge ml-2 flex-shrink-0
+                {% if project.status == 'brouillon' %}bg-gray-100 text-gray-800
+                {% elif project.status == 'soumis' %}bg-blue-100 text-blue-800
+                {% elif project.status == 'en_examen' %}bg-yellow-100 text-yellow-800
+                {% elif project.status == 'devis_demande' %}bg-orange-100 text-orange-800
+                {% elif project.status == 'devis_envoye' %}bg-purple-100 text-purple-800
+                {% elif project.status == 'devis_accepte' %}bg-green-100 text-green-800
+                {% elif project.status == 'en_cours' %}bg-blue-100 text-blue-800
+                {% elif project.status == 'termine' %}bg-emerald-100 text-emerald-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ project.get_status_display }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Conteúdo do Card -->
+          <div class="card-content">
+            <div class="space-y-4">
+              
+              <!-- Informações básicas -->
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="flex items-center text-gray-600">
+                  <i class="fas fa-paint-brush text-gray-400 mr-2 flex-shrink-0"></i>
+                  <span class="truncate">{{ project.get_type_projet_display }}</span>
+                </div>
+                <div class="flex items-center justify-end">
+                  <span class="priority-badge
+                    {% if project.priority == 'urgente' %}bg-red-100 text-red-800
+                    {% elif project.priority == 'elevee' %}bg-orange-100 text-orange-800
+                    {% elif project.priority == 'normale' %}bg-blue-100 text-blue-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    <i class="fas fa-flag mr-1"></i>
+                    {{ project.get_priority_display }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Localização -->
+              <div class="flex items-center text-sm text-gray-600">
+                <i class="fas fa-map-marker-alt text-gray-400 mr-2 flex-shrink-0"></i>
+                <span class="truncate">{{ project.ville }}, {{ project.code_postal }}</span>
+              </div>
+
+              <!-- Superfície e pièces -->
+              <div class="flex items-center justify-between text-sm text-gray-600">
+                <div class="flex items-center">
+                  <i class="fas fa-ruler-combined text-gray-400 mr-2"></i>
+                  <span>{{ project.surface_totale }}m²</span>
+                </div>
+                <div class="flex items-center">
+                  <i class="fas fa-door-open text-gray-400 mr-2"></i>
+                  <span>{{ project.nombre_pieces }} pièce{{ project.nombre_pieces|pluralize }}</span>
+                </div>
+              </div>
+
+              <!-- Client (se staff) -->
+              {% if user.is_staff %}
+              <div class="flex items-center text-sm text-gray-600">
+                <i class="fas fa-user text-gray-400 mr-2 flex-shrink-0"></i>
+                <span class="truncate">{{ project.user.get_full_name|default:project.user.username }}</span>
+              </div>
+              {% endif %}
+
+              <!-- Progress Bar -->
+              <div class="mt-4">
+                <div class="flex items-center justify-between text-sm mb-2">
+                  <span class="text-gray-600 font-medium">Progression</span>
+                  <span class="font-semibold text-gray-900">{{ project.progress_percentage }}%</span>
+                </div>
+                <div class="progress-bar">
+                  <div
+                    class="progress-fill
+                    {% if project.progress_percentage < 30 %}bg-gradient-to-r from-red-400 to-red-500
+                    {% elif project.progress_percentage < 70 %}bg-gradient-to-r from-yellow-400 to-yellow-500
+                    {% else %}bg-gradient-to-r from-green-400 to-green-500{% endif %}"
+                    style="width: {{ project.progress_percentage }}%"
+                    data-progress="{{ project.progress_percentage }}"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- Dates importantes -->
+              <div class="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+                <span class="flex items-center">
+                  <i class="fas fa-calendar-plus mr-1"></i>
+                  Créé {{ project.created_at|date:"d/m/Y" }}
+                </span>
+                {% if project.date_debut_souhaitee %}
+                <span class="flex items-center">
+                  <i class="fas fa-calendar-check mr-1"></i>
+                  Début {{ project.date_debut_souhaitee|date:"d/m" }}
+                </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer com Actions -->
+          <div class="card-footer">
+            
+            <!-- Botões de ação -->
+            <div class="flex items-center gap-1">
+              <a
+                href="{% url 'projects:detail' pk=project.pk %}"
+                class="icon-btn text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                title="Visualiser le projet"
+              >
+                <i class="fas fa-eye"></i>
+              </a>
+              
+              {% if project.can_be_edited %}
+              <a
+                href="{% url 'projects:edit' pk=project.pk %}"
+                class="icon-btn text-green-600 hover:text-green-700 hover:bg-green-50"
+                title="Modifier le projet"
+              >
+                <i class="fas fa-edit"></i>
+              </a>
+              {% endif %}
+
+              {% if user.is_staff and project.status not in 'termine,cancelled' %}
+              <a
+                href="{% url 'projects:devis_create' project_pk=project.pk %}"
+                class="icon-btn text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                title="Créer un devis"
+              >
+                <i class="fas fa-file-plus"></i>
+              </a>
+              {% endif %}
+
+              {% if project.can_request_quote %}
+              <form method="post" action="{% url 'projects:request_quote' pk=project.pk %}" class="inline">
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="icon-btn text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                  title="Demander un devis"
+                >
+                  <i class="fas fa-file-invoice-dollar"></i>
+                </button>
+              </form>
+              {% endif %}
+
+              {% if project.status == 'brouillon' %}
+              <a
+                href="{% url 'projects:delete' pk=project.pk %}"
+                class="icon-btn text-red-600 hover:text-red-700 hover:bg-red-50"
+                title="Supprimer le projet"
+                onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')"
+              >
+                <i class="fas fa-trash"></i>
+              </a>
+              {% endif %}
+            </div>
+
+            <!-- Informações adicionais -->
+            <div class="flex items-center gap-4 text-xs text-gray-500">
+              {% if project.devis.count %}
+              <div class="flex items-center gap-1">
+                <i class="fas fa-file-invoice"></i>
+                <span>{{ project.devis.count }} devis</span>
+              </div>
+              {% endif %}
+              
+              {% if project.comments.count %}
+              <div class="flex items-center gap-1">
+                <i class="fas fa-comments"></i>
+                <span>{{ project.comments.count }}</span>
+              </div>
+              {% endif %}
+
+              {% if project.photos.count %}
+              <div class="flex items-center gap-1">
+                <i class="fas fa-images"></i>
+                <span>{{ project.photos.count }}</span>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Paginação -->
+      {% if is_paginated %}
+      <div class="mt-12 flex justify-center">
+        <nav class="flex items-center space-x-2" aria-label="Pagination">
+          {% if page_obj.has_previous %}
+          <a
+            href="?{{ request.GET.urlencode }}&page=1"
+            class="pagination-link"
+            title="Première page"
+          >
+            <i class="fas fa-angle-double-left"></i>
+          </a>
+          <a
+            href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}"
+            class="pagination-link"
+            title="Page précédente"
+          >
+            <i class="fas fa-angle-left"></i>
+          </a>
+          {% endif %}
+
+          <!-- Pages numbers -->
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <span class="pagination-current">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?{{ request.GET.urlencode }}&page={{ num }}" class="pagination-link">{{ num }}</a>
+            {% elif num == 1 or num == page_obj.paginator.num_pages %}
+            <a href="?{{ request.GET.urlencode }}&page={{ num }}" class="pagination-link">{{ num }}</a>
+            {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
+            <span class="px-2 py-2 text-sm text-gray-500">...</span>
+            {% endif %}
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+          <a
+            href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}"
+            class="pagination-link"
+            title="Page suivante"
+          >
+            <i class="fas fa-angle-right"></i>
+          </a>
+          <a
+            href="?{{ request.GET.urlencode }}&page={{ page_obj.paginator.num_pages }}"
+            class="pagination-link"
+            title="Dernière page"
+          >
+            <i class="fas fa-angle-double-right"></i>
+          </a>
+          {% endif %}
+        </nav>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <!-- Estado vazio -->
+      <div class="empty-state">
+        <div class="empty-icon">
+          <i class="fas fa-paint-brush text-gray-400 text-3xl"></i>
+        </div>
+        <h3 class="text-xl font-medium text-gray-900 mb-2">Aucun projet trouvé</h3>
+        <p class="text-gray-600 mb-8 max-w-md mx-auto">
+          {% if request.GET %}
+          Aucun projet ne correspond à vos critères de recherche. Essayez de modifier les filtres ou de créer un nouveau projet.
+          {% else %}
+          Commencez par créer votre premier projet de peinture pour organiser vos travaux.
+          {% endif %}
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          {% if request.GET %}
+          <a
+            href="{% url 'projects:list' %}"
+            class="action-btn btn-secondary"
+          >
+            <i class="fas fa-refresh"></i>
+            Voir tous les projets
+          </a>
+          {% endif %}
+          <a
+            href="{% url 'projects:create' %}"
+            class="action-btn btn-primary"
+          >
+            <i class="fas fa-plus"></i>
+            Créer un projet
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize
+    initializeView();
+    animateCards();
+    setupFilters();
+
+    // Toggle filtros no mobile
+    window.toggleFilters = function() {
+        const sidebar = document.getElementById('filters-sidebar');
+        sidebar.classList.toggle('hidden');
+        sidebar.classList.toggle('lg:block');
+    };
+
+    // Toggle view
+    window.setView = function(view) {
+        const gridBtn = document.getElementById('grid-view');
+        const listBtn = document.getElementById('list-view');
+        const container = document.getElementById('projects-container');
+        
+        // Update buttons
+        [gridBtn, listBtn].forEach(btn => {
+            btn.classList.remove('active');
+            btn.classList.add('inactive');
+        });
+        
+        if (view === 'grid') {
+            gridBtn.classList.remove('inactive');
+            gridBtn.classList.add('active');
+            container.className = 'grid-view';
+        } else {
+            listBtn.classList.remove('inactive');
+            listBtn.classList.add('active');
+            container.className = 'list-view';
+            
+            // Adjust cards for list view
+            const cards = container.querySelectorAll('.project-card');
+            cards.forEach(card => {
+                card.classList.add('flex', 'flex-row');
+                const content = card.querySelector('.card-content');
+                if (content) {
+                    content.classList.add('flex-1');
+                }
+            });
+        }
+        
+        // Save preference
+        localStorage.setItem('projectsView', view);
+    };
+
+    // Change sorting
+    window.changeSorting = function(ordering) {
+        const url = new URL(window.location);
+        url.searchParams.set('ordering', ordering);
+        window.location = url.toString();
+    };
+
+    // Export projects
+    window.exportProjects = function() {
+        const params = new URLSearchParams(window.location.search);
+        params.set('export', 'csv');
+        window.open(`${window.location.pathname}?${params.toString()}`);
+    };
+
+    // Initialize view from localStorage
+    function initializeView() {
+        const savedView = localStorage.getItem('projectsView') || 'grid';
+        setView(savedView);
+    }
+
+    // Animate cards on load
+    function animateCards() {
+        const cards = document.querySelectorAll('.card-animate');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.classList.add('show');
+            }, index * 100);
+        });
+
+        // Animate progress bars
+        setTimeout(() => {
+            const progressBars = document.querySelectorAll('.progress-fill');
+            progressBars.forEach(bar => {
+                const progress = bar.dataset.progress || 0;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = progress + '%';
+                }, 200);
+            });
+        }, 500);
+    }
+
+    // Setup filters
+    function setupFilters() {
+        const form = document.getElementById('filter-form');
+        if (!form) return;
+
+        // Auto-submit on select changes
+        const selects = form.querySelectorAll('select');
+        selects.forEach(select => {
+            select.addEventListener('change', () => {
+                if (select.value !== '') {
+                    form.submit();
+                }
+            });
+        });
+
+        // Search input with debounce
+        const searchInput = form.querySelector('input[name="search"]');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    if (e.target.value.length > 2 || e.target.value.length === 0) {
+                        form.submit();
+                    }
+                }, 1000);
+            });
+        }
+
+        // Date inputs auto-submit
+        const dateInputs = form.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                if (input.value) {
+                    form.submit();
+                }
+            });
+        });
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // / para focar no search
+        if (e.key === '/' && !e.ctrlKey && !e.altKey) {
+            e.preventDefault();
+            const searchInput = document.querySelector('input[name="search"]');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }
+        
+        // G para grid view
+        if (e.key === 'g' && !e.ctrlKey && !e.altKey) {
+            setView('grid');
+        }
+        
+        // L para list view
+        if (e.key === 'l' && !e.ctrlKey && !e.altKey) {
+            setView('list');
+        }
+        
+        // N para novo projeto
+        if (e.key === 'n' && !e.ctrlKey && !e.altKey && !e.target.matches('input, textarea, select')) {
+            window.location.href = "{% url 'projects:create' %}";
+        }
+        
+        // F para toggle filters no mobile
+        if (e.key === 'f' && !e.ctrlKey && !e.altKey && window.innerWidth < 1024) {
+            toggleFilters();
+        }
+    });
+
+    // Infinite scroll (opcional)
+    function setupInfiniteScroll() {
+        let loading = false;
+        
+        window.addEventListener('scroll', () => {
+            if (loading) return;
+            
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+            
+            if (scrollTop + clientHeight >= scrollHeight - 5) {
+                loadMoreProjects();
+            }
+        });
+        
+        function loadMoreProjects() {
+            // Implementation for infinite scroll
+            // This would require backend support
+        }
+    }
+
+    // Real-time updates (opcional)
+    function setupRealTimeUpdates() {
+        // Poll for updates every 5 minutes
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                checkForUpdates();
+            }
+        }, 300000);
+        
+        function checkForUpdates() {
+            // Check for new projects or status changes
+            // This would require backend API
+        }
+    }
+
+    // Card hover effects
+    const cards = document.querySelectorAll('.project-card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+
+    // Filter chips (show active filters)
+    function showActiveFilters() {
+        const params = new URLSearchParams(window.location.search);
+        const filterChips = document.getElementById('filter-chips');
+        
+        if (filterChips) {
+            filterChips.innerHTML = '';
+            
+            params.forEach((value, key) => {
+                if (value && key !== 'page') {
+                    const chip = document.createElement('span');
+                    chip.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800';
+                    chip.innerHTML = `
+                        ${key}: ${value}
+                        <button onclick="removeFilter('${key}')" class="ml-1 text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    filterChips.appendChild(chip);
+                }
+            });
+        }
+    }
+
+    // Remove filter
+    window.removeFilter = function(filterKey) {
+        const url = new URL(window.location);
+        url.searchParams.delete(filterKey);
+        window.location = url.toString();
+    };
+
+    // Show filter chips if we have active filters
+    if (window.location.search) {
+        showActiveFilters();
+    }
+});
+</script>
+{% endblock %}

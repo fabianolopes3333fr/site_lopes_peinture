@@ -16,8 +16,7 @@ class ProjectAdmin(admin.ModelAdmin):
         "status_colored",
         "priority_colored",
         "ville",
-        "budget_estime",
-        "created_at",
+        "budget_display",
     ]
     list_filter = [
         "status",
@@ -84,6 +83,17 @@ class ProjectAdmin(admin.ModelAdmin):
     )
 
     readonly_fields = ["created_at", "updated_at", "completed_at"]
+
+    # OU adicione um método personalizado:
+    def budget_display(self, obj):
+        """Exibe o orçamento formatado"""
+        if obj.budget_maximum:
+            return f"{obj.budget_maximum}€"
+        elif obj.budget_minimum:
+            return f"À partir de {obj.budget_minimum}€"
+        return "-"
+
+    budget_display.short_description = "Budget"
 
     def user_email(self, obj):
         """Retorna o email do usuário."""

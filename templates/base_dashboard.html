@@ -129,76 +129,74 @@
           href="{% url 'pages:home' %}"
           class="relative flex items-center px-4 py-3 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors duration-200 group"
         >
-          <i
-            class="sidebar-icon fas fa-arrow-left mr-3 text-amber-600 group-hover:text-amber-700 flex-shrink-0"
-          ></i>
+          <i class="sidebar-icon fas fa-arrow-left mr-3 text-amber-600 group-hover:text-amber-700 flex-shrink-0"></i>
           <span class="sidebar-text">Retour au Site</span>
           <div class="sidebar-tooltip">Retour au Site</div>
         </a>
 
+        <!-- ✅ DASHBOARD -->
         <a
-          href="{% url 'config:painel' %}"
+          href="{% url 'projects:dashboard' %}"
           class="relative flex items-center px-4 py-3 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors duration-200 group"
         >
-          <i
-            class="sidebar-icon fas fa-tachometer-alt mr-3 text-blue-600 group-hover:text-blue-700 flex-shrink-0"
-          ></i>
+          <i class="sidebar-icon fas fa-tachometer-alt mr-3 text-blue-600 group-hover:text-blue-700 flex-shrink-0"></i>
           <span class="sidebar-text">Tableau de Bord</span>
           <div class="sidebar-tooltip">Tableau de Bord</div>
         </a>
 
+        <!-- ✅ PROJETOS -->
         <a
-          href="#"
+          href="{% url 'projects:list' %}"
           class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 group"
         >
-          <i
-            class="sidebar-icon fas fa-file-alt mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"
-          ></i>
-          <span class="sidebar-text">Rapports</span>
-          <div class="sidebar-tooltip">Rapports</div>
+          <i class="sidebar-icon fas fa-paint-brush mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"></i>
+          <span class="sidebar-text">Mes Projets</span>
+          <div class="sidebar-tooltip">Mes Projets</div>
         </a>
 
+        <!-- ✅ DEVIS -->
         <a
-          href="#"
+          href="{% url 'projects:devis_list' %}"
           class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 group"
         >
-          <i
-            class="sidebar-icon fas fa-users mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"
-          ></i>
-          <span class="sidebar-text">Utilisateurs</span>
-          <div class="sidebar-tooltip">Utilisateurs</div>
+          <i class="sidebar-icon fas fa-file-invoice-dollar mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"></i>
+          <span class="sidebar-text">Mes Devis</span>
+          <div class="sidebar-tooltip">Mes Devis</div>
         </a>
 
-        <a
-          href="#"
-          class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 group"
-        >
-          <i
-            class="sidebar-icon fas fa-paint-brush mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"
-          ></i>
-          <span class="sidebar-text">Projets</span>
-          <div class="sidebar-tooltip">Projets</div>
-        </a>
-        <a
-          href="{% url 'profiles:detail'  %}"
-          class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 group"
-        >
-          <i
-            class="sidebar-icon fas fa-user mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"
-          ></i>
-          <span class="sidebar-text">Profils</span>
-          <div class="sidebar-tooltip">Profils</div>
-        </a>
+        <!-- ✅ ADMINISTRAÇÃO (apenas staff) -->
+        {% if user.is_staff %}
+        <div class="pt-4 border-t border-gray-200 mt-4">
+          <h3 class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Administration</h3>
+          
+          <a
+            href="{% url 'projects:admin_dashboard' %}"
+            class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors duration-200 group"
+          >
+            <i class="sidebar-icon fas fa-chart-line mr-3 text-gray-500 group-hover:text-purple-600 flex-shrink-0"></i>
+            <span class="sidebar-text">Dashboard Admin</span>
+            <div class="sidebar-tooltip">Dashboard Admin</div>
+          </a>
 
+          <a
+            href="{% url 'projects:admin_product_list' %}"
+            class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors duration-200 group"
+          >
+            <i class="sidebar-icon fas fa-box mr-3 text-gray-500 group-hover:text-purple-600 flex-shrink-0"></i>
+            <span class="sidebar-text">Produits</span>
+            <div class="sidebar-tooltip">Gestion des Produits</div>
+          </a>
+        </div>
+        {% endif %}
+
+        <!-- ✅ PERFIL -->
         <a
-          href="{% url 'config:settings' %}"
+          href="{% url 'profiles:detail' %}"
           class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 group"
         >
-          <i
-            class="sidebar-icon fas fa-cog mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"
-          ></i>
-          <span class="sidebar-text">Paramètres</span>
-          <div class="sidebar-tooltip">Paramètres</div>
+          <i class="sidebar-icon fas fa-user mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"></i>
+          <span class="sidebar-text">Mon Profil</span>
+          <div class="sidebar-tooltip">Mon Profil</div>
         </a>
       </nav>
 

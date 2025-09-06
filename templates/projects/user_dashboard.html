@@ -1,0 +1,904 @@
+{% extends 'base_dashboard.html' %} {% load static %} {% block title %}Mon Espace Client - LOPES
+PEINTURE{% endblock %} {% block extra_css %}
+<style>
+  .project-card {
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden;
+  }
+  .project-card:hover {
+    @apply transform -translate-y-1 shadow-lg;
+  }
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .priority-badge {
+    @apply inline-flex items-center px-2 py-1 rounded text-xs font-medium;
+  }
+  .welcome-banner {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-6 mb-8;
+  }
+  .stat-card {
+    @apply bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-all duration-200;
+  }
+  .icon-card {
+    @apply w-12 h-12 rounded-lg flex items-center justify-center mb-4;
+  }
+  .action-btn {
+    @apply px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2;
+  }
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md;
+  }
+  .btn-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700;
+  }
+  .btn-success {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+  }
+  .btn-outline {
+    @apply border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white;
+  }
+  .timeline-item {
+    @apply relative pl-8 pb-6;
+  }
+  .timeline-dot {
+    @apply absolute left-0 top-1 w-3 h-3 rounded-full;
+  }
+  .timeline-line {
+    @apply absolute left-1.5 top-3 w-0.5 h-full bg-gray-200;
+  }
+  .notification-card {
+    @apply bg-white border border-gray-200 rounded-lg p-4 shadow-sm;
+  }
+  .notification-icon {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0;
+  }
+  .quick-action-card {
+    @apply bg-white border border-gray-200 rounded-lg p-4 text-center hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 cursor-pointer;
+  }
+  .document-card {
+    @apply bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200;
+  }
+  .progress-ring {
+    @apply transform -rotate-90;
+  }
+  .empty-state {
+    @apply text-center py-16;
+  }
+  .empty-icon {
+    @apply w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center;
+  }
+  .badge-new {
+    @apply absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center;
+  }
+  .weather-card {
+    @apply bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-lg p-4;
+  }
+  .tips-card {
+    @apply bg-gradient-to-br from-green-400 to-green-600 text-white rounded-lg p-4;
+  }
+  .testimonial-card {
+    @apply bg-gradient-to-br from-purple-400 to-purple-600 text-white rounded-lg p-4;
+  }
+  .card-animate {
+    @apply opacity-0 transform translate-y-4;
+  }
+  .card-animate.show {
+    @apply opacity-100 transform translate-y-0 transition-all duration-500;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="p-6 max-w-7xl mx-auto">
+  <!-- Welcome Banner -->
+  <div class="welcome-banner">
+    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between">
+      <div class="flex-1">
+        <h1 class="text-3xl font-bold mb-2">
+          Bonjour, {{ user.get_full_name|default:user.username }} ! 👋
+        </h1>
+        <p class="text-blue-100 text-lg">Bienvenue dans votre espace client LOPES PEINTURE</p>
+        <p class="text-blue-200 text-sm mt-2">
+          Suivez l'avancement de vos projets et gérez vos demandes en toute simplicité
+        </p>
+      </div>
+
+      <!-- CTA Principal -->
+      <div class="mt-6 lg:mt-0">
+        <a
+          href="{% url 'projects:create' %}"
+          class="inline-flex items-center gap-3 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-200 shadow-lg"
+        >
+          <i class="fas fa-plus text-lg"></i>
+          Nouveau Projet
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistiques principales -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total des projets -->
+    <div class="stat-card card-animate">
+      <div class="flex items-center">
+        <div class="icon-card bg-blue-100 text-blue-600">
+          <i class="fas fa-paint-brush text-xl"></i>
+        </div>
+        <div class="ml-4">
+          <div class="text-2xl font-bold text-gray-900">{{ stats.total_projects }}</div>
+          <div class="text-sm text-gray-600">Projet{{ stats.total_projects|pluralize }}</div>
+        </div>
+      </div>
+      <div class="mt-4 flex items-center text-sm">
+        {% if stats.projects_this_month > 0 %}
+        <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+        <span class="text-green-600">+{{ stats.projects_this_month }} ce mois</span>
+        {% else %}
+        <span class="text-gray-500">Aucun nouveau ce mois</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Projets en cours -->
+    <div class="stat-card card-animate">
+      <div class="flex items-center">
+        <div class="icon-card bg-orange-100 text-orange-600">
+          <i class="fas fa-clock text-xl"></i>
+        </div>
+        <div class="ml-4">
+          <div class="text-2xl font-bold text-gray-900">{{ stats.active_projects }}</div>
+          <div class="text-sm text-gray-600">En cours</div>
+        </div>
+      </div>
+      <div class="mt-4 flex items-center text-sm">
+        {% if stats.urgent_projects > 0 %}
+        <i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>
+        <span class="text-red-600"
+          >{{ stats.urgent_projects }} urgent{{ stats.urgent_projects|pluralize }}</span
+        >
+        {% else %}
+        <span class="text-gray-500">Tout sous contrôle</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Devis reçus -->
+    <div class="stat-card card-animate">
+      <div class="flex items-center">
+        <div class="icon-card bg-green-100 text-green-600">
+          <i class="fas fa-file-invoice-dollar text-xl"></i>
+        </div>
+        <div class="ml-4">
+          <div class="text-2xl font-bold text-gray-900">{{ stats.total_devis }}</div>
+          <div class="text-sm text-gray-600">Devis reçu{{ stats.total_devis|pluralize }}</div>
+        </div>
+      </div>
+      <div class="mt-4 flex items-center text-sm">
+        {% if stats.pending_devis > 0 %}
+        <i class="fas fa-hourglass-half text-orange-500 mr-1"></i>
+        <span class="text-orange-600">{{ stats.pending_devis }} en attente</span>
+        {% else %}
+        <span class="text-gray-500">Tous traités</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Projets terminés -->
+    <div class="stat-card card-animate">
+      <div class="flex items-center">
+        <div class="icon-card bg-purple-100 text-purple-600">
+          <i class="fas fa-check-circle text-xl"></i>
+        </div>
+        <div class="ml-4">
+          <div class="text-2xl font-bold text-gray-900">{{ stats.completed_projects }}</div>
+          <div class="text-sm text-gray-600">Terminé{{ stats.completed_projects|pluralize }}</div>
+        </div>
+      </div>
+      <div class="mt-4 flex items-center text-sm">
+        {% if stats.satisfaction_rate %}
+        <i class="fas fa-star text-yellow-500 mr-1"></i>
+        <span class="text-yellow-600">{{ stats.satisfaction_rate }}% satisfaction</span>
+        {% else %}
+        <span class="text-gray-500">Évaluez vos projets</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Layout principal -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+    <!-- Colonne principale -->
+    <div class="xl:col-span-2 space-y-8">
+      <!-- Projets actifs -->
+      <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-paint-brush text-blue-600"></i>
+            Mes Projets Actifs {% if active_projects.count > 0 %}
+            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full ml-2">
+              {{ active_projects.count }}
+            </span>
+            {% endif %}
+          </h2>
+          <a
+            href="{% url 'projects:list' %}"
+            class="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+          >
+            Voir tous
+            <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+
+        {% if active_projects %}
+        <div class="space-y-4">
+          {% for project in active_projects %}
+          <div class="project-card p-4">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex-1">
+                <h3 class="font-semibold text-gray-900 mb-1">
+                  <a
+                    href="{% url 'projects:detail' pk=project.pk %}"
+                    class="hover:text-blue-600 transition-colors duration-200"
+                  >
+                    {{ project.title }}
+                  </a>
+                </h3>
+                <p class="text-sm text-gray-600">{{ project.ville }}</p>
+              </div>
+
+              <span
+                class="status-badge {% if project.status == 'nouveau' %}bg-blue-100 text-blue-800 {% elif project.status == 'en_examen' %}bg-yellow-100 text-yellow-800 {% elif project.status == 'devis_envoye' %}bg-purple-100 text-purple-800 {% elif project.status == 'en_cours' %}bg-orange-100 text-orange-800 {% else %}bg-gray-100 text-gray-800{% endif %}"
+              >
+                {{ project.get_status_display }}
+              </span>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="mb-3">
+              <div class="flex items-center justify-between text-sm mb-1">
+                <span class="text-gray-600">Progression</span>
+                <span class="font-medium">{{ project.progress_percentage }}%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  class="h-2 rounded-full transition-all duration-1000 {% if project.progress_percentage < 30 %}bg-gradient-to-r from-red-400 to-red-500 {% elif project.progress_percentage < 70 %}bg-gradient-to-r from-yellow-400 to-yellow-500 {% else %}bg-gradient-to-r from-green-400 to-green-500{% endif %}"
+                  style="width: {{ project.progress_percentage }}%"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Informations supplémentaires -->
+            <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+              <div class="flex items-center">
+                <i class="fas fa-ruler-combined mr-2 text-gray-400"></i>
+                {{ project.surface_totale }}m²
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-calendar-plus mr-2 text-gray-400"></i>
+                {{ project.created_at|date:"d/m/Y" }}
+              </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+              <div class="flex gap-2">
+                <a
+                  href="{% url 'projects:detail' pk=project.pk %}"
+                  class="text-blue-600 hover:text-blue-700 p-1"
+                  title="Voir le détail"
+                >
+                  <i class="fas fa-eye"></i>
+                </a>
+
+                {% if project.can_request_quote %}
+                <form
+                  method="post"
+                  action="{% url 'projects:request_quote' pk=project.pk %}"
+                  class="inline"
+                >
+                  {% csrf_token %}
+                  <button
+                    type="submit"
+                    class="text-green-600 hover:text-green-700 p-1"
+                    title="Demander un devis"
+                  >
+                    <i class="fas fa-file-invoice-dollar"></i>
+                  </button>
+                </form>
+                {% endif %} {% if project.can_be_edited %}
+                <a
+                  href="{% url 'projects:edit' pk=project.pk %}"
+                  class="text-orange-600 hover:text-orange-700 p-1"
+                  title="Modifier"
+                >
+                  <i class="fas fa-edit"></i>
+                </a>
+                {% endif %}
+              </div>
+
+              <!-- Badges informatifs -->
+              <div class="flex items-center gap-2 text-xs">
+                {% if project.devis.count %}
+                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                  {{ project.devis.count }} devis
+                </span>
+                {% endif %} {% if project.priority == 'urgente' %}
+                <span class="bg-red-100 text-red-800 px-2 py-1 rounded">
+                  <i class="fas fa-exclamation-triangle mr-1"></i>
+                  Urgent
+                </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="fas fa-paint-brush text-gray-400 text-3xl"></i>
+          </div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun projet actif</h3>
+          <p class="text-gray-600 mb-6">
+            Créez votre premier projet pour commencer vos travaux de peinture.
+          </p>
+          <a href="{% url 'projects:create' %}" class="action-btn btn-primary">
+            <i class="fas fa-plus"></i>
+            Créer un projet
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Derniers devis -->
+      <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-file-invoice-dollar text-blue-600"></i>
+            Mes Devis {% if recent_devis.count > 0 %}
+            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full ml-2">
+              {{ recent_devis.count }}
+            </span>
+            {% endif %}
+          </h2>
+          <a
+            href="{% url 'projects:devis_list' %}"
+            class="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+          >
+            Voir tous
+            <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+
+        {% if recent_devis %}
+        <div class="space-y-4">
+          {% for devis in recent_devis %}
+          <div class="document-card">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                  <h4 class="font-medium text-gray-900">{{ devis.title }}</h4>
+                  <span
+                    class="status-badge {% if devis.status == 'brouillon' %}bg-gray-100 text-gray-800 {% elif devis.status == 'envoye' %}bg-blue-100 text-blue-800 {% elif devis.status == 'accepte' %}bg-green-100 text-green-800 {% elif devis.status == 'refuse' %}bg-red-100 text-red-800 {% else %}bg-gray-100 text-gray-800{% endif %}"
+                  >
+                    {{ devis.get_status_display }}
+                  </span>
+                </div>
+
+                <p class="text-sm text-gray-600 mb-2">{{ devis.project.title }}</p>
+
+                <div class="flex items-center gap-4 text-xs text-gray-500">
+                  <span>
+                    <i class="fas fa-calendar mr-1"></i>
+                    {{ devis.created_at|date:"d/m/Y" }}
+                  </span>
+                  {% if devis.date_expiry %}
+                  <span class="{% if devis.is_expired %}text-red-600{% endif %}">
+                    <i class="fas fa-clock mr-1"></i>
+                    {% if devis.is_expired %} Expiré le {{ devis.date_expiry|date:"d/m/Y" }} {% else
+                    %} Expire le {{ devis.date_expiry|date:"d/m/Y" }} {% endif %}
+                  </span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="text-right">
+                <div class="text-lg font-bold text-blue-600 mb-2">
+                  {{ devis.total|floatformat:2 }}€
+                </div>
+
+                <div class="flex gap-2">
+                  <a
+                    href="{% url 'projects:devis_detail' pk=devis.pk %}"
+                    class="text-blue-600 hover:text-blue-700 p-1"
+                    title="Voir le devis"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </a>
+
+                  <a
+                    href="{% url 'projects:devis_pdf' pk=devis.pk %}"
+                    class="text-green-600 hover:text-green-700 p-1"
+                    title="Télécharger PDF"
+                    target="_blank"
+                  >
+                    <i class="fas fa-download"></i>
+                  </a>
+
+                  {% if devis.status == 'envoye' and not devis.is_expired %}
+                  <div class="flex gap-1">
+                    <form
+                      method="post"
+                      action="{% url 'projects:devis_accept' pk=devis.pk %}"
+                      class="inline"
+                    >
+                      {% csrf_token %}
+                      <button
+                        type="submit"
+                        class="text-green-600 hover:text-green-700 p-1"
+                        title="Accepter"
+                        onclick="return confirm('Accepter ce devis ?')"
+                      >
+                        <i class="fas fa-check"></i>
+                      </button>
+                    </form>
+
+                    <form
+                      method="post"
+                      action="{% url 'projects:devis_refuse' pk=devis.pk %}"
+                      class="inline"
+                    >
+                      {% csrf_token %}
+                      <button
+                        type="submit"
+                        class="text-red-600 hover:text-red-700 p-1"
+                        title="Refuser"
+                        onclick="return confirm('Refuser ce devis ?')"
+                      >
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </form>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-gray-500">
+          <i class="fas fa-file-invoice-dollar text-3xl mb-3"></i>
+          <p>Aucun devis pour le moment</p>
+          <p class="text-sm">Créez un projet pour recevoir des devis</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Historique récent -->
+      <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-history text-blue-600"></i>
+            Activité Récente
+          </h2>
+        </div>
+
+        {% if recent_activities %}
+        <div class="space-y-4">
+          {% for activity in recent_activities %}
+          <div class="timeline-item">
+            {% if not forloop.last %}
+            <div class="timeline-line"></div>
+            {% endif %}
+
+            <div
+              class="timeline-dot {% if activity.type == 'project_created' %}bg-blue-500 {% elif activity.type == 'devis_received' %}bg-green-500 {% elif activity.type == 'project_updated' %}bg-orange-500 {% elif activity.type == 'devis_accepted' %}bg-purple-500 {% else %}bg-gray-500{% endif %}"
+            ></div>
+
+            <div class="bg-gray-50 rounded-lg p-3">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-900">{{ activity.description }}</p>
+                  <p class="text-xs text-gray-500">{{ activity.created_at|timesince }}</p>
+                </div>
+
+                {% if activity.related_object %}
+                <a
+                  href="{{ activity.get_absolute_url }}"
+                  class="text-blue-600 hover:text-blue-700 text-sm"
+                >
+                  Voir <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-gray-500">
+          <i class="fas fa-history text-3xl mb-3"></i>
+          <p>Aucune activité récente</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Actions rapides -->
+      <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <i class="fas fa-bolt text-blue-600"></i>
+          Actions Rapides
+        </h3>
+
+        <div class="grid grid-cols-2 gap-3">
+          <a href="{% url 'projects:create' %}" class="quick-action-card">
+            <i class="fas fa-plus text-blue-600 text-xl mb-2"></i>
+            <div class="text-sm font-medium">Nouveau Projet</div>
+          </a>
+
+          <a href="{% url 'projects:list' %}" class="quick-action-card">
+            <i class="fas fa-list text-green-600 text-xl mb-2"></i>
+            <div class="text-sm font-medium">Mes Projets</div>
+          </a>
+
+          <a href="{% url 'projects:devis_list' %}" class="quick-action-card">
+            <i class="fas fa-file-invoice-dollar text-orange-600 text-xl mb-2"></i>
+            <div class="text-sm font-medium">Mes Devis</div>
+          </a>
+
+          <a href="{% url 'accounts:profile' %}" class="quick-action-card">
+            <i class="fas fa-user text-purple-600 text-xl mb-2"></i>
+            <div class="text-sm font-medium">Mon Profil</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-bell text-blue-600"></i>
+            Notifications {% if notifications.count > 0 %}
+            <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full ml-2">
+              {{ notifications.count }}
+            </span>
+            {% endif %}
+          </h3>
+          {% if notifications.count > 0 %}
+          <button onclick="markAllAsRead()" class="text-xs text-blue-600 hover:text-blue-700">
+            Tout marquer comme lu
+          </button>
+          {% endif %}
+        </div>
+
+        {% if notifications %}
+        <div class="space-y-3 max-h-64 overflow-y-auto">
+          {% for notification in notifications %}
+          <div class="notification-card">
+            <div class="flex items-start gap-3">
+              <div
+                class="notification-icon {% if notification.type == 'devis' %}bg-green-500 {% elif notification.type == 'project' %}bg-blue-500 {% elif notification.type == 'urgent' %}bg-red-500 {% else %}bg-gray-500{% endif %}"
+              >
+                <i
+                  class="fas {% if notification.type == 'devis' %}fa-file-invoice-dollar {% elif notification.type == 'project' %}fa-paint-brush {% elif notification.type == 'urgent' %}fa-exclamation-triangle {% else %}fa-bell{% endif %}"
+                >
+                </i>
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900">{{ notification.title }}</p>
+                <p class="text-xs text-gray-600">{{ notification.message|truncatechars:60 }}</p>
+                <div class="text-xs text-gray-500 mt-1">
+                  {{ notification.created_at|timesince }}
+                </div>
+              </div>
+
+              <button
+                onclick="markAsRead({{ notification.id }})"
+                class="text-gray-400 hover:text-gray-600 flex-shrink-0"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-6 text-gray-500">
+          <i class="fas fa-bell-slash text-2xl mb-2"></i>
+          <p class="text-sm">Aucune notification</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Météo du jour -->
+      <div class="weather-card">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Météo du Jour</h3>
+          <i class="fas fa-sun text-2xl"></i>
+        </div>
+        <div class="text-sm opacity-90">
+          <p>{{ weather.location|default:"Paris" }}</p>
+          <p class="text-xl font-bold">{{ weather.temperature|default:"22" }}°C</p>
+          <p>{{ weather.description|default:"Ensoleillé" }}</p>
+          <p class="text-xs mt-2">
+            {% if weather.is_good_for_painting %} ✅ Idéal pour peindre en extérieur {% else %} ⚠️
+            Conditions non optimales pour peindre dehors {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Conseils du jour -->
+      <div class="tips-card">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Conseil du Jour</h3>
+          <i class="fas fa-lightbulb text-2xl"></i>
+        </div>
+        <div class="text-sm opacity-90">
+          <p class="font-medium mb-2">{{ daily_tip.title|default:"Préparation des surfaces" }}</p>
+          <p>
+            {{ daily_tip.content|default:"Une bonne préparation des surfaces est essentielle pour un
+            résultat durable. Pensez à nettoyer et poncer avant d'appliquer la peinture." }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Support & Contact -->
+      <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <i class="fas fa-headset text-blue-600"></i>
+          Support & Contact
+        </h3>
+
+        <div class="space-y-3">
+          <div class="text-sm">
+            <div class="flex items-center gap-2 mb-1">
+              <i class="fas fa-phone text-blue-600"></i>
+              <span class="font-medium">Téléphone</span>
+            </div>
+            <a href="tel:+33123456789" class="text-gray-600 hover:text-blue-600">
+              +33 1 23 45 67 89
+            </a>
+          </div>
+
+          <div class="text-sm">
+            <div class="flex items-center gap-2 mb-1">
+              <i class="fas fa-envelope text-blue-600"></i>
+              <span class="font-medium">Email</span>
+            </div>
+            <a href="mailto:contact@lopes-peinture.fr" class="text-gray-600 hover:text-blue-600">
+              contact@lopes-peinture.fr
+            </a>
+          </div>
+
+          <div class="text-sm">
+            <div class="flex items-center gap-2 mb-1">
+              <i class="fas fa-clock text-blue-600"></i>
+              <span class="font-medium">Horaires</span>
+            </div>
+            <p class="text-gray-600">
+              Lun-Ven: 8h-18h<br />
+              Sam: 9h-12h
+            </p>
+          </div>
+
+          <div class="pt-3 border-t border-gray-200">
+            <a href="{% url 'contact' %}" class="w-full action-btn btn-outline justify-center">
+              <i class="fas fa-envelope"></i>
+              Nous contacter
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Témoignage -->
+      <div class="testimonial-card">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Témoignage Client</h3>
+          <div class="flex gap-1">
+            {% for i in "12345" %}
+            <i class="fas fa-star text-yellow-300 text-sm"></i>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="text-sm opacity-90">
+          <p class="mb-2">
+            "{{ testimonial.content|default:"Excellent travail ! L'équipe LOPES PEINTURE a
+            transformé ma maison. Je recommande vivement leurs services." }}"
+          </p>
+          <p class="text-xs font-medium">- {{ testimonial.author|default:"Marie D." }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      // Animate cards on load
+      function animateCards() {
+          const cards = document.querySelectorAll('.card-animate');
+          cards.forEach((card, index) => {
+              setTimeout(() => {
+                  card.classList.add('show');
+              }, index * 100);
+          });
+      }
+
+      // Mark notification as read
+      window.markAsRead = function(notificationId) {
+          fetch(`/notifications/${notificationId}/read/`, {
+              method: 'POST',
+              headers: {
+                  'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                  'Content-Type': 'application/json'
+              }
+          })
+          .then(response => {
+              if (response.ok) {
+                  const notification = document.querySelector(`[data-notification="${notificationId}"]`);
+                  if (notification) {
+                      notification.remove();
+                      updateNotificationBadge();
+                  }
+              }
+          })
+          .catch(error => {
+              console.error('Erreur:', error);
+          });
+      };
+
+      // Mark all notifications as read
+      window.markAllAsRead = function() {
+          fetch('/notifications/mark-all-read/', {
+              method: 'POST',
+              headers: {
+                  'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                  'Content-Type': 'application/json'
+              }
+          })
+          .then(response => {
+              if (response.ok) {
+                  document.querySelectorAll('.notification-card').forEach(card => {
+                      card.remove();
+                  });
+                  updateNotificationBadge();
+              }
+          })
+          .catch(error => {
+              console.error('Erreur:', error);
+          });
+      };
+
+      // Update notification badge
+      function updateNotificationBadge() {
+          const badge = document.querySelector('h3 .bg-red-100');
+          const count = document.querySelectorAll('.notification-card').length;
+
+          if (badge) {
+              if (count === 0) {
+                  badge.remove();
+                  // Show empty state
+                  const container = badge.closest('.bg-white').querySelector('.space-y-3');
+                  if (container) {
+                      container.innerHTML = `
+                          <div class="text-center py-6 text-gray-500">
+                              <i class="fas fa-bell-slash text-2xl mb-2"></i>
+                              <p class="text-sm">Aucune notification</p>
+                          </div>
+                      `;
+                  }
+              } else {
+                  badge.textContent = count;
+              }
+          }
+      }
+
+      // Progress bar animations
+      function animateProgressBars() {
+          const progressBars = document.querySelectorAll('[style*="width:"]');
+          progressBars.forEach(bar => {
+              const width = bar.style.width;
+              bar.style.width = '0%';
+              setTimeout(() => {
+                  bar.style.width = width;
+              }, 500);
+          });
+      }
+
+      // Refresh weather and tips
+      function refreshDynamicContent() {
+          // This could be expanded to fetch real weather data
+          console.log('Refreshing dynamic content...');
+      }
+
+      // Show tooltips for truncated text
+      function setupTooltips() {
+          document.querySelectorAll('[title]').forEach(element => {
+              if (element.scrollWidth > element.offsetWidth) {
+                  element.setAttribute('title', element.textContent);
+              }
+          });
+      }
+
+      // Auto-refresh notifications
+      function autoRefreshNotifications() {
+          setInterval(() => {
+              if (document.visibilityState === 'visible') {
+                  fetch('/api/notifications/unread/')
+                      .then(response => response.json())
+                      .then(data => {
+                          if (data.count > 0) {
+                              // Update notification badge
+                              const badge = document.querySelector('h3 .bg-red-100');
+                              if (badge) {
+                                  badge.textContent = data.count;
+                              }
+                          }
+                      })
+                      .catch(error => {
+                          console.error('Error fetching notifications:', error);
+                      });
+              }
+          }, 60000); // Check every minute
+      }
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', function(e) {
+          // N para novo projeto
+          if (e.key === 'n' && !e.ctrlKey && !e.altKey && !e.target.matches('input, textarea, select')) {
+              window.location.href = "{% url 'projects:create' %}";
+          }
+
+          // P para ver projetos
+          if (e.key === 'p' && !e.ctrlKey && !e.altKey && !e.target.matches('input, textarea, select')) {
+              window.location.href = "{% url 'projects:list' %}";
+          }
+
+          // D para ver devis
+          if (e.key === 'd' && !e.ctrlKey && !e.altKey && !e.target.matches('input, textarea, select')) {
+              window.location.href = "{% url 'projects:devis_list' %}";
+          }
+      });
+
+      // Initialize everything
+      animateCards();
+      animateProgressBars();
+      setupTooltips();
+      refreshDynamicContent();
+      autoRefreshNotifications();
+
+      // Show welcome message for new users
+      {% if user.date_joined|timesince:"7 days" %}
+      if ({{ stats.total_projects }} === 0) {
+          setTimeout(() => {
+              const toast = document.createElement('div');
+              toast.className = 'fixed bottom-4 right-4 bg-blue-600 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm';
+              toast.innerHTML = `
+                  <div class="flex items-start gap-3">
+                      <i class="fas fa-info-circle text-xl mt-1"></i>
+                      <div>
+                          <h4 class="font-medium mb-1">Bienvenue chez LOPES PEINTURE !</h4>
+                          <p class="text-sm opacity-90">Créez votre premier projet pour commencer.</p>
+                          <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-sm underline mt-2">
+                              Fermer
+                          </button>
+                      </div>
+                  </div>
+              `;
+              document.body.appendChild(toast);
+
+              // Auto-remove after 10 seconds
+              setTimeout(() => {
+                  if (toast.parentElement) {
+                      toast.remove();
+                  }
+              }, 10000);
+          }, 2000);
+      }
+      {% endif %}
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,935 @@
+{% extends 'base_dashboard.html' %} {% load static %} {% block title %}Dashboard Administrateur -
+LOPES PEINTURE{% endblock %} {% block extra_css %}
+<style>
+  .dashboard-card {
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200;
+  }
+  .stat-card {
+    @apply bg-gradient-to-br rounded-lg p-6 text-white shadow-sm hover:shadow-md transition-all duration-200;
+  }
+  .stat-value {
+    @apply text-3xl font-bold mb-1;
+  }
+  .stat-label {
+    @apply text-sm opacity-90;
+  }
+  .stat-change {
+    @apply text-xs flex items-center gap-1 mt-2;
+  }
+  .chart-container {
+    @apply bg-white border border-gray-200 rounded-lg p-6 shadow-sm;
+  }
+  .action-btn {
+    @apply px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2;
+  }
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md;
+  }
+  .btn-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700;
+  }
+  .btn-success {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+  }
+  .btn-warning {
+    @apply bg-orange-600 hover:bg-orange-700 text-white;
+  }
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white;
+  }
+  .progress-bar {
+    @apply w-full bg-gray-200 rounded-full h-2;
+  }
+  .progress-fill {
+    @apply bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-out;
+  }
+  .notification-item {
+    @apply flex items-start gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200;
+  }
+  .priority-dot {
+    @apply w-3 h-3 rounded-full flex-shrink-0 mt-1;
+  }
+  .table-row {
+    @apply border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200;
+  }
+  .table-header {
+    @apply bg-gray-50 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  }
+  .filter-tabs {
+    @apply flex bg-gray-100 rounded-lg p-1;
+  }
+  .filter-tab {
+    @apply px-3 py-2 rounded text-sm font-medium transition-all duration-200 cursor-pointer;
+  }
+  .filter-tab.active {
+    @apply bg-white text-blue-600 shadow-sm;
+  }
+  .filter-tab.inactive {
+    @apply text-gray-600 hover:text-gray-900;
+  }
+  .alert-banner {
+    @apply p-4 rounded-lg border-l-4 mb-6;
+  }
+  .alert-success {
+    @apply bg-green-50 border-green-400 text-green-800;
+  }
+  .alert-warning {
+    @apply bg-yellow-50 border-yellow-400 text-yellow-800;
+  }
+  .alert-danger {
+    @apply bg-red-50 border-red-400 text-red-800;
+  }
+  .alert-info {
+    @apply bg-blue-50 border-blue-400 text-blue-800;
+  }
+  .widget-header {
+    @apply flex items-center justify-between mb-4 pb-3 border-b border-gray-200;
+  }
+  .widget-title {
+    @apply text-lg font-semibold text-gray-900 flex items-center gap-2;
+  }
+  .quick-action-grid {
+    @apply grid grid-cols-2 md:grid-cols-4 gap-3;
+  }
+  .quick-action-item {
+    @apply bg-white border border-gray-200 rounded-lg p-4 text-center hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 cursor-pointer;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="p-6 max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <i class="fas fa-chart-line text-blue-600"></i>
+          Dashboard Administrateur
+        </h1>
+        <p class="text-gray-600 mt-1">Vue d'ensemble de l'activité et des performances</p>
+      </div>
+
+      <!-- Filtres temporels -->
+      <div class="flex items-center gap-3">
+        <div class="filter-tabs">
+          <div class="filter-tab active" data-period="7" onclick="changePeriod(7)">7 jours</div>
+          <div class="filter-tab inactive" data-period="30" onclick="changePeriod(30)">
+            30 jours
+          </div>
+          <div class="filter-tab inactive" data-period="90" onclick="changePeriod(90)">3 mois</div>
+          <div class="filter-tab inactive" data-period="365" onclick="changePeriod(365)">1 an</div>
+        </div>
+
+        <button onclick="refreshDashboard()" class="action-btn btn-secondary" title="Actualiser">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertes importantes -->
+  {% if urgent_notifications %}
+  <div class="alert-banner alert-warning">
+    <div class="flex items-start">
+      <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
+      <div>
+        <h3 class="font-medium mb-1">Attention requise</h3>
+        <p class="text-sm">
+          {{ urgent_notifications.count }} élément{{ urgent_notifications.count|pluralize }}
+          nécessite{{ urgent_notifications.count|pluralize:"nt" }} votre attention.
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Statistiques principales -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Chiffre d'affaires -->
+    <div class="stat-card from-blue-500 to-blue-600">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="stat-value">{{ stats.ca_total|floatformat:0 }}€</div>
+          <div class="stat-label">Chiffre d'affaires</div>
+          <div class="stat-change">
+            <i class="fas fa-arrow-up"></i>
+            <span>+{{ stats.ca_evolution|floatformat:1 }}%</span>
+            <span class="opacity-75">vs mois dernier</span>
+          </div>
+        </div>
+        <div class="bg-blue-400 bg-opacity-30 rounded-full p-3">
+          <i class="fas fa-euro-sign text-2xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Projets -->
+    <div class="stat-card from-green-500 to-green-600">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="stat-value">{{ stats.projets_total }}</div>
+          <div class="stat-label">Projets actifs</div>
+          <div class="stat-change">
+            <i class="fas fa-arrow-up"></i>
+            <span>+{{ stats.projets_nouveaux }}</span>
+            <span class="opacity-75">ce mois</span>
+          </div>
+        </div>
+        <div class="bg-green-400 bg-opacity-30 rounded-full p-3">
+          <i class="fas fa-paint-brush text-2xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devis -->
+    <div class="stat-card from-orange-500 to-orange-600">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="stat-value">{{ stats.devis_total }}</div>
+          <div class="stat-label">Devis en cours</div>
+          <div class="stat-change">
+            <i class="fas fa-clock"></i>
+            <span>{{ stats.devis_en_attente }}</span>
+            <span class="opacity-75">en attente</span>
+          </div>
+        </div>
+        <div class="bg-orange-400 bg-opacity-30 rounded-full p-3">
+          <i class="fas fa-file-invoice text-2xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Taux de conversion -->
+    <div class="stat-card from-purple-500 to-purple-600">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="stat-value">{{ stats.taux_conversion|floatformat:1 }}%</div>
+          <div class="stat-label">Taux de conversion</div>
+          <div class="stat-change">
+            <i class="fas fa-chart-line"></i>
+            <span>{{ stats.devis_acceptes }}/{{ stats.devis_total }}</span>
+            <span class="opacity-75">devis acceptés</span>
+          </div>
+        </div>
+        <div class="bg-purple-400 bg-opacity-30 rounded-full p-3">
+          <i class="fas fa-percentage text-2xl"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layout principal -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+    <!-- Colonne principale -->
+    <div class="xl:col-span-2 space-y-8">
+      <!-- Graphiques de performance -->
+      <div class="chart-container">
+        <div class="widget-header">
+          <h2 class="widget-title">
+            <i class="fas fa-chart-area text-blue-600"></i>
+            Performance Mensuelle
+          </h2>
+          <div class="flex gap-2">
+            <button
+              onclick="toggleChart('ca')"
+              class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded"
+            >
+              CA
+            </button>
+            <button
+              onclick="toggleChart('projets')"
+              class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
+            >
+              Projets
+            </button>
+            <button
+              onclick="toggleChart('devis')"
+              class="text-xs px-2 py-1 bg-orange-100 text-orange-800 rounded"
+            >
+              Devis
+            </button>
+          </div>
+        </div>
+
+        <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+          <canvas id="performance-chart" width="400" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- Projets récents -->
+      <div class="dashboard-card p-6">
+        <div class="widget-header">
+          <h2 class="widget-title">
+            <i class="fas fa-paint-brush text-blue-600"></i>
+            Projets Récents
+          </h2>
+          <a href="{% url 'projects:list' %}" class="text-sm text-blue-600 hover:text-blue-700">
+            Voir tous <i class="fas fa-arrow-right ml-1"></i>
+          </a>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr>
+                <th class="table-header px-4 py-3">Projet</th>
+                <th class="table-header px-4 py-3">Client</th>
+                <th class="table-header px-4 py-3">Statut</th>
+                <th class="table-header px-4 py-3">Surface</th>
+                <th class="table-header px-4 py-3">Date</th>
+                <th class="table-header px-4 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              {% for project in recent_projects %}
+              <tr class="table-row">
+                <td class="px-4 py-3">
+                  <div class="font-medium text-gray-900">
+                    <a href="{% url 'projects:detail' pk=project.pk %}" class="hover:text-blue-600">
+                      {{ project.title|truncatechars:30 }}
+                    </a>
+                  </div>
+                  <div class="text-xs text-gray-500">{{ project.ville }}</div>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-900">
+                  {{ project.user.get_full_name|default:project.user.username }}
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if project.status == 'nouveau' %}bg-blue-100 text-blue-800 {% elif project.status == 'en_cours' %}bg-yellow-100 text-yellow-800 {% elif project.status == 'termine' %}bg-green-100 text-green-800 {% else %}bg-gray-100 text-gray-800{% endif %}"
+                  >
+                    {{ project.get_status_display }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-900">{{ project.surface_totale }}m²</td>
+                <td class="px-4 py-3 text-sm text-gray-500">
+                  {{ project.date_created|date:"d/m/Y" }}
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <a
+                      href="{% url 'projects:detail' pk=project.pk %}"
+                      class="text-blue-600 hover:text-blue-700"
+                      title="Voir"
+                    >
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    <a
+                      href="{% url 'projects:devis_create' project_pk=project.pk %}"
+                      class="text-green-600 hover:text-green-700"
+                      title="Créer devis"
+                    >
+                      <i class="fas fa-file-plus"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-gray-500">Aucun projet récent</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Devis à traiter -->
+      <div class="dashboard-card p-6">
+        <div class="widget-header">
+          <h2 class="widget-title">
+            <i class="fas fa-file-invoice-dollar text-blue-600"></i>
+            Devis à Traiter {% if pending_devis.count > 0 %}
+            <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full ml-2">
+              {{ pending_devis.count }}
+            </span>
+            {% endif %}
+          </h2>
+          <a
+            href="{% url 'projects:devis_list' %}"
+            class="text-sm text-blue-600 hover:text-blue-700"
+          >
+            Voir tous <i class="fas fa-arrow-right ml-1"></i>
+          </a>
+        </div>
+
+        {% if pending_devis %}
+        <div class="space-y-3">
+          {% for devis in pending_devis %}
+          <div class="notification-item">
+            <div
+              class="priority-dot {% if devis.is_urgent %}bg-red-500 {% elif devis.days_until_expiry <= 7 %}bg-orange-500 {% else %}bg-blue-500{% endif %}"
+            ></div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h4 class="font-medium text-gray-900">
+                  <a
+                    href="{% url 'projects:devis_detail' pk=devis.pk %}"
+                    class="hover:text-blue-600"
+                  >
+                    {{ devis.reference }}
+                  </a>
+                </h4>
+                <span class="text-sm font-medium text-blue-600"
+                  >{{ devis.total|floatformat:0 }}€</span
+                >
+              </div>
+              <p class="text-sm text-gray-600">{{ devis.project.title|truncatechars:40 }}</p>
+              <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                <span
+                  ><i class="fas fa-user mr-1"></i>{{
+                  devis.project.user.get_full_name|default:devis.project.user.username }}</span
+                >
+                <span
+                  ><i class="fas fa-calendar mr-1"></i>{{ devis.date_created|date:"d/m/Y" }}</span
+                >
+                {% if devis.date_limite %}
+                <span class="{% if devis.is_expired %}text-red-600 font-medium{% endif %}">
+                  <i class="fas fa-clock mr-1"></i>
+                  {% if devis.is_expired %}Expiré{% else %}Expire le {{
+                  devis.date_limite|date:"d/m/Y" }}{% endif %}
+                </span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              {% if devis.status == 'brouillon' %}
+              <a
+                href="{% url 'projects:devis_edit' pk=devis.pk %}"
+                class="text-green-600 hover:text-green-700 p-1"
+                title="Modifier"
+              >
+                <i class="fas fa-edit"></i>
+              </a>
+              {% endif %} {% if devis.can_be_sent %}
+              <form
+                method="post"
+                action="{% url 'projects:devis_send' pk=devis.pk %}"
+                class="inline"
+              >
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="text-orange-600 hover:text-orange-700 p-1"
+                  title="Envoyer"
+                  onclick="return confirm('Envoyer ce devis ?')"
+                >
+                  <i class="fas fa-paper-plane"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-gray-500">
+          <i class="fas fa-check-circle text-4xl mb-3"></i>
+          <p>Tous les devis sont à jour !</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Actions rapides -->
+      <div class="dashboard-card p-6">
+        <div class="widget-header">
+          <h3 class="widget-title">
+            <i class="fas fa-bolt text-blue-600"></i>
+            Actions Rapides
+          </h3>
+        </div>
+
+        <div class="quick-action-grid">
+          <a href="{% url 'projects:create' %}" class="quick-action-item">
+            <i class="fas fa-plus text-blue-600 text-xl mb-2"></i>
+            <div class="text-sm font-medium">Nouveau Projet</div>
+          </a>
+
+          <a href="{% url 'projects:devis_create' %}" class="quick-action-item">
+            <i class="fas fa-file-plus text-green-600 text-xl mb-2"></i>
+            <div class="text-sm font-medium">Nouveau Devis</div>
+          </a>
+
+          <a href="{% url 'projects:list' %}?status=en_cours" class="quick-action-item">
+            <i class="fas fa-paint-brush text-orange-600 text-xl mb-2"></i>
+            <div class="text-sm font-medium">Projets en Cours</div>
+          </a>
+
+          <a href="{% url 'projects:devis_list' %}?status=envoye" class="quick-action-item">
+            <i class="fas fa-clock text-purple-600 text-xl mb-2"></i>
+            <div class="text-sm font-medium">Devis Envoyés</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Objectifs mensuels -->
+      <div class="dashboard-card p-6">
+        <div class="widget-header">
+          <h3 class="widget-title">
+            <i class="fas fa-target text-blue-600"></i>
+            Objectifs du Mois
+          </h3>
+        </div>
+
+        <div class="space-y-4">
+          <!-- CA Objectif -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm font-medium text-gray-700">Chiffre d'affaires</span>
+              <span class="text-sm text-gray-600"
+                >{{ stats.ca_actuel|floatformat:0 }}€ / {{ stats.ca_objectif|floatformat:0 }}€</span
+              >
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: {{ stats.ca_progress }}%"></div>
+            </div>
+            <div class="text-xs text-gray-500 mt-1">
+              {{ stats.ca_progress|floatformat:1 }}% atteint
+            </div>
+          </div>
+
+          <!-- Projets Objectif -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm font-medium text-gray-700">Nouveaux projets</span>
+              <span class="text-sm text-gray-600"
+                >{{ stats.projets_actuels }} / {{ stats.projets_objectif }}</span
+              >
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: {{ stats.projets_progress }}%"></div>
+            </div>
+            <div class="text-xs text-gray-500 mt-1">
+              {{ stats.projets_progress|floatformat:1 }}% atteint
+            </div>
+          </div>
+
+          <!-- Conversion Objectif -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm font-medium text-gray-700">Taux de conversion</span>
+              <span class="text-sm text-gray-600"
+                >{{ stats.conversion_actuelle|floatformat:1 }}% / {{ stats.conversion_objectif
+                }}%</span
+              >
+            </div>
+            <div class="progress-bar">
+              <div
+                class="progress-fill bg-green-600"
+                style="width: {{ stats.conversion_progress }}%"
+              ></div>
+            </div>
+            <div class="text-xs text-gray-500 mt-1">
+              {{ stats.conversion_progress|floatformat:1 }}% atteint
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="dashboard-card p-6">
+        <div class="widget-header">
+          <h3 class="widget-title">
+            <i class="fas fa-bell text-blue-600"></i>
+            Notifications {% if notifications.count > 0 %}
+            <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full ml-2">
+              {{ notifications.count }}
+            </span>
+            {% endif %}
+          </h3>
+          <button onclick="markAllAsRead()" class="text-xs text-blue-600 hover:text-blue-700">
+            Tout marquer comme lu
+          </button>
+        </div>
+
+        {% if notifications %}
+        <div class="space-y-3 max-h-64 overflow-y-auto">
+          {% for notification in notifications %}
+          <div class="notification-item">
+            <div
+              class="priority-dot {% if notification.priority == 'high' %}bg-red-500 {% elif notification.priority == 'medium' %}bg-orange-500 {% else %}bg-blue-500{% endif %}"
+            ></div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900">{{ notification.title }}</p>
+              <p class="text-xs text-gray-600">{{ notification.message|truncatechars:60 }}</p>
+              <div class="text-xs text-gray-500 mt-1">{{ notification.created_at|timesince }}</div>
+            </div>
+            <button
+              onclick="markAsRead({{ notification.id }})"
+              class="text-gray-400 hover:text-gray-600"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-6 text-gray-500">
+          <i class="fas fa-bell-slash text-2xl mb-2"></i>
+          <p class="text-sm">Aucune notification</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Météo des ventes -->
+      <div class="dashboard-card p-6">
+        <div class="widget-header">
+          <h3 class="widget-title">
+            <i class="fas fa-chart-pie text-blue-600"></i>
+            Répartition des Ventes
+          </h3>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">Peinture intérieure</span>
+            <span class="text-sm font-medium">{{ sales_breakdown.interieure }}%</span>
+          </div>
+          <div class="progress-bar">
+            <div
+              class="progress-fill bg-blue-500"
+              style="width: {{ sales_breakdown.interieure }}%"
+            ></div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">Peinture extérieure</span>
+            <span class="text-sm font-medium">{{ sales_breakdown.exterieure }}%</span>
+          </div>
+          <div class="progress-bar">
+            <div
+              class="progress-fill bg-green-500"
+              style="width: {{ sales_breakdown.exterieure }}%"
+            ></div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">Rénovation</span>
+            <span class="text-sm font-medium">{{ sales_breakdown.renovation }}%</span>
+          </div>
+          <div class="progress-bar">
+            <div
+              class="progress-fill bg-orange-500"
+              style="width: {{ sales_breakdown.renovation }}%"
+            ></div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">Autres</span>
+            <span class="text-sm font-medium">{{ sales_breakdown.autres }}%</span>
+          </div>
+          <div class="progress-bar">
+            <div
+              class="progress-fill bg-purple-500"
+              style="width: {{ sales_breakdown.autres }}%"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Planning du jour -->
+      <div class="dashboard-card p-6">
+        <div class="widget-header">
+          <h3 class="widget-title">
+            <i class="fas fa-calendar-day text-blue-600"></i>
+            Aujourd'hui
+          </h3>
+          <span class="text-xs text-gray-500">{{ today|date:"d/m/Y" }}</span>
+        </div>
+
+        <div class="space-y-3">
+          {% if today_tasks %} {% for task in today_tasks %}
+          <div class="flex items-start gap-3">
+            <div class="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900">{{ task.title }}</p>
+              <p class="text-xs text-gray-600">{{ task.time }} - {{ task.location }}</p>
+            </div>
+          </div>
+          {% endfor %} {% else %}
+          <div class="text-center py-4 text-gray-500">
+            <i class="fas fa-calendar-check text-xl mb-2"></i>
+            <p class="text-sm">Aucune tâche programmée</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      let currentPeriod = 7;
+      let currentChart = null;
+
+      // Initialize chart
+      function initChart() {
+          const ctx = document.getElementById('performance-chart').getContext('2d');
+
+          currentChart = new Chart(ctx, {
+              type: 'line',
+              data: {
+                  labels: {{ chart_labels|safe }},
+                  datasets: [{
+                      label: 'Chiffre d\'affaires (€)',
+                      data: {{ chart_data.ca|safe }},
+                      borderColor: 'rgb(59, 130, 246)',
+                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                      tension: 0.4,
+                      fill: true
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                      legend: {
+                          display: false
+                      }
+                  },
+                  scales: {
+                      y: {
+                          beginAtZero: true,
+                          ticks: {
+                              callback: function(value) {
+                                  return value + '€';
+                              }
+                          }
+                      }
+                  },
+                  interaction: {
+                      intersect: false,
+                      mode: 'index'
+                  }
+              }
+          });
+      }
+
+      // Change period
+      window.changePeriod = function(period) {
+          currentPeriod = period;
+
+          // Update tab appearance
+          document.querySelectorAll('.filter-tab').forEach(tab => {
+              tab.classList.remove('active');
+              tab.classList.add('inactive');
+          });
+
+          document.querySelector(`[data-period="${period}"]`).classList.remove('inactive');
+          document.querySelector(`[data-period="${period}"]`).classList.add('active');
+
+          // Reload data
+          loadChartData(period);
+      };
+
+      // Toggle chart data
+      window.toggleChart = function(type) {
+          const datasets = {
+              'ca': {
+                  label: 'Chiffre d\'affaires (€)',
+                  data: {{ chart_data.ca|safe }},
+                  borderColor: 'rgb(59, 130, 246)',
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)'
+              },
+              'projets': {
+                  label: 'Nouveaux projets',
+                  data: {{ chart_data.projets|safe }},
+                  borderColor: 'rgb(34, 197, 94)',
+                  backgroundColor: 'rgba(34, 197, 94, 0.1)'
+              },
+              'devis': {
+                  label: 'Devis créés',
+                  data: {{ chart_data.devis|safe }},
+                  borderColor: 'rgb(249, 115, 22)',
+                  backgroundColor: 'rgba(249, 115, 22, 0.1)'
+              }
+          };
+
+          if (currentChart && datasets[type]) {
+              currentChart.data.datasets[0] = {
+                  ...datasets[type],
+                  tension: 0.4,
+                  fill: true
+              };
+              currentChart.update();
+          }
+      };
+
+      // Load chart data via AJAX
+      function loadChartData(period) {
+          fetch(`{% url 'projects:admin_dashboard' %}?ajax=1&period=${period}`)
+              .then(response => response.json())
+              .then(data => {
+                  if (currentChart) {
+                      currentChart.data.labels = data.labels;
+                      currentChart.data.datasets[0].data = data.ca;
+                      currentChart.update();
+                  }
+
+                  // Update stats
+                  updateStats(data.stats);
+              })
+              .catch(error => {
+                  console.error('Erreur lors du chargement des données:', error);
+              });
+      }
+
+      // Update statistics
+      function updateStats(stats) {
+          document.querySelector('.stat-card .stat-value').textContent = stats.ca_total + '€';
+          // Update other stats...
+      }
+
+      // Refresh dashboard
+      window.refreshDashboard = function() {
+          const button = event.target.closest('button');
+          const icon = button.querySelector('i');
+
+          icon.classList.add('fa-spin');
+
+          setTimeout(() => {
+              location.reload();
+          }, 1000);
+      };
+
+      // Mark notification as read
+      window.markAsRead = function(notificationId) {
+          fetch(`/notifications/${notificationId}/read/`, {
+              method: 'POST',
+              headers: {
+                  'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                  'Content-Type': 'application/json'
+              }
+          })
+          .then(response => {
+              if (response.ok) {
+                  document.querySelector(`[data-notification="${notificationId}"]`).remove();
+                  updateNotificationBadge();
+              }
+          });
+      };
+
+      // Mark all notifications as read
+      window.markAllAsRead = function() {
+          fetch('/notifications/mark-all-read/', {
+              method: 'POST',
+              headers: {
+                  'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                  'Content-Type': 'application/json'
+              }
+          })
+          .then(response => {
+              if (response.ok) {
+                  document.querySelectorAll('.notification-item').forEach(item => {
+                      item.remove();
+                  });
+                  updateNotificationBadge();
+              }
+          });
+      };
+
+      // Update notification badge
+      function updateNotificationBadge() {
+          const badge = document.querySelector('.widget-title .bg-red-100');
+          const count = document.querySelectorAll('.notification-item').length;
+
+          if (badge) {
+              if (count === 0) {
+                  badge.remove();
+              } else {
+                  badge.textContent = count;
+              }
+          }
+      }
+
+      // Animate progress bars
+      function animateProgressBars() {
+          const progressBars = document.querySelectorAll('.progress-fill');
+          progressBars.forEach((bar, index) => {
+              const width = bar.style.width;
+              bar.style.width = '0%';
+              setTimeout(() => {
+                  bar.style.width = width;
+              }, index * 200);
+          });
+      }
+
+      // Auto-refresh every 5 minutes
+      setInterval(() => {
+          if (document.visibilityState === 'visible') {
+              loadChartData(currentPeriod);
+          }
+      }, 300000);
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', function(e) {
+          // R para refresh
+          if (e.key === 'r' && !e.ctrlKey && !e.altKey) {
+              refreshDashboard();
+          }
+
+          // 1-4 para períodos
+          if (['1', '2', '3', '4'].includes(e.key) && !e.ctrlKey && !e.altKey) {
+              const periods = [7, 30, 90, 365];
+              changePeriod(periods[parseInt(e.key) - 1]);
+          }
+      });
+
+      // Real-time updates simulation
+      function simulateRealTimeUpdates() {
+          // Simulate new notification
+          const notifications = [
+              { title: 'Nouveau projet reçu', message: 'Un client vient de soumettre un projet', priority: 'high' },
+              { title: 'Devis accepté', message: 'Le devis DEV-2024-001 a été accepté', priority: 'medium' },
+              { title: 'Rappel', message: 'Rendez-vous client à 14h30', priority: 'low' }
+          ];
+
+          setInterval(() => {
+              if (Math.random() < 0.1) { // 10% chance every interval
+                  const notification = notifications[Math.floor(Math.random() * notifications.length)];
+                  showNotification(notification);
+              }
+          }, 60000); // Check every minute
+      }
+
+      // Show notification
+      function showNotification(notification) {
+          // Create toast notification
+          const toast = document.createElement('div');
+          toast.className = 'fixed top-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 max-w-sm';
+          toast.innerHTML = `
+              <div class="flex items-start gap-3">
+                  <div class="priority-dot ${notification.priority === 'high' ? 'bg-red-500' : notification.priority === 'medium' ? 'bg-orange-500' : 'bg-blue-500'} mt-1"></div>
+                  <div class="flex-1">
+                      <p class="font-medium text-gray-900">${notification.title}</p>
+                      <p class="text-sm text-gray-600">${notification.message}</p>
+                  </div>
+                  <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                      <i class="fas fa-times"></i>
+                  </button>
+              </div>
+          `;
+
+          document.body.appendChild(toast);
+
+          // Auto-remove after 5 seconds
+          setTimeout(() => {
+              if (toast.parentElement) {
+                  toast.remove();
+              }
+          }, 5000);
+      }
+
+      // Initialize
+      initChart();
+      animateProgressBars();
+
+      // Start real-time updates (uncomment for production)
+      // simulateRealTimeUpdates();
+  });
+</script>
+{% endblock %}
