@@ -214,32 +214,32 @@ project_request_quote(request, pk)
 
 ## 🚀 FUNCIONALIDADES PRINCIPAIS
 # 👤 Para Clientes
-✅ Dashboard personalizado com estatísticas
-✅ Gestão completa de projetos (CRUD)
-✅ Visualização de devis recebidos
-✅ Aceitação/recusa de devis online
-✅ Histórico detalhado de todas as ações
-✅ Download de PDFs dos devis
-✅ Notificações em tempo real
-✅ Sistema de filtros avançados
+- ✅ Dashboard personalizado com estatísticas
+- ✅ Gestão completa de projetos (CRUD)
+- ✅ Visualização de devis recebidos
+- ✅ Aceitação/recusa de devis online
+- ✅ Histórico detalhado de todas as ações
+- ✅ Download de PDFs dos devis
+- ✅ Notificações em tempo real
+- ✅ Sistema de filtros avançados
 ## 👨‍💼 Para Staff/Admin
-✅ Dashboard administrativo com métricas
-✅ Gestão completa de devis (criar/editar/enviar)
-✅ Controle de status dos projetos
-✅ Gestão de produtos e preços
-✅ Comparação de versões de devis
-✅ Duplicação de devis existentes
-✅ Arquivamento ao invés de exclusão
-✅ Audit trail completo
+- ✅ Dashboard administrativo com métricas
+- ✅ Gestão completa de devis (criar/editar/enviar)
+- ✅ Controle de status dos projetos
+- ✅ Gestão de produtos e preços
+- ✅ Comparação de versões de devis
+- ✅ Duplicação de devis existentes
+- ✅ Arquivamento ao invés de exclusão
+- ✅ Audit trail completo
 ## 🎨 Interface & UX
-✅ Design responsivo com Tailwind CSS
-✅ Animações suaves e transições
-✅ Feedback visual em tempo real
-✅ Loading states e indicators
-✅ Tooltips e help text
-✅ Keyboard shortcuts (N=novo, P=projetos, D=devis)
-✅ Dark mode support preparado
-✅ Acessibilidade (ARIA labels)
+- ✅ Design responsivo com Tailwind CSS
+- ✅ Animações suaves e transições
+- ✅ Feedback visual em tempo real
+- ✅ Loading states e indicators
+- ✅ Tooltips e help text
+- ✅ Keyboard shortcuts (N=novo, P=projetos, D=devis)
+- ✅ Dark mode support preparado
+- ✅ Acessibilidade (ARIA labels)
 ## 🔒 SEGURANÇA E VALIDAÇÕES
 
 ### Decorators implementados
@@ -276,36 +276,36 @@ def can_be_deleted(self):
 
 ## 📁 ESTRUTURA DE ARQUIVOS
 
-site_lopes_peinture/
-├── templates/
-│   ├── base_dashboard.html
-│   └── projects/
-│       ├── dashboard.html (cliente)
-│       ├── admin_dashboard.html
-│       ├── user_dashboard.html
-│       ├── project_list.html
-│       ├── project_detail.html
-│       ├── project_create.html
-│       ├── project_edit.html
-│       ├── project_delete.html
-│       ├── devis_list.html
-│       ├── devis_detail.html
-│       ├── devis_create.html
-│       ├── devis_edit.html
-│       ├── devis_delete.html
-│       ├── devis_history.html
-│       ├── devis_compare.html
-│       └── devis_respond.html
-├── projects/
-│   ├── views.py (750+ linhas)
-│   ├── urls.py (40+ rotas)
-│   ├── models.py
-│   └── forms.py
-└── static/
-    ├── css/
-    ├── js/
-    └── images/
-
+- site_lopes_peinture/
+- ├── templates/
+- │   ├── base_dashboard.html
+- │   └── projects/
+- │       ├── dashboard.html (cliente)
+- │       ├── admin_dashboard.html
+- │       ├── user_dashboard.html
+- │       ├── project_list.html
+- │       ├── project_detail.html
+- │       ├── project_create.html
+- │       ├── project_edit.html
+- │       ├── project_delete.html
+- │       ├── devis_list.html
+- │       ├── devis_detail.html
+- │       ├── devis_create.html
+- │       ├── devis_edit.html
+- │       ├── devis_delete.html
+- │       ├── devis_history.html
+- │       ├── devis_compare.html
+- │       └── devis_respond.html
+- ├── projects/
+- │   ├── views.py (750+ linhas)
+- │   ├── urls.py (40+ rotas)
+- │   ├── models.py
+- │   └── forms.py
+- └── static/
+-     ├── css/
+-     ├── js/
+-     └── images/
+- 
 ## 🔄 FLUXO DE TRABALHO IMPLEMENTADO
 ### 📋 Ciclo de Vida do Projeto
 - Cliente cria projeto → Status: Nouveau
