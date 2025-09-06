@@ -204,8 +204,8 @@ Este projeto é propriedade da **LOPES PEINTURE**. Todos os direitos reservados.
 
 ## 📞 Suporte
 
-- **Email**: support@lopespeinture.com
-- **Telefone**: +33 1 23 45 67 89
+- **Email**: contact@lopespeinture.com
+- **Telefone**: +33 7 69 27 37 76
 - **Site**: https://lopespeinture.com
 
 ---
