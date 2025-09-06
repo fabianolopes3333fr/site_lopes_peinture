@@ -152,7 +152,7 @@ Esta etapa focou na criação completa dos templates HTML e views Django para o 
 
 ## ⚙️ VIEWS IMPLEMENTADAS
 ### 🏠 Dashboard Views
-
+```
 @login_required
 def dashboard_projects(request)
 #### Dashboard principal para clientes
@@ -200,9 +200,9 @@ devis_pdf(request, pk)
 devis_history(request, pk)
 devis_compare(request, pk)
 devis_duplicate(request, pk)
-
+```
 ## 🔧 Utility Views
-
+```
 ajax_product_price(request, pk)
 #### Preços via AJAX
 
@@ -210,6 +210,8 @@ ajax_project_stats(request)
 #### Estatísticas dinâmicas
 
 project_request_quote(request, pk)
+
+```
 #### Solicitação de orçamento
 
 ## 🚀 FUNCIONALIDADES PRINCIPAIS
@@ -247,15 +249,14 @@ project_request_quote(request, pk)
 @user_passes_test(is_staff)
 @require_http_methods(["POST"])
 @csrf_protect
-
+```
 ### Verificações contextuais
 def can_edit_project(user, project):
     return user == project.user or user.is_staff
-
-
+```
 ### 🛡️ Controle de Acesso
 ✅ Validações de Business Logic
-
+```
 # No modelo Project
 def can_be_deleted(self):
     if self.devis.exclude(status='brouillon').exists():
@@ -267,6 +268,7 @@ def can_be_deleted(self):
     if self.status == 'accepte':
         return False
     return self.status in ['brouillon', 'refuse']
+```
 # 📋 Validações de Formulário
 ✅ Confirmação por digitação (título/referência)
 ✅ Múltiplas checkboxes de confirmação
@@ -275,37 +277,37 @@ def can_be_deleted(self):
 ✅ Countdown de segurança antes exclusões críticas
 
 ## 📁 ESTRUTURA DE ARQUIVOS
-
-- site_lopes_peinture/
-- ├── templates/
-- │   ├── base_dashboard.html
-- │   └── projects/
-- │       ├── dashboard.html (cliente)
-- │       ├── admin_dashboard.html
-- │       ├── user_dashboard.html
-- │       ├── project_list.html
-- │       ├── project_detail.html
-- │       ├── project_create.html
-- │       ├── project_edit.html
-- │       ├── project_delete.html
-- │       ├── devis_list.html
-- │       ├── devis_detail.html
-- │       ├── devis_create.html
-- │       ├── devis_edit.html
-- │       ├── devis_delete.html
-- │       ├── devis_history.html
-- │       ├── devis_compare.html
-- │       └── devis_respond.html
-- ├── projects/
-- │   ├── views.py (750+ linhas)
-- │   ├── urls.py (40+ rotas)
-- │   ├── models.py
-- │   └── forms.py
-- └── static/
--     ├── css/
--     ├── js/
--     └── images/
-- 
+```
+site_lopes_peinture/
+├── templates/
+│   ├── base_dashboard.html
+│   └── projects/
+│       ├── dashboard.html (cliente)
+│       ├── admin_dashboard.html
+│       ├── user_dashboard.html
+│       ├── project_list.html
+│       ├── project_detail.html
+│       ├── project_create.html
+│       ├── project_edit.html
+│       ├── project_delete.html
+│       ├── devis_list.html
+│       ├── devis_detail.html
+│       ├── devis_create.html
+│       ├── devis_edit.html
+│       ├── devis_delete.html
+│       ├── devis_history.html
+│       ├── devis_compare.html
+│       └── devis_respond.html
+├── projects/
+│   ├── views.py (750+ linhas)
+│   ├── urls.py (40+ rotas)
+│   ├── models.py
+│   └── forms.py
+└── static/
+    ├── css/
+    ├── js/
+    └── images/
+```
 ## 🔄 FLUXO DE TRABALHO IMPLEMENTADO
 ### 📋 Ciclo de Vida do Projeto
 - Cliente cria projeto → Status: Nouveau
