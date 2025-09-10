@@ -1,0 +1,909 @@
+{% extends 'base_dashboard.html' %} 
+{% load static tailwind_tags %} 
+{% block title %}{{ devis.reference }} - LOPES PEINTURE{% endblock %} 
+{% block extra_css %}
+{% tailwind_css %}
+{% endblock %} 
+{% block content %}
+<div class="p-6 max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+      <div class="flex-1">
+        <div class="flex items-center gap-3 mb-2">
+          <a
+            href="{% url 'projects:devis_list' %}"
+            class="text-gray-600 hover:text-blue-600 transition-colors duration-200"
+            title="Retour à la liste"
+          >
+            <i class="fas fa-arrow-left text-lg"></i>
+          </a>
+          <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <i class="fas fa-file-invoice-dollar text-blue-600"></i>
+            {{ devis.reference }}
+          </h1>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-calendar text-gray-400"></i>
+            <span>Créé le {{ devis.date_created|date:"d/m/Y à H:i" }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i class="fas fa-user text-gray-400"></i>
+            <span>{{ devis.project.user.get_full_name|default:devis.project.user.username }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i class="fas fa-paint-brush text-gray-400"></i>
+            <a
+              href="{% url 'projects:detail' pk=devis.project.pk %}"
+              class="hover:text-blue-600 transition-colors duration-200"
+            >
+              {{ devis.project.title }}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status et Actions -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <!-- Status Badge -->
+        <span
+          class="status-badge {% if devis.status == 'brouillon' %}bg-gray-100 text-gray-800 {% elif devis.status == 'envoye' %}bg-blue-100 text-blue-800 {% elif devis.status == 'vu' %}bg-yellow-100 text-yellow-800 {% elif devis.status == 'accepte' %}bg-green-100 text-green-800 {% elif devis.status == 'refuse' %}bg-red-100 text-red-800 {% elif devis.status == 'expire' %}bg-gray-100 text-gray-600 {% else %}bg-gray-100 text-gray-800{% endif %}"
+        >
+          {{ devis.get_status_display }}
+        </span>
+
+        <!-- Actions principales -->
+        <div class="flex gap-2">
+          {% if is_staff and devis.status == 'brouillon' %}
+          <a href="{% url 'projects:devis_edit' pk=devis.pk %}" class="action-btn btn-secondary">
+            <i class="fas fa-edit"></i>
+            Modifier
+          </a>
+          {% endif %} {% if is_staff and devis.can_be_sent %}
+          <form method="post" action="{% url 'projects:devis_send' pk=devis.pk %}" class="inline">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="action-btn btn-warning"
+              onclick="return confirm('Envoyer ce devis au client ?')"
+            >
+              <i class="fas fa-paper-plane"></i>
+              Envoyer
+            </button>
+          </form>
+          {% endif %} {% if devis.can_download_pdf %}
+          <a
+            href="{% url 'projects:devis_pdf' pk=devis.pk %}"
+            class="action-btn btn-primary"
+            target="_blank"
+          >
+            <i class="fas fa-file-pdf"></i>
+            Télécharger PDF
+          </a>
+          {% endif %} {% if devis.status == 'envoye' and not is_staff %}
+          <div class="flex gap-2">
+            <form
+              method="post"
+              action="{% url 'projects:devis_accept' pk=devis.pk %}"
+              class="inline"
+            >
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="action-btn btn-success"
+                onclick="return confirm('Accepter ce devis ?')"
+              >
+                <i class="fas fa-check"></i>
+                Accepter
+              </button>
+            </form>
+            <form
+              method="post"
+              action="{% url 'projects:devis_refuse' pk=devis.pk %}"
+              class="inline"
+            >
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="action-btn btn-danger"
+                onclick="return confirm('Refuser ce devis ?')"
+              >
+                <i class="fas fa-times"></i>
+                Refuser
+              </button>
+            </form>
+          </div>
+          {% endif %} {% if is_staff and devis.status == 'brouillon' %}
+          <a
+            href="{% url 'projects:devis_delete' pk=devis.pk %}"
+            class="action-btn btn-danger"
+            onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce devis ?')"
+          >
+            <i class="fas fa-trash"></i>
+            Supprimer
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertes -->
+  {% if devis.is_expired %}
+  <div class="deadline-alert mb-6">
+    <div class="flex items-start">
+      <i class="fas fa-exclamation-triangle text-red-600 mt-1 mr-3"></i>
+      <div>
+        <h3 class="text-sm font-medium text-red-800 mb-1">Devis expiré</h3>
+        <p class="text-sm text-red-700">
+          Ce devis a expiré le {{ devis.date_limite|date:"d/m/Y" }}. {% if is_staff %}Vous pouvez
+          créer un nouveau devis basé sur celui-ci.{% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+  {% elif devis.days_until_expiry and devis.days_until_expiry <= 7 %}
+  <div class="warning-alert mb-6">
+    <div class="flex items-start">
+      <i class="fas fa-clock text-yellow-600 mt-1 mr-3"></i>
+      <div>
+        <h3 class="text-sm font-medium text-yellow-800 mb-1">Devis bientôt expiré</h3>
+        <p class="text-sm text-yellow-700">
+          Ce devis expire dans {{ devis.days_until_expiry }} jour{{
+          devis.days_until_expiry|pluralize }} ({{ devis.date_limite|date:"d/m/Y" }}).
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %} {% if devis.status == 'accepte' %}
+  <div class="success-alert mb-6">
+    <div class="flex items-start">
+      <i class="fas fa-check-circle text-green-600 mt-1 mr-3"></i>
+      <div>
+        <h3 class="text-sm font-medium text-green-800 mb-1">Devis accepté</h3>
+        <p class="text-sm text-green-700">
+          Ce devis a été accepté le {{ devis.date_response|date:"d/m/Y à H:i" }}. {% if is_staff
+          %}Vous pouvez maintenant planifier les travaux.{% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+  {% elif devis.status == 'refuse' %}
+  <div class="deadline-alert mb-6">
+    <div class="flex items-start">
+      <i class="fas fa-times-circle text-red-600 mt-1 mr-3"></i>
+      <div>
+        <h3 class="text-sm font-medium text-red-800 mb-1">Devis refusé</h3>
+        <p class="text-sm text-red-700">
+          Ce devis a été refusé le {{ devis.date_response|date:"d/m/Y à H:i" }}. {% if
+          devis.refusal_reason %}
+          <br /><strong>Raison :</strong> {{ devis.refusal_reason }} {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Layout principal -->
+  <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+    <!-- Contenu principal -->
+    <div class="xl:col-span-3 space-y-8">
+      <!-- Informations générales -->
+      <div class="detail-card">
+        <div class="detail-header">
+          <h2 class="text-xl font-semibold text-blue-900 flex items-center gap-3">
+            <i class="fas fa-info-circle"></i>
+            Informations Générales
+          </h2>
+        </div>
+        <div class="detail-content">
+          <div class="mb-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-3">{{ devis.title }}</h3>
+            {% if devis.description %}
+            <p class="text-gray-700 leading-relaxed">{{ devis.description|linebreaks }}</p>
+            {% endif %}
+          </div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <i class="fas fa-hashtag text-blue-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Référence</div>
+                <div class="info-value font-mono">{{ devis.reference }}</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <i class="fas fa-calendar-alt text-green-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Date de création</div>
+                <div class="info-value">{{ devis.date_created|date:"d/m/Y à H:i" }}</div>
+              </div>
+            </div>
+
+            {% if devis.date_limite %}
+            <div class="info-item">
+              <i class="fas fa-clock text-orange-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Date limite</div>
+                <div class="info-value {% if devis.is_expired %}text-red-600 font-bold{% endif %}">
+                  {{ devis.date_limite|date:"d/m/Y" }}
+                </div>
+              </div>
+            </div>
+            {% endif %} {% if devis.date_sent %}
+            <div class="info-item">
+              <i class="fas fa-paper-plane text-blue-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Date d'envoi</div>
+                <div class="info-value">{{ devis.date_sent|date:"d/m/Y à H:i" }}</div>
+              </div>
+            </div>
+            {% endif %} {% if devis.date_response %}
+            <div class="info-item">
+              <i class="fas fa-reply text-purple-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Date de réponse</div>
+                <div class="info-value">{{ devis.date_response|date:"d/m/Y à H:i" }}</div>
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="info-item">
+              <i class="fas fa-paint-brush text-indigo-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Projet associé</div>
+                <div class="info-value">
+                  <a
+                    href="{% url 'projects:detail' pk=devis.project.pk %}"
+                    class="text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    {{ devis.project.title }}
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <i class="fas fa-user text-gray-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Client</div>
+                <div class="info-value">
+                  {{ devis.project.user.get_full_name|default:devis.project.user.username }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Détails du projet -->
+      <div class="detail-card">
+        <div class="detail-header">
+          <h2 class="text-xl font-semibold text-blue-900 flex items-center gap-3">
+            <i class="fas fa-building"></i>
+            Détails du Projet
+          </h2>
+        </div>
+        <div class="detail-content">
+          <div class="info-grid">
+            <div class="info-item">
+              <i class="fas fa-home text-blue-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Type de projet</div>
+                <div class="info-value">{{ devis.project.get_type_projet_display }}</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <i class="fas fa-ruler-combined text-green-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Surface totale</div>
+                <div class="info-value">{{ devis.project.surface_totale }}m²</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <i class="fas fa-map-marker-alt text-red-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Adresse</div>
+                <div class="info-value">
+                  {{ devis.project.adresse_travaux }}<br />
+                  {{ devis.project.code_postal }} {{ devis.project.ville }}
+                </div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <i class="fas fa-clipboard-list text-purple-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Nombre de pièces</div>
+                <div class="info-value">
+                  {{ devis.project.nombre_pieces }} pièce{{ devis.project.nombre_pieces|pluralize }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {% if devis.project.description %}
+          <div class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <h4 class="text-sm font-medium text-gray-900 mb-2">Description du projet</h4>
+            <p class="text-sm text-gray-700 leading-relaxed">
+              {{ devis.project.description|linebreaks }}
+            </p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Détail des prestations -->
+      {% if devis.items.exists %}
+      <div class="detail-card">
+        <div class="detail-header">
+          <h2 class="text-xl font-semibold text-blue-900 flex items-center gap-3">
+            <i class="fas fa-list-ul"></i>
+            Détail des Prestations
+          </h2>
+        </div>
+        <div class="detail-content">
+          <div class="overflow-x-auto">
+            <table class="devis-table">
+              <thead>
+                <tr>
+                  <th class="text-left">Description</th>
+                  <th class="text-center w-20">Qté</th>
+                  <th class="text-center w-20">Unité</th>
+                  <th class="text-right w-32">Prix Unit. HT</th>
+                  <th class="text-right w-32">Total HT</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in devis.items.all %}
+                <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+                  <td class="font-medium text-gray-900">
+                    {{ item.description }} {% if item.details %}
+                    <div class="text-xs text-gray-600 mt-1">{{ item.details }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">{{ item.quantity|floatformat:0 }}</td>
+                  <td class="text-center text-gray-600">{{ item.unit }}</td>
+                  <td class="text-right font-mono">{{ item.unit_price|floatformat:2 }}€</td>
+                  <td class="text-right font-mono font-medium">
+                    {{ item.total_price|floatformat:2 }}€
+                  </td>
+                </tr>
+                {% endfor %}
+
+                <!-- Totaux -->
+                <tr class="border-t-2 border-gray-300">
+                  <td colspan="4" class="text-right font-medium text-gray-900 py-3">
+                    Sous-total HT :
+                  </td>
+                  <td class="text-right font-mono font-bold text-lg py-3">
+                    {{ devis.total_ht|floatformat:2 }}€
+                  </td>
+                </tr>
+
+                {% if devis.discount_amount %}
+                <tr>
+                  <td colspan="4" class="text-right text-gray-700 py-2">
+                    Remise ({{ devis.discount_percentage }}%) :
+                  </td>
+                  <td class="text-right font-mono text-green-600 py-2">
+                    -{{ devis.discount_amount|floatformat:2 }}€
+                  </td>
+                </tr>
+                {% endif %}
+
+                <tr>
+                  <td colspan="4" class="text-right text-gray-700 py-2">
+                    TVA ({{ devis.tax_rate }}%) :
+                  </td>
+                  <td class="text-right font-mono py-2">{{ devis.tax_amount|floatformat:2 }}€</td>
+                </tr>
+
+                <tr class="border-t-2 border-blue-300 bg-blue-50">
+                  <td colspan="4" class="text-right font-bold text-blue-900 py-4 text-lg">
+                    TOTAL TTC :
+                  </td>
+                  <td class="text-right font-mono font-bold text-blue-900 py-4 text-xl">
+                    {{ devis.total|floatformat:2 }}€
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Conditions et notes -->
+      {% if devis.conditions or devis.notes_internes %}
+      <div class="detail-card">
+        <div class="detail-header">
+          <h2 class="text-xl font-semibold text-blue-900 flex items-center gap-3">
+            <i class="fas fa-file-contract"></i>
+            Conditions et Notes
+          </h2>
+        </div>
+        <div class="detail-content">
+          {% if devis.conditions %}
+          <div class="mb-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-3">Conditions générales</h3>
+            <div class="prose prose-sm max-w-none text-gray-700">
+              {{ devis.conditions|linebreaks }}
+            </div>
+          </div>
+          {% endif %} {% if devis.notes_internes and is_staff %}
+          <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h4 class="text-sm font-medium text-yellow-800 mb-2 flex items-center gap-2">
+              <i class="fas fa-sticky-note"></i>
+              Notes internes (visible uniquement par l'équipe)
+            </h4>
+            <p class="text-sm text-yellow-700">{{ devis.notes_internes|linebreaks }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Historique -->
+      <div class="detail-card">
+        <div class="detail-header">
+          <h2 class="text-xl font-semibold text-blue-900 flex items-center gap-3">
+            <i class="fas fa-history"></i>
+            Historique
+          </h2>
+        </div>
+        <div class="detail-content">
+          <div class="space-y-4">
+            <div class="timeline-item">
+              <div class="timeline-dot bg-blue-500"></div>
+              <div>
+                <div class="text-sm font-medium text-gray-900">Devis créé</div>
+                <div class="text-xs text-gray-600">{{ devis.date_created|date:"d/m/Y à H:i" }}</div>
+                {% if devis.created_by %}
+                <div class="text-xs text-gray-500">
+                  par {{ devis.created_by.get_full_name|default:devis.created_by.username }}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            {% if devis.updated_at != devis.date_created %}
+            <div class="timeline-item">
+              <div class="timeline-dot bg-orange-500"></div>
+              <div>
+                <div class="text-sm font-medium text-gray-900">Dernière modification</div>
+                <div class="text-xs text-gray-600">{{ devis.updated_at|date:"d/m/Y à H:i" }}</div>
+              </div>
+            </div>
+            {% endif %} {% if devis.date_sent %}
+            <div class="timeline-item">
+              <div class="timeline-dot bg-green-500"></div>
+              <div>
+                <div class="text-sm font-medium text-gray-900">Devis envoyé au client</div>
+                <div class="text-xs text-gray-600">{{ devis.date_sent|date:"d/m/Y à H:i" }}</div>
+              </div>
+            </div>
+            {% endif %} {% if devis.date_viewed %}
+            <div class="timeline-item">
+              <div class="timeline-dot bg-yellow-500"></div>
+              <div>
+                <div class="text-sm font-medium text-gray-900">Devis consulté par le client</div>
+                <div class="text-xs text-gray-600">{{ devis.date_viewed|date:"d/m/Y à H:i" }}</div>
+              </div>
+            </div>
+            {% endif %} {% if devis.date_response %}
+            <div class="timeline-item">
+              <div
+                class="timeline-dot {% if devis.status == 'accepte' %}bg-green-600{% else %}bg-red-500{% endif %}"
+              ></div>
+              <div>
+                <div class="text-sm font-medium text-gray-900">
+                  Devis {{ devis.get_status_display|lower }}
+                </div>
+                <div class="text-xs text-gray-600">
+                  {{ devis.date_response|date:"d/m/Y à H:i" }}
+                </div>
+                {% if devis.status == 'refuse' and devis.refusal_reason %}
+                <div class="text-xs text-gray-500 mt-1">Raison: {{ devis.refusal_reason }}</div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Résumé financier -->
+      <div class="sidebar-card">
+        <div class="flex items-center gap-3 mb-4">
+          <i class="fas fa-euro-sign text-blue-600 text-lg"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Résumé Financier</h3>
+        </div>
+
+        <div class="space-y-4">
+          {% if devis.total %}
+          <div class="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="amount-highlight">{{ devis.total|floatformat:2 }}€</div>
+            <div class="text-sm text-blue-700">Total TTC</div>
+          </div>
+          {% endif %}
+
+          <div class="space-y-3 text-sm">
+            {% if devis.total_ht %}
+            <div class="flex justify-between">
+              <span class="text-gray-600">Total HT:</span>
+              <span class="font-medium">{{ devis.total_ht|floatformat:2 }}€</span>
+            </div>
+            {% endif %} {% if devis.tax_amount %}
+            <div class="flex justify-between">
+              <span class="text-gray-600">TVA ({{ devis.tax_rate }}%):</span>
+              <span class="font-medium">{{ devis.tax_amount|floatformat:2 }}€</span>
+            </div>
+            {% endif %} {% if devis.discount_amount %}
+            <div class="flex justify-between">
+              <span class="text-gray-600">Remise:</span>
+              <span class="font-medium text-green-600"
+                >-{{ devis.discount_amount|floatformat:2 }}€</span
+              >
+            </div>
+            {% endif %} {% if devis.items.count %}
+            <div class="flex justify-between pt-2 border-t border-gray-200">
+              <span class="text-gray-600">Prestations:</span>
+              <span class="font-medium">{{ devis.items.count }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Informations rapides -->
+      <div class="sidebar-card">
+        <div class="flex items-center gap-3 mb-4">
+          <i class="fas fa-info text-blue-600 text-lg"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Informations</h3>
+        </div>
+
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600">Référence:</span>
+            <span class="font-mono text-gray-900">{{ devis.reference }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">Statut:</span>
+            <span
+              class="status-badge text-xs {% if devis.status == 'brouillon' %}bg-gray-100 text-gray-800 {% elif devis.status == 'envoye' %}bg-blue-100 text-blue-800 {% elif devis.status == 'vu' %}bg-yellow-100 text-yellow-800 {% elif devis.status == 'accepte' %}bg-green-100 text-green-800 {% elif devis.status == 'refuse' %}bg-red-100 text-red-800 {% elif devis.status == 'expire' %}bg-gray-100 text-gray-600 {% else %}bg-gray-100 text-gray-800{% endif %}"
+            >
+              {{ devis.get_status_display }}
+            </span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">Créé:</span>
+            <span class="text-gray-900">{{ devis.date_created|date:"d/m/Y" }}</span>
+          </div>
+          {% if devis.date_limite %}
+          <div class="flex justify-between">
+            <span class="text-gray-600">Expire:</span>
+            <span
+              class="text-gray-900 {% if devis.is_expired %}text-red-600 font-medium{% endif %}"
+            >
+              {{ devis.date_limite|date:"d/m/Y" }}
+            </span>
+          </div>
+          {% endif %} {% if devis.created_by %}
+          <div class="flex justify-between">
+            <span class="text-gray-600">Créé par:</span>
+            <span class="text-gray-900"
+              >{{ devis.created_by.get_full_name|default:devis.created_by.username }}</span
+            >
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Progress Status -->
+      {% if devis.status != 'brouillon' %}
+      <div class="sidebar-card">
+        <div class="flex items-center gap-3 mb-4">
+          <i class="fas fa-chart-line text-blue-600 text-lg"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Progression</h3>
+        </div>
+
+        <div class="space-y-4">
+          <!-- Progress bar -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm text-gray-600">Avancement</span>
+              <span class="text-sm font-medium text-gray-900"
+                >{{ devis.progress_percentage }}%</span
+              >
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: {{ devis.progress_percentage }}%"></div>
+            </div>
+          </div>
+
+          <!-- Status steps -->
+          <div class="space-y-2 text-xs">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 rounded-full bg-green-500"></div>
+              <span class="text-gray-600">Créé</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div
+                class="w-2 h-2 rounded-full {% if devis.date_sent %}bg-green-500{% else %}bg-gray-300{% endif %}"
+              ></div>
+              <span class="{% if devis.date_sent %}text-gray-900{% else %}text-gray-400{% endif %}"
+                >Envoyé</span
+              >
+            </div>
+            <div class="flex items-center gap-2">
+              <div
+                class="w-2 h-2 rounded-full {% if devis.date_viewed %}bg-green-500{% else %}bg-gray-300{% endif %}"
+              ></div>
+              <span
+                class="{% if devis.date_viewed %}text-gray-900{% else %}text-gray-400{% endif %}"
+                >Consulté</span
+              >
+            </div>
+            <div class="flex items-center gap-2">
+              <div
+                class="w-2 h-2 rounded-full {% if devis.date_response %}bg-green-500{% else %}bg-gray-300{% endif %}"
+              ></div>
+              <span
+                class="{% if devis.date_response %}text-gray-900{% else %}text-gray-400{% endif %}"
+                >Répondu</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Actions rapides -->
+      <div class="sidebar-card">
+        <div class="flex items-center gap-3 mb-4">
+          <i class="fas fa-bolt text-blue-600 text-lg"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Actions</h3>
+        </div>
+
+        <div class="space-y-3">
+          <a
+            href="{% url 'projects:detail' pk=devis.project.pk %}"
+            class="w-full action-btn btn-secondary justify-center"
+          >
+            <i class="fas fa-paint-brush"></i>
+            Voir le projet
+          </a>
+
+          <a
+            href="{% url 'projects:devis_list' %}"
+            class="w-full action-btn btn-secondary justify-center"
+          >
+            <i class="fas fa-list"></i>
+            Tous les devis
+          </a>
+
+          {% if is_staff %}
+          <a
+            href="{% url 'projects:devis_create' project_pk=devis.project.pk %}"
+            class="w-full action-btn btn-primary justify-center"
+          >
+            <i class="fas fa-copy"></i>
+            Dupliquer ce devis
+          </a>
+          {% endif %} {% if devis.can_download_pdf %}
+          <a
+            href="{% url 'projects:devis_pdf' pk=devis.pk %}"
+            class="w-full action-btn btn-warning justify-center"
+            target="_blank"
+          >
+            <i class="fas fa-download"></i>
+            Télécharger PDF
+          </a>
+          {% endif %} {% if not is_staff %}
+          <a
+            href="{% url 'projects:create' %}"
+            class="w-full action-btn btn-success justify-center"
+          >
+            <i class="fas fa-plus"></i>
+            Nouveau projet
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Contact -->
+      <div class="sidebar-card">
+        <div class="flex items-center gap-3 mb-4">
+          <i class="fas fa-headset text-blue-600 text-lg"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Besoin d'aide ?</h3>
+        </div>
+
+        <div class="space-y-3 text-sm">
+          <p class="text-gray-600">Une question sur ce devis ? Contactez-nous !</p>
+
+          <div class="space-y-2">
+            <a
+              href="tel:+33123456789"
+              class="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+            >
+              <i class="fas fa-phone"></i>
+              01 23 45 67 89
+            </a>
+            <a
+              href="mailto:contact@lopes-peinture.fr"
+              class="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+            >
+              <i class="fas fa-envelope"></i>
+              contact@lopes-peinture.fr
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      // Animate progress bar
+      const progressBar = document.querySelector('.progress-fill');
+      if (progressBar) {
+          const percentage = {{ devis.progress_percentage }};
+          progressBar.style.width = '0%';
+          setTimeout(() => {
+              progressBar.style.width = percentage + '%';
+          }, 500);
+      }
+
+      // Highlight amounts on hover
+      const amounts = document.querySelectorAll('.amount-highlight, .font-mono');
+      amounts.forEach(amount => {
+          amount.addEventListener('mouseenter', function() {
+              this.style.transform = 'scale(1.05)';
+              this.style.transition = 'transform 0.2s ease';
+          });
+
+          amount.addEventListener('mouseleave', function() {
+              this.style.transform = 'scale(1)';
+          });
+      });
+
+      // Confirmation for critical actions
+      const criticalActions = document.querySelectorAll('button[onclick*="confirm"], a[onclick*="confirm"]');
+      criticalActions.forEach(action => {
+          action.addEventListener('click', function(e) {
+              const message = this.getAttribute('onclick').match(/'([^']+)'/)[1];
+              if (!confirm(message)) {
+                  e.preventDefault();
+              }
+          });
+      });
+
+      // Auto-expand description if truncated
+      const descriptions = document.querySelectorAll('.prose p');
+      descriptions.forEach(desc => {
+          if (desc.scrollHeight > desc.clientHeight) {
+              const expandBtn = document.createElement('button');
+              expandBtn.textContent = 'Voir plus...';
+              expandBtn.className = 'text-blue-600 hover:text-blue-700 text-sm mt-2';
+              expandBtn.addEventListener('click', function() {
+                  desc.style.maxHeight = 'none';
+                  desc.style.overflow = 'visible';
+                  this.remove();
+              });
+              desc.parentNode.appendChild(expandBtn);
+          }
+      });
+
+      // Mark as viewed for client
+      {% if not is_staff and devis.status == 'envoye' %}
+      fetch('{% url "projects:devis_mark_viewed" pk=devis.pk %}', {
+          method: 'POST',
+          headers: {
+              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+              'Content-Type': 'application/json'
+          }
+      }).then(response => {
+          if (response.ok) {
+              console.log('Devis marqué comme vu');
+          }
+      });
+      {% endif %}
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', function(e) {
+          // P para PDF
+          if (e.key === 'p' && !e.ctrlKey && !e.altKey) {
+              const pdfLink = document.querySelector('a[href*="pdf"]');
+              if (pdfLink) {
+                  pdfLink.click();
+              }
+          }
+
+          // E para editar (staff only)
+          if (e.key === 'e' && !e.ctrlKey && !e.altKey) {
+              const editLink = document.querySelector('a[href*="edit"]');
+              if (editLink) {
+                  editLink.click();
+              }
+          }
+
+          // Escape para voltar
+          if (e.key === 'Escape') {
+              window.history.back();
+          }
+      });
+
+      // Print functionality
+      const printBtn = document.createElement('button');
+      printBtn.innerHTML = '<i class="fas fa-print mr-2"></i>Imprimer';
+      printBtn.className = 'action-btn btn-secondary';
+      printBtn.addEventListener('click', function() {
+          window.print();
+      });
+
+      // Add print button to actions
+      const actionContainer = document.querySelector('.flex.gap-2');
+      if (actionContainer) {
+          actionContainer.appendChild(printBtn);
+      }
+
+      // Status change animations
+      const statusBadge = document.querySelector('.status-badge');
+      if (statusBadge) {
+          statusBadge.addEventListener('animationend', function() {
+              this.style.animation = 'none';
+          });
+
+          if (statusBadge.textContent.includes('Accepté')) {
+              statusBadge.style.animation = 'glow-green 2s ease-in-out';
+          } else if (statusBadge.textContent.includes('Refusé')) {
+              statusBadge.style.animation = 'glow-red 2s ease-in-out';
+          }
+      }
+
+      // Deadline countdown
+      {% if devis.date_limite and not devis.is_expired %}
+      const deadline = new Date('{{ devis.date_limite|date:"Y-m-d" }}').getTime();
+      const countdown = setInterval(function() {
+          const now = new Date().getTime();
+          const distance = deadline - now;
+
+          if (distance < 0) {
+              clearInterval(countdown);
+              location.reload(); // Reload to show expired status
+          }
+      }, 1000 * 60 * 60); // Check every hour
+      {% endif %}
+  });
+
+  // CSS animations
+  const style = document.createElement('style');
+  style.textContent = `
+      @keyframes glow-green {
+          0%, 100% { box-shadow: 0 0 5px rgba(34, 197, 94, 0.5); }
+          50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.8); }
+      }
+
+      @keyframes glow-red {
+          0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
+          50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
+      }
+
+      @media print {
+          .sidebar-card, .action-btn, .fas { display: none !important; }
+          .detail-card { box-shadow: none !important; border: 1px solid #ccc !important; }
+      }
+  `;
+  document.head.appendChild(style);
+</script>
+{% endblock %}

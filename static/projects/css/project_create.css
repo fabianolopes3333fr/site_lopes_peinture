@@ -1,0 +1,523 @@
+/**
+ * PROJECT CREATE - Custom CSS Styles
+ * Complementa as classes Tailwind com estilos específicos
+ */
+
+/* ================================ */
+/* VARIABLES & ROOT */
+/* ================================ */
+:root {
+  /* Cores principais do projeto */
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-secondary: #64748b;
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+
+  /* Gradientes personalizados */
+  --gradient-primary: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --gradient-success: linear-gradient(135deg, #059669 0%, #047857 100%);
+  --gradient-blue-light: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+
+  /* Sombras personalizadas */
+  --shadow-soft: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Transições */
+  --transition-fast: all 0.15s ease;
+  --transition-normal: all 0.2s ease;
+  --transition-slow: all 0.3s ease;
+}
+
+/* ================================ */
+/* FORM FIELD STYLES */
+/* ================================ */
+
+/* Estilos base para todos os campos do formulário */
+.form-field {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white;
+}
+
+/* Input com ícone à esquerda */
+.form-field-with-icon {
+  @apply pl-10;
+}
+
+/* Textarea específico */
+.form-textarea {
+  @apply resize-none;
+  min-height: 100px;
+}
+
+/* Select personalizado */
+.form-select {
+  @apply bg-white cursor-pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* Estados de validação */
+.form-field-valid {
+  @apply border-green-500 ring-2 ring-green-200 bg-green-50;
+}
+
+.form-field-invalid {
+  @apply border-red-500 ring-2 ring-red-200 bg-red-50;
+}
+
+/* ================================ */
+/* ANIMATIONS & TRANSITIONS */
+/* ================================ */
+
+/* Slide in animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+/* Classes de animação */
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.2s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: slideInUp 0.4s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s infinite;
+}
+
+/* ================================ */
+/* PROGRESS INDICATOR */
+/* ================================ */
+
+.progress-step {
+  transition: var(--transition-normal);
+}
+
+.progress-circle {
+  @apply w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300;
+}
+
+/* Estados do progress */
+.progress-step.completed .progress-circle {
+  @apply bg-green-600 text-white;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+}
+
+.progress-step.active .progress-circle {
+  @apply bg-blue-600 text-white;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+  animation: pulse 2s infinite;
+}
+
+.progress-step.inactive .progress-circle {
+  @apply bg-gray-300 text-gray-600;
+}
+
+/* Linha de progresso animada */
+.progress-line {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-line.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* ================================ */
+/* SECTION STYLES */
+/* ================================ */
+
+/* Header de seção */
+.section-header {
+  @apply flex items-center gap-4 mb-6 pb-4 border-b border-gray-200;
+}
+
+.section-icon {
+  @apply w-12 h-12 rounded-xl flex items-center justify-center;
+  background: var(--gradient-blue-light);
+}
+
+/* Navegação entre seções */
+.section-navigation {
+  @apply mt-8 pt-6 border-t border-gray-200;
+}
+
+/* ================================ */
+/* BUTTONS */
+/* ================================ */
+
+/* Botão primário */
+.btn-primary {
+  @apply inline-flex items-center justify-center px-6 py-3 text-white text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200;
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-medium);
+}
+
+.btn-primary:hover {
+  @apply transform -translate-y-0.5;
+  box-shadow: var(--shadow-large);
+}
+
+.btn-primary:active {
+  @apply transform translate-y-0;
+}
+
+/* Botão secundário */
+.btn-secondary {
+  @apply inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 bg-white;
+}
+
+/* Botão de sucesso */
+.btn-success {
+  @apply inline-flex items-center justify-center px-6 py-3 text-white text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200;
+  background: var(--gradient-success);
+}
+
+/* Estados de loading */
+.btn-loading {
+  @apply opacity-75 cursor-not-allowed;
+}
+
+.btn-loading i {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ================================ */
+/* CALCULATOR STYLES */
+/* ================================ */
+
+.surface-calculator {
+  @apply p-4 border border-blue-200 rounded-lg;
+  background: var(--gradient-blue-light);
+}
+
+.calculator-result {
+  @apply p-3 bg-white border border-blue-300 rounded-lg;
+}
+
+.calculator-input {
+  @apply w-full px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
+}
+
+/* ================================ */
+/* TOOLTIP STYLES */
+/* ================================ */
+
+.tooltip {
+  @apply absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 transition-opacity pointer-events-none whitespace-nowrap z-10;
+}
+
+.tooltip-trigger:hover .tooltip {
+  @apply opacity-100;
+}
+
+/* ================================ */
+/* VALIDATION STYLES */
+/* ================================ */
+
+.validation-summary {
+  @apply bg-red-50 border border-red-200 rounded-xl p-4 mb-6;
+  animation: slideInUp 0.3s ease-out;
+}
+
+.validation-error {
+  @apply flex items-start gap-2 text-red-600 text-sm;
+}
+
+.field-error {
+  @apply mt-1 flex items-center gap-2 text-red-600 text-sm;
+}
+
+/* ================================ */
+/* AUTO-SAVE INDICATOR */
+/* ================================ */
+
+.auto-save-indicator {
+  @apply fixed top-4 right-4 bg-green-50 border border-green-200 text-green-800 px-4 py-2 rounded-lg text-sm opacity-0 transition-all duration-300 z-50 shadow-lg;
+}
+
+.auto-save-indicator.show {
+  @apply opacity-100;
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* ================================ */
+/* MODAL STYLES */
+/* ================================ */
+
+.modal-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-50 z-50;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  @apply bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl;
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* ================================ */
+/* RESPONSIVE UTILITIES */
+/* ================================ */
+
+/* Ajustes específicos para mobile */
+@media (max-width: 640px) {
+  .section-header {
+    @apply flex-col items-start gap-3;
+  }
+
+  .section-icon {
+    @apply w-10 h-10;
+  }
+
+  .progress-step .hidden {
+    @apply block;
+  }
+
+  .calculator-grid {
+    @apply grid-cols-1 gap-2;
+  }
+}
+
+/* Ajustes para tablets */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .form-grid {
+    @apply grid-cols-2;
+  }
+}
+
+/* ================================ */
+/* FOCUS STATES */
+/* ================================ */
+
+/* Melhor visibilidade do focus para acessibilidade */
+.form-field:focus,
+.btn-primary:focus,
+.btn-secondary:focus {
+  @apply ring-2 ring-offset-2;
+}
+
+/* Estados de focus para elementos interativos */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ================================ */
+/* LOADING STATES */
+/* ================================ */
+
+.loading-spinner {
+  @apply inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full;
+  animation: spin 1s linear infinite;
+}
+
+.loading-overlay {
+  @apply absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10;
+}
+
+/* ================================ */
+/* SPECIAL EFFECTS */
+/* ================================ */
+
+/* Efeito de hover suave para cards */
+.card-hover {
+  transition: var(--transition-normal);
+}
+
+.card-hover:hover {
+  @apply transform -translate-y-1;
+  box-shadow: var(--shadow-large);
+}
+
+/* Efeito de glassmorphism para elementos especiais */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ================================ */
+/* UTILITY CLASSES */
+/* ================================ */
+
+/* Gradiente de texto */
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scrollbar personalizada */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ================================ */
+/* PRINT STYLES */
+/* ================================ */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .section-navigation,
+  .auto-save-indicator,
+  .modal-overlay {
+    display: none !important;
+  }
+
+  .bg-gradient-to-r {
+    background: #f3f4f6 !important;
+  }
+}
+
+/* ================================ */
+/* DARK MODE SUPPORT */
+/* ================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1f2937;
+    --color-surface: #374151;
+    --color-text: #f9fafb;
+  }
+
+  .dark-mode .form-field {
+    @apply bg-gray-800 border-gray-600 text-gray-100;
+  }
+
+  .dark-mode .tooltip {
+    @apply bg-gray-100 text-gray-900;
+  }
+}
+
+/* ================================ */
+/* ACCESSIBILITY IMPROVEMENTS */
+/* ================================ */
+
+/* Redução de movimento para usuários com preferência */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Alto contraste */
+@media (prefers-contrast: high) {
+  .form-field {
+    @apply border-2 border-gray-900;
+  }
+
+  .btn-primary {
+    @apply bg-blue-800 border-2 border-blue-900;
+  }
+}

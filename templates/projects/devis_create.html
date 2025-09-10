@@ -1,0 +1,1034 @@
+{% extends 'base_dashboard.html' %} 
+{% load static tailwind_tags %} 
+{% block title %}Nouveau Devis - LOPES PEINTURE{% endblock %} 
+{% block extra_css %}
+{% tailwind_css %}
+{% endblock %} 
+{% block content %}
+<div class="p-6 max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+      <div class="flex-1">
+        <div class="flex items-center gap-3 mb-2">
+          <a
+            href="{% url 'projects:devis_list' %}"
+            class="text-gray-600 hover:text-blue-600 transition-colors duration-200"
+            title="Retour à la liste"
+          >
+            <i class="fas fa-arrow-left text-lg"></i>
+          </a>
+          <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <i class="fas fa-file-invoice-dollar text-blue-600"></i>
+            Nouveau Devis
+          </h1>
+        </div>
+
+        <p class="text-gray-600">
+          {% if project %} Créer un devis pour le projet "{{ project.title }}" {% else %} Créer un
+          nouveau devis pour un projet existant {% endif %}
+        </p>
+      </div>
+
+      <!-- Actions rapides -->
+      <div class="flex gap-3">
+        <button type="button" onclick="loadTemplate()" class="action-btn btn-secondary">
+          <i class="fas fa-file-import"></i>
+          Charger un modèle
+        </button>
+
+        <button type="button" onclick="toggleCalculator()" class="action-btn btn-warning">
+          <i class="fas fa-calculator"></i>
+          Calculatrice
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Projet sélectionné -->
+  {% if project %}
+  <div class="project-info-card mb-8">
+    <div class="flex items-start justify-between">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+          <i class="fas fa-paint-brush text-blue-600 mr-2"></i>
+          {{ project.title }}
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <span class="text-gray-600">Client:</span>
+            <span class="font-medium ml-2"
+              >{{ project.user.get_full_name|default:project.user.username }}</span
+            >
+          </div>
+          <div>
+            <span class="text-gray-600">Surface:</span>
+            <span class="font-medium ml-2">{{ project.surface_totale }}m²</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Adresse:</span>
+            <span class="font-medium ml-2">{{ project.ville }}, {{ project.code_postal }}</span>
+          </div>
+        </div>
+      </div>
+      <a
+        href="{% url 'projects:detail' pk=project.pk %}"
+        class="text-blue-600 hover:text-blue-700 text-sm"
+        target="_blank"
+      >
+        <i class="fas fa-external-link-alt mr-1"></i>
+        Voir le projet
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Layout principal -->
+  <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+    <!-- Formulaire principal -->
+    <div class="xl:col-span-3">
+      <form method="post" id="devis-form" class="space-y-8">
+        {% csrf_token %}
+
+        <!-- ================================ -->
+        <!-- SECTION 1: INFORMATIONS GÉNÉRALES -->
+        <!-- ================================ -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+            <h2 class="text-xl font-semibold text-gray-900">Informations Générales</h2>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Projet -->
+            {% if not project %}
+            <div class="form-group lg:col-span-2">
+              <label for="{{ form.project.id_for_label }}" class="form-label">
+                Projet <span class="text-red-500">*</span>
+              </label>
+              {{ form.project }} {% if form.project.errors %}
+              <div class="form-error">{{ form.project.errors.0 }}</div>
+              {% endif %}
+              <p class="text-xs text-gray-500 mt-1">
+                Sélectionnez le projet pour lequel créer ce devis
+              </p>
+            </div>
+            {% else %}
+            <input type="hidden" name="project" value="{{ project.pk }}" />
+            {% endif %}
+
+            <!-- Titre -->
+            <div class="form-group lg:col-span-2">
+              <label for="{{ form.title.id_for_label }}" class="form-label">
+                Titre du devis <span class="text-red-500">*</span>
+              </label>
+              {{ form.title }} {% if form.title.errors %}
+              <div class="form-error">{{ form.title.errors.0 }}</div>
+              {% endif %}
+              <p class="text-xs text-gray-500 mt-1">Donnez un titre descriptif à votre devis</p>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group lg:col-span-2">
+              <label for="{{ form.description.id_for_label }}" class="form-label">
+                Description
+              </label>
+              {{ form.description }} {% if form.description.errors %}
+              <div class="form-error">{{ form.description.errors.0 }}</div>
+              {% endif %}
+              <p class="text-xs text-gray-500 mt-1">Description détaillée des travaux à réaliser</p>
+            </div>
+
+            <!-- Date limite -->
+            <div class="form-group">
+              <label for="{{ form.date_limite.id_for_label }}" class="form-label">
+                Date limite de validité
+              </label>
+              {{ form.date_limite }} {% if form.date_limite.errors %}
+              <div class="form-error">{{ form.date_limite.errors.0 }}</div>
+              {% endif %}
+              <p class="text-xs text-gray-500 mt-1">Date jusqu'à laquelle ce devis est valable</p>
+            </div>
+
+            <!-- Référence -->
+            <div class="form-group">
+              <label for="{{ form.reference.id_for_label }}" class="form-label"> Référence </label>
+              <div class="flex gap-2">
+                {{ form.reference }}
+                <button
+                  type="button"
+                  onclick="generateReference()"
+                  class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm"
+                  title="Générer automatiquement"
+                >
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+              {% if form.reference.errors %}
+              <div class="form-error">{{ form.reference.errors.0 }}</div>
+              {% endif %}
+              <p class="text-xs text-gray-500 mt-1">
+                Référence unique du devis (générée automatiquement si vide)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================================ -->
+        <!-- SECTION 2: PRESTATIONS -->
+        <!-- ================================ -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <i class="fas fa-list-ul text-blue-600 text-xl"></i>
+            <h2 class="text-xl font-semibold text-gray-900">Prestations</h2>
+            <div class="ml-auto">
+              <span class="auto-calc-badge">
+                <i class="fas fa-calculator mr-1"></i>
+                Calcul automatique
+              </span>
+            </div>
+          </div>
+
+          <!-- Template de prestations -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-medium text-gray-900">Modèles de prestations</h3>
+              <button
+                type="button"
+                onclick="toggleTemplates()"
+                class="text-sm text-blue-600 hover:text-blue-700"
+              >
+                <i class="fas fa-eye" id="template-toggle-icon"></i>
+                <span id="template-toggle-text">Afficher les modèles</span>
+              </button>
+            </div>
+
+            <div id="templates-container" class="hidden">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+                <!-- Modèles prédéfinis -->
+                <div class="template-card" onclick="applyTemplate('peinture_interieure')">
+                  <h4 class="font-medium text-gray-900 mb-2">Peinture Intérieure Standard</h4>
+                  <p class="text-sm text-gray-600 mb-2">Préparation + 2 couches de peinture</p>
+                  <div class="text-xs text-blue-600">Cliquer pour appliquer</div>
+                </div>
+
+                <div class="template-card" onclick="applyTemplate('peinture_exterieure')">
+                  <h4 class="font-medium text-gray-900 mb-2">Peinture Extérieure</h4>
+                  <p class="text-sm text-gray-600 mb-2">Nettoyage + protection + peinture</p>
+                  <div class="text-xs text-blue-600">Cliquer pour appliquer</div>
+                </div>
+
+                <div class="template-card" onclick="applyTemplate('renovation_complete')">
+                  <h4 class="font-medium text-gray-900 mb-2">Rénovation Complète</h4>
+                  <p class="text-sm text-gray-600 mb-2">Préparation + enduit + peinture</p>
+                  <div class="text-xs text-blue-600">Cliquer pour appliquer</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Items du devis -->
+          <div id="items-container">
+            <div class="mb-4">
+              <div
+                class="grid grid-cols-12 gap-3 mb-2 text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                <div class="col-span-4">Description</div>
+                <div class="col-span-2 text-center">Quantité</div>
+                <div class="col-span-2 text-center">Unité</div>
+                <div class="col-span-2 text-right">Prix Unit. HT</div>
+                <div class="col-span-1 text-right">Total HT</div>
+                <div class="col-span-1 text-center">Actions</div>
+              </div>
+            </div>
+
+            <!-- Items existants (via formset) -->
+            {{ items_formset.management_form }}
+            <div id="items-list">
+              {% for form in items_formset %}
+              <div class="item-row" data-item-index="{{ forloop.counter0 }}">
+                <!-- Description -->
+                <div class="col-span-4">
+                  {{ form.description }} {% if form.description.errors %}
+                  <div class="form-error">{{ form.description.errors.0 }}</div>
+                  {% endif %}
+                  <!-- Détails optionnels -->
+                  <div class="mt-2">
+                    {{ form.details }} {% if form.details.errors %}
+                    <div class="form-error">{{ form.details.errors.0 }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Quantité -->
+                <div class="col-span-2">
+                  {{ form.quantity }} {% if form.quantity.errors %}
+                  <div class="form-error">{{ form.quantity.errors.0 }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- Unité -->
+                <div class="col-span-2">
+                  {{ form.unit }} {% if form.unit.errors %}
+                  <div class="form-error">{{ form.unit.errors.0 }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- Prix unitaire -->
+                <div class="col-span-2">
+                  {{ form.unit_price }} {% if form.unit_price.errors %}
+                  <div class="form-error">{{ form.unit_price.errors.0 }}</div>
+                  {% endif %}
+                </div>
+
+                <!-- Total calculé -->
+                <div class="col-span-1">
+                  <div class="text-right font-mono text-sm text-gray-600 py-2 px-3">
+                    <span class="item-total">0.00€</span>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="col-span-1 flex justify-center">
+                  <button
+                    type="button"
+                    onclick="removeItem(this)"
+                    class="item-remove-btn"
+                    title="Supprimer cette ligne"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+
+                <!-- Hidden fields -->
+                {{ form.DELETE }} {% if form.id %}{{ form.id }}{% endif %}
+              </div>
+              {% endfor %}
+            </div>
+
+            <!-- Bouton ajouter item -->
+            <div class="flex justify-start mb-6">
+              <button type="button" onclick="addItem()" class="add-item-btn">
+                <i class="fas fa-plus"></i>
+                Ajouter une prestation
+              </button>
+            </div>
+          </div>
+
+          <!-- Totaux -->
+          <div class="border-t border-gray-300 pt-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Remise et TVA -->
+              <div class="space-y-4">
+                <div class="form-group">
+                  <label for="{{ form.discount_percentage.id_for_label }}" class="form-label">
+                    Remise (%)
+                  </label>
+                  {{ form.discount_percentage }} {% if form.discount_percentage.errors %}
+                  <div class="form-error">{{ form.discount_percentage.errors.0 }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="form-group">
+                  <label for="{{ form.tax_rate.id_for_label }}" class="form-label">
+                    Taux TVA (%)
+                  </label>
+                  {{ form.tax_rate }} {% if form.tax_rate.errors %}
+                  <div class="form-error">{{ form.tax_rate.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Résumé des totaux -->
+              <div class="calculator-card">
+                <h4 class="font-medium text-gray-900 mb-4">Récapitulatif</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Sous-total HT:</span>
+                    <span class="font-mono" id="subtotal-display">0.00€</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Remise:</span>
+                    <span class="font-mono text-green-600" id="discount-display">0.00€</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Total HT:</span>
+                    <span class="font-mono" id="total-ht-display">0.00€</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">TVA:</span>
+                    <span class="font-mono" id="tax-display">0.00€</span>
+                  </div>
+                  <div class="flex justify-between pt-2 border-t border-blue-300 font-medium">
+                    <span class="text-blue-900">TOTAL TTC:</span>
+                    <span class="total-display" id="total-ttc-display">0.00€</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================================ -->
+        <!-- SECTION 3: CONDITIONS ET NOTES -->
+        <!-- ================================ -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <i class="fas fa-file-contract text-blue-600 text-xl"></i>
+            <h2 class="text-xl font-semibold text-gray-900">Conditions et Notes</h2>
+          </div>
+
+          <div class="grid grid-cols-1 gap-6">
+            <!-- Conditions -->
+            <div class="form-group">
+              <label for="{{ form.conditions.id_for_label }}" class="form-label">
+                Conditions générales
+              </label>
+              {{ form.conditions }} {% if form.conditions.errors %}
+              <div class="form-error">{{ form.conditions.errors.0 }}</div>
+              {% endif %}
+              <p class="text-xs text-gray-500 mt-1">
+                Conditions de réalisation, garanties, modalités de paiement, etc.
+              </p>
+            </div>
+
+            <!-- Notes internes -->
+            <div class="form-group">
+              <label for="{{ form.notes_internes.id_for_label }}" class="form-label">
+                Notes internes
+                <span class="text-xs text-orange-600 ml-2">(Non visible par le client)</span>
+              </label>
+              {{ form.notes_internes }} {% if form.notes_internes.errors %}
+              <div class="form-error">{{ form.notes_internes.errors.0 }}</div>
+              {% endif %}
+              <p class="text-xs text-gray-500 mt-1">
+                Notes et remarques internes, visible uniquement par l'équipe
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-section">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <!-- Boutons secondaires -->
+            <div class="flex gap-3">
+              <a href="{% url 'projects:devis_list' %}" class="action-btn btn-secondary">
+                <i class="fas fa-times"></i>
+                Annuler
+              </a>
+
+              <button type="button" onclick="previewDevis()" class="action-btn btn-warning">
+                <i class="fas fa-eye"></i>
+                Aperçu
+              </button>
+            </div>
+
+            <!-- Boutons principaux -->
+            <div class="flex gap-3">
+              <button type="submit" name="save_draft" class="action-btn btn-secondary">
+                <i class="fas fa-save"></i>
+                Sauvegarder brouillon
+              </button>
+
+              <button
+                type="submit"
+                name="save_and_send"
+                class="action-btn btn-success"
+                onclick="return confirm('Créer et envoyer ce devis au client ?')"
+              >
+                <i class="fas fa-paper-plane"></i>
+                Créer et envoyer
+              </button>
+
+              <button type="submit" class="action-btn btn-primary" id="save-button">
+                <i class="fas fa-check"></i>
+                Créer le devis
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Erreurs globales -->
+        {% if form.non_field_errors or items_formset.non_form_errors %}
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+            <h3 class="text-sm font-medium text-red-800">Erreurs de validation</h3>
+          </div>
+          <div class="mt-2 text-sm text-red-700">
+            {{ form.non_field_errors }} {{ items_formset.non_form_errors }}
+          </div>
+        </div>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Calculatrice rapide -->
+      <div id="quick-calculator" class="sidebar-card hidden">
+        <div class="flex items-center gap-3 mb-4">
+          <i class="fas fa-calculator text-blue-600 text-lg"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Calculatrice</h3>
+        </div>
+
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              id="calc-surface"
+              placeholder="Surface (m²)"
+              class="form-input text-sm"
+            />
+            <input
+              type="number"
+              id="calc-price-m2"
+              placeholder="Prix/m²"
+              class="form-input text-sm"
+            />
+          </div>
+
+          <div class="text-center py-2 bg-blue-50 border border-blue-200 rounded">
+            <span class="text-sm text-gray-600">Total:</span>
+            <span class="font-bold text-blue-600 ml-2" id="calc-result">0.00€</span>
+          </div>
+
+          <button
+            type="button"
+            onclick="addCalculatedItem()"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm"
+          >
+            Ajouter au devis
+          </button>
+        </div>
+      </div>
+
+      <!-- Aide et conseils -->
+      <div class="sidebar-card">
+        <div class="flex items-center gap-3 mb-4">
+          <i class="fas fa-lightbulb text-blue-600 text-lg"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Conseils</h3>
+        </div>
+
+        <div class="space-y-3 text-sm text-gray-600">
+          <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p class="font-medium text-blue-800 mb-1">💡 Conseil</p>
+            <p class="text-blue-700">
+              Utilisez des descriptions claires et détaillées pour chaque prestation.
+            </p>
+          </div>
+
+          <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p class="font-medium text-green-800 mb-1">✅ Bonne pratique</p>
+            <p class="text-green-700">
+              Incluez toujours la préparation des surfaces dans vos devis.
+            </p>
+          </div>
+
+          <div class="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <p class="font-medium text-orange-800 mb-1">⚠️ Attention</p>
+            <p class="text-orange-700">Vérifiez bien les quantités et unités avant de finaliser.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prix indicatifs -->
+      <div class="sidebar-card">
+        <div class="flex items-center gap-3 mb-4">
+          <i class="fas fa-euro-sign text-blue-600 text-lg"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Prix Indicatifs</h3>
+        </div>
+
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between py-1 border-b border-gray-100">
+            <span class="text-gray-600">Peinture murs (m²):</span>
+            <span class="font-medium">15-25€</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-gray-100">
+            <span class="text-gray-600">Peinture plafond (m²):</span>
+            <span class="font-medium">18-30€</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-gray-100">
+            <span class="text-gray-600">Préparation (m²):</span>
+            <span class="font-medium">5-15€</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-gray-100">
+            <span class="text-gray-600">Enduit (m²):</span>
+            <span class="font-medium">10-20€</span>
+          </div>
+          <div class="flex justify-between py-1">
+            <span class="text-gray-600">Peinture extérieure (m²):</span>
+            <span class="font-medium">20-35€</span>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <p class="text-xs text-gray-500">
+            Prix indicatifs TTC incluant fournitures et main-d'œuvre.
+          </p>
+        </div>
+      </div>
+
+      <!-- Actions rapides -->
+      <div class="sidebar-card">
+        <div class="flex items-center gap-3 mb-4">
+          <i class="fas fa-bolt text-blue-600 text-lg"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Actions Rapides</h3>
+        </div>
+
+        <div class="space-y-3">
+          {% if project %}
+          <a
+            href="{% url 'projects:detail' pk=project.pk %}"
+            class="w-full action-btn btn-secondary justify-center"
+            target="_blank"
+          >
+            <i class="fas fa-external-link-alt"></i>
+            Voir le projet
+          </a>
+          {% endif %}
+
+          <button
+            type="button"
+            onclick="saveAndNew()"
+            class="w-full action-btn btn-warning justify-center"
+          >
+            <i class="fas fa-plus"></i>
+            Sauver et nouveau
+          </button>
+
+          <a
+            href="{% url 'projects:devis_list' %}"
+            class="w-full action-btn btn-secondary justify-center"
+          >
+            <i class="fas fa-list"></i>
+            Tous les devis
+          </a>
+        </div>
+      </div>
+
+      <!-- Modèles sauvegardés -->
+      <div class="sidebar-card">
+        <div class="flex items-center gap-3 mb-4">
+          <i class="fas fa-bookmark text-blue-600 text-lg"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Modèles</h3>
+        </div>
+
+        <div class="space-y-2">
+          <button
+            type="button"
+            onclick="saveAsTemplate()"
+            class="w-full action-btn btn-secondary justify-center text-xs"
+          >
+            <i class="fas fa-bookmark"></i>
+            Sauvegarder comme modèle
+          </button>
+
+          <button
+            type="button"
+            onclick="loadTemplate()"
+            class="w-full action-btn btn-secondary justify-center text-xs"
+          >
+            <i class="fas fa-file-import"></i>
+            Charger un modèle
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div id="preview-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+      <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900">Aperçu du Devis</h3>
+          <button type="button" onclick="closePreview()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+      </div>
+      <div id="preview-content" class="p-6">
+        <!-- Contenu du preview sera généré par JavaScript -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      let itemIndex = {{ items_formset.total_form_count }};
+
+      // Calculer les totaux
+      function calculateTotals() {
+          let subtotal = 0;
+
+          document.querySelectorAll('.item-row').forEach(row => {
+              const quantity = parseFloat(row.querySelector('input[name$="-quantity"]').value) || 0;
+              const unitPrice = parseFloat(row.querySelector('input[name$="-unit_price"]').value) || 0;
+              const total = quantity * unitPrice;
+
+              row.querySelector('.item-total').textContent = total.toFixed(2) + '€';
+              subtotal += total;
+          });
+
+          const discountPercentage = parseFloat(document.getElementById('{{ form.discount_percentage.id_for_label }}').value) || 0;
+          const taxRate = parseFloat(document.getElementById('{{ form.tax_rate.id_for_label }}').value) || 20;
+
+          const discountAmount = subtotal * (discountPercentage / 100);
+          const totalHT = subtotal - discountAmount;
+          const taxAmount = totalHT * (taxRate / 100);
+          const totalTTC = totalHT + taxAmount;
+
+          document.getElementById('subtotal-display').textContent = subtotal.toFixed(2) + '€';
+          document.getElementById('discount-display').textContent = discountAmount.toFixed(2) + '€';
+          document.getElementById('total-ht-display').textContent = totalHT.toFixed(2) + '€';
+          document.getElementById('tax-display').textContent = taxAmount.toFixed(2) + '€';
+          document.getElementById('total-ttc-display').textContent = totalTTC.toFixed(2) + '€';
+      }
+
+      // Ajouter un item
+      window.addItem = function() {
+          const container = document.getElementById('items-list');
+          const newRow = document.createElement('div');
+          newRow.className = 'item-row';
+          newRow.setAttribute('data-item-index', itemIndex);
+
+          newRow.innerHTML = `
+              <div class="col-span-4">
+                  <input type="text" name="items-${itemIndex}-description" class="form-input" placeholder="Description de la prestation">
+                  <input type="text" name="items-${itemIndex}-details" class="form-input mt-2" placeholder="Détails optionnels">
+              </div>
+              <div class="col-span-2">
+                  <input type="number" name="items-${itemIndex}-quantity" class="form-input" placeholder="Qté" step="0.01" min="0">
+              </div>
+              <div class="col-span-2">
+                  <select name="items-${itemIndex}-unit" class="form-select">
+                      <option value="m²">m²</option>
+                      <option value="ml">ml</option>
+                      <option value="pièce">pièce</option>
+                      <option value="forfait">forfait</option>
+                      <option value="heure">heure</option>
+                      <option value="jour">jour</option>
+                  </select>
+              </div>
+              <div class="col-span-2">
+                  <input type="number" name="items-${itemIndex}-unit_price" class="form-input" placeholder="Prix" step="0.01" min="0">
+              </div>
+              <div class="col-span-1">
+                  <div class="text-right font-mono text-sm text-gray-600 py-2 px-3">
+                      <span class="item-total">0.00€</span>
+                  </div>
+              </div>
+              <div class="col-span-1 flex justify-center">
+                  <button type="button" onclick="removeItem(this)" class="item-remove-btn" title="Supprimer cette ligne">
+                      <i class="fas fa-trash"></i>
+                  </button>
+              </div>
+          `;
+
+          container.appendChild(newRow);
+
+          // Update management form
+          const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+          totalForms.value = parseInt(totalForms.value) + 1;
+
+          itemIndex++;
+
+          // Add event listeners
+          const inputs = newRow.querySelectorAll('input[type="number"]');
+          inputs.forEach(input => {
+              input.addEventListener('input', calculateTotals);
+          });
+      };
+
+      // Supprimer un item
+      window.removeItem = function(button) {
+          const row = button.closest('.item-row');
+          const deleteInput = row.querySelector('input[name$="-DELETE"]');
+
+          if (deleteInput) {
+              deleteInput.checked = true;
+              row.style.display = 'none';
+          } else {
+              row.remove();
+              const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+              totalForms.value = parseInt(totalForms.value) - 1;
+          }
+
+          calculateTotals();
+      };
+
+      // Appliquer un modèle
+      window.applyTemplate = function(templateType) {
+          // Clear existing items
+          document.querySelectorAll('.item-row').forEach(row => {
+              if (!row.querySelector('input[name$="-id"]')) {
+                  row.remove();
+              } else {
+                  row.querySelector('input[name$="-DELETE"]').checked = true;
+                  row.style.display = 'none';
+              }
+          });
+
+          // Templates predefined
+          const templates = {
+              'peinture_interieure': [
+                  {description: 'Préparation des supports', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '8.00'},
+                  {description: 'Sous-couche universelle', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '12.00'},
+                  {description: 'Peinture acrylique 2 couches', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '15.00'}
+              ],
+              'peinture_exterieure': [
+                  {description: 'Nettoyage haute pression', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '5.00'},
+                  {description: 'Traitement anti-mousse', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '8.00'},
+                  {description: 'Sous-couche spéciale extérieur', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '15.00'},
+                  {description: 'Peinture façade 2 couches', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '22.00'}
+              ],
+              'renovation_complete': [
+                  {description: 'Décapage ancien revêtement', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '12.00'},
+                  {description: 'Rebouchage et lissage', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '18.00'},
+                  {description: 'Enduit de finition', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '15.00'},
+                  {description: 'Sous-couche professionnelle', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '12.00'},
+                  {description: 'Peinture premium 2 couches', quantity: '{{ project.surface_totale|default:"0" }}', unit: 'm²', price: '20.00'}
+              ]
+          };
+
+          if (templates[templateType]) {
+              templates[templateType].forEach(item => {
+                  addItemWithData(item);
+              });
+          }
+
+          // Mark template as selected
+          document.querySelectorAll('.template-card').forEach(card => {
+              card.classList.remove('selected');
+          });
+          event.target.closest('.template-card').classList.add('selected');
+
+          calculateTotals();
+      };
+
+      // Ajouter item avec données
+      function addItemWithData(data) {
+          addItem();
+          const lastRow = document.querySelector('.item-row:last-child');
+          lastRow.querySelector('input[name$="-description"]').value = data.description;
+          lastRow.querySelector('input[name$="-quantity"]').value = data.quantity;
+          lastRow.querySelector('select[name$="-unit"]').value = data.unit;
+          lastRow.querySelector('input[name$="-unit_price"]').value = data.price;
+      }
+
+      // Toggle templates
+      window.toggleTemplates = function() {
+          const container = document.getElementById('templates-container');
+          const icon = document.getElementById('template-toggle-icon');
+          const text = document.getElementById('template-toggle-text');
+
+          if (container.classList.contains('hidden')) {
+              container.classList.remove('hidden');
+              icon.classList.replace('fa-eye', 'fa-eye-slash');
+              text.textContent = 'Masquer les modèles';
+          } else {
+              container.classList.add('hidden');
+              icon.classList.replace('fa-eye-slash', 'fa-eye');
+              text.textContent = 'Afficher les modèles';
+          }
+      };
+
+      // Toggle calculator
+      window.toggleCalculator = function() {
+          const calculator = document.getElementById('quick-calculator');
+          calculator.classList.toggle('hidden');
+      };
+
+      // Quick calculator
+      document.getElementById('calc-surface').addEventListener('input', calculateQuick);
+      document.getElementById('calc-price-m2').addEventListener('input', calculateQuick);
+
+      function calculateQuick() {
+          const surface = parseFloat(document.getElementById('calc-surface').value) || 0;
+          const priceM2 = parseFloat(document.getElementById('calc-price-m2').value) || 0;
+          const result = surface * priceM2;
+          document.getElementById('calc-result').textContent = result.toFixed(2) + '€';
+      }
+
+      // Add calculated item
+      window.addCalculatedItem = function() {
+          const surface = document.getElementById('calc-surface').value;
+          const priceM2 = document.getElementById('calc-price-m2').value;
+
+          if (surface && priceM2) {
+              addItemWithData({
+                  description: 'Prestation calculée',
+                  quantity: surface,
+                  unit: 'm²',
+                  price: priceM2
+              });
+
+              // Clear calculator
+              document.getElementById('calc-surface').value = '';
+              document.getElementById('calc-price-m2').value = '';
+              document.getElementById('calc-result').textContent = '0.00€';
+
+              calculateTotals();
+          }
+      };
+
+      // Generate reference
+      window.generateReference = function() {
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+
+          const reference = `DEV-${year}${month}${day}-${random}`;
+          document.getElementById('{{ form.reference.id_for_label }}').value = reference;
+      };
+
+      // Preview devis
+      window.previewDevis = function() {
+          const modal = document.getElementById('preview-modal');
+          const content = document.getElementById('preview-content');
+
+          // Generate preview content
+          const title = document.getElementById('{{ form.title.id_for_label }}').value;
+          const reference = document.getElementById('{{ form.reference.id_for_label }}').value;
+
+          content.innerHTML = `
+              <div class="text-center mb-6">
+                  <h2 class="text-2xl font-bold text-gray-900">${title || 'Nouveau Devis'}</h2>
+                  <p class="text-gray-600">Référence: ${reference || 'À générer'}</p>
+              </div>
+
+              <div class="space-y-6">
+                  <div>
+                      <h3 class="text-lg font-semibold mb-3">Prestations</h3>
+                      <table class="w-full border-collapse border border-gray-300">
+                          <thead>
+                              <tr class="bg-gray-50">
+                                  <th class="border border-gray-300 p-2 text-left">Description</th>
+                                  <th class="border border-gray-300 p-2 text-center">Qté</th>
+                                  <th class="border border-gray-300 p-2 text-center">Unité</th>
+                                  <th class="border border-gray-300 p-2 text-right">Prix Unit.</th>
+                                  <th class="border border-gray-300 p-2 text-right">Total</th>
+                              </tr>
+                          </thead>
+                          <tbody id="preview-items">
+                          </tbody>
+                      </table>
+                  </div>
+
+                  <div class="text-right">
+                      <div class="inline-block space-y-2">
+                          <div class="flex justify-between gap-8">
+                              <span>Total TTC:</span>
+                              <span class="font-bold text-xl" id="preview-total">0.00€</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          `;
+
+          // Add items to preview
+          const itemsTable = document.getElementById('preview-items');
+          document.querySelectorAll('.item-row:not([style*="display: none"])').forEach(row => {
+              const description = row.querySelector('input[name$="-description"]').value;
+              const quantity = row.querySelector('input[name$="-quantity"]').value;
+              const unit = row.querySelector('select[name$="-unit"]').value;
+              const price = row.querySelector('input[name$="-unit_price"]').value;
+              const total = (parseFloat(quantity) || 0) * (parseFloat(price) || 0);
+
+              if (description) {
+                  const tr = document.createElement('tr');
+                  tr.innerHTML = `
+                      <td class="border border-gray-300 p-2">${description}</td>
+                      <td class="border border-gray-300 p-2 text-center">${quantity}</td>
+                      <td class="border border-gray-300 p-2 text-center">${unit}</td>
+                      <td class="border border-gray-300 p-2 text-right">${parseFloat(price).toFixed(2)}€</td>
+                      <td class="border border-gray-300 p-2 text-right">${total.toFixed(2)}€</td>
+                  `;
+                  itemsTable.appendChild(tr);
+              }
+          });
+
+          document.getElementById('preview-total').textContent = document.getElementById('total-ttc-display').textContent;
+          modal.classList.remove('hidden');
+      };
+
+      // Close preview
+      window.closePreview = function() {
+          document.getElementById('preview-modal').classList.add('hidden');
+      };
+
+      // Save and new
+      window.saveAndNew = function() {
+          const form = document.getElementById('devis-form');
+          const hiddenInput = document.createElement('input');
+          hiddenInput.type = 'hidden';
+          hiddenInput.name = 'save_and_new';
+          hiddenInput.value = '1';
+          form.appendChild(hiddenInput);
+          form.submit();
+      };
+
+      // Auto-save functionality
+      let autoSaveInterval;
+      function startAutoSave() {
+          autoSaveInterval = setInterval(() => {
+              // Only auto-save if there's content
+              const hasContent = document.querySelector('input[name$="-description"]').value.trim();
+              if (hasContent) {
+                  console.log('Auto-saving draft...');
+                  // Implement auto-save logic here
+              }
+          }, 300000); // 5 minutes
+      }
+
+      // Event listeners
+      document.addEventListener('input', calculateTotals);
+      document.addEventListener('change', calculateTotals);
+
+      // Initialize
+      calculateTotals();
+      if (document.getElementById('{{ form.reference.id_for_label }}').value === '') {
+          generateReference();
+      }
+
+      // Form validation
+      document.getElementById('devis-form').addEventListener('submit', function(e) {
+          const hasItems = document.querySelectorAll('.item-row:not([style*="display: none"]) input[name$="-description"]').length > 0;
+
+          if (!hasItems) {
+              e.preventDefault();
+              alert('Veuillez ajouter au moins une prestation au devis.');
+              return;
+          }
+
+          // Loading state
+          const submitButtons = document.querySelectorAll('button[type="submit"]');
+          submitButtons.forEach(btn => {
+              btn.disabled = true;
+              btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Création en cours...';
+          });
+      });
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', function(e) {
+          // Ctrl + Enter pour soumettre
+          if (e.ctrlKey && e.key === 'Enter') {
+              document.getElementById('save-button').click();
+          }
+
+          // Ctrl + N pour nouvel item
+          if (e.ctrlKey && e.key === 'n') {
+              e.preventDefault();
+              addItem();
+          }
+      });
+  });
+</script>
+{% endblock %}

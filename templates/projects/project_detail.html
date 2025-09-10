@@ -1,0 +1,763 @@
+{% extends 'base_dashboard.html' %} 
+{% load static tailwind_tags %} 
+{% block title %}{{ project.title }} - LOPES PEINTURE{% endblock %} 
+{% block extra_css %}
+{% tailwind_css %}
+{% endblock %} 
+{% block content %}
+<div class="p-6 max-w-7xl mx-auto">
+  <!-- Header Principal -->
+  <div class="mb-8">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+      <div class="flex-1">
+        <div class="flex items-center gap-3 mb-2">
+          <a
+            href="{% url 'projects:list' %}"
+            class="text-gray-600 hover:text-blue-600 transition-colors duration-200"
+            title="Retour à la liste"
+          >
+            <i class="fas fa-arrow-left text-lg"></i>
+          </a>
+          <h1 class="text-3xl font-bold text-gray-900">{{ project.title }}</h1>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-hashtag text-gray-400"></i>
+            <span class="font-mono">{{ project.reference }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i class="fas fa-calendar text-gray-400"></i>
+            <span>Créé le {{ project.created_at|date:"d/m/Y à H:i" }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i class="fas fa-map-marker-alt text-gray-400"></i>
+            <span>{{ project.ville }}, {{ project.code_postal }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions principales -->
+      <div class="flex flex-wrap gap-3">
+        {% if can_edit %}
+        <a href="{% url 'projects:edit' pk=project.pk %}" class="action-btn btn-secondary">
+          <i class="fas fa-edit"></i>
+          Modifier
+        </a>
+        {% endif %} {% if project.can_request_quote %}
+        <form
+          method="post"
+          action="{% url 'projects:request_quote' pk=project.pk %}"
+          class="inline"
+        >
+          {% csrf_token %}
+          <button
+            type="submit"
+            class="action-btn btn-warning"
+            onclick="return confirm('Demander un devis pour ce projet ?')"
+          >
+            <i class="fas fa-file-invoice-dollar"></i>
+            Demander un devis
+          </button>
+        </form>
+        {% endif %} {% if is_staff and project.status == 'devis_demande' %}
+        <a
+          href="{% url 'projects:devis_create' project_pk=project.pk %}"
+          class="action-btn btn-success"
+        >
+          <i class="fas fa-plus"></i>
+          Créer devis
+        </a>
+        {% endif %} {% if project.status == 'brouillon' and can_edit %}
+        <a
+          href="{% url 'projects:delete' pk=project.pk %}"
+          class="action-btn btn-danger"
+          onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')"
+        >
+          <i class="fas fa-trash"></i>
+          Supprimer
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Layout principal -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+    <!-- Colonne principale -->
+    <div class="xl:col-span-2 space-y-8">
+      <!-- Informations générales -->
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+          <h2 class="text-xl font-semibold text-gray-900">Informations Générales</h2>
+        </div>
+        <div class="detail-content">
+          <div class="mb-6">
+            <h3 class="text-sm font-medium text-gray-600 mb-2">Description</h3>
+            <p class="text-gray-900 leading-relaxed">{{ project.description|linebreaks }}</p>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <i class="fas fa-paint-brush text-blue-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Type de projet</div>
+                <div class="info-value">{{ project.get_type_projet_display }}</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <i class="fas fa-flag text-orange-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Priorité</div>
+                <div class="info-value">
+                  <span
+                    class="priority-badge {% if project.priority == 'urgente' %}bg-red-100 text-red-800 {% elif project.priority == 'elevee' %}bg-orange-100 text-orange-800 {% elif project.priority == 'normale' %}bg-blue-100 text-blue-800 {% else %}bg-gray-100 text-gray-800{% endif %}"
+                  >
+                    {{ project.get_priority_display }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <i class="fas fa-ruler-combined text-green-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Surface totale</div>
+                <div class="info-value">{{ project.surface_totale }}m²</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <i class="fas fa-home text-purple-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Nombre de pièces</div>
+                <div class="info-value">
+                  {{ project.nombre_pieces }} pièce{{ project.nombre_pieces|pluralize }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Détails techniques -->
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-cogs text-blue-600 text-xl"></i>
+          <h2 class="text-xl font-semibold text-gray-900">Détails Techniques</h2>
+        </div>
+        <div class="detail-content">
+          <!-- Surfaces -->
+          <div class="mb-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+              <i class="fas fa-ruler-combined text-gray-600"></i>
+              Surfaces et Dimensions
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div
+                class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 text-center"
+              >
+                <div class="text-2xl font-bold text-blue-900">{{ project.surface_totale }}m²</div>
+                <div class="text-sm text-blue-700">Surface totale</div>
+              </div>
+              {% if project.surface_murs %}
+              <div
+                class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-4 text-center"
+              >
+                <div class="text-2xl font-bold text-green-900">{{ project.surface_murs }}m²</div>
+                <div class="text-sm text-green-700">Murs</div>
+              </div>
+              {% endif %} {% if project.surface_plafond %}
+              <div
+                class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4 text-center"
+              >
+                <div class="text-2xl font-bold text-purple-900">
+                  {{ project.surface_plafond }}m²
+                </div>
+                <div class="text-sm text-purple-700">Plafond</div>
+              </div>
+              {% endif %} {% if project.hauteur_sous_plafond %}
+              <div
+                class="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-4 text-center"
+              >
+                <div class="text-2xl font-bold text-orange-900">
+                  {{ project.hauteur_sous_plafond }}m
+                </div>
+                <div class="text-sm text-orange-700">Hauteur</div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Types de pièces -->
+          {% if project.types_pieces %}
+          <div class="mb-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+              <i class="fas fa-home text-gray-600"></i>
+              Types de Pièces
+            </h3>
+            <div class="flex flex-wrap gap-2">
+              {% for piece in project.types_pieces %}
+              <span
+                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+              >
+                {{ piece|capfirst }}
+              </span>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- État et finitions -->
+          <div class="mb-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+              <i class="fas fa-palette text-gray-600"></i>
+              État et Finitions
+            </h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <i class="fas fa-hammer text-orange-600 text-lg flex-shrink-0 mt-0.5"></i>
+                <div>
+                  <div class="info-label">État du support</div>
+                  <div class="info-value">{{ project.get_etat_support_display }}</div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <i class="fas fa-brush text-purple-600 text-lg flex-shrink-0 mt-0.5"></i>
+                <div>
+                  <div class="info-label">Type de finition</div>
+                  <div class="info-value">{{ project.get_type_finition_display }}</div>
+                </div>
+              </div>
+            </div>
+
+            {% if project.preparation_necessaire %}
+            <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <h4 class="text-sm font-medium text-yellow-800 mb-2 flex items-center gap-2">
+                <i class="fas fa-tools"></i>
+                Préparation nécessaire
+              </h4>
+              <p class="text-sm text-yellow-700">{{ project.preparation_necessaire }}</p>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Couleurs -->
+          {% if project.couleurs_souhaitees %}
+          <div class="mb-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+              <i class="fas fa-paint-brush text-gray-600"></i>
+              Couleurs Souhaitées
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {% for zone, couleur in project.couleurs_souhaitees.items %}
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div class="text-sm font-medium text-gray-600 mb-1">{{ zone|capfirst }}</div>
+                <div class="text-sm text-gray-900">{{ couleur }}</div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Matériaux et contraintes -->
+          {% if project.materiaux_specifiques or project.contraintes_horaires or
+          project.acces_difficile %}
+          <div class="mb-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+              <i class="fas fa-exclamation-triangle text-gray-600"></i>
+              Contraintes et Spécificités
+            </h3>
+
+            {% if project.materiaux_specifiques %}
+            <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 class="text-sm font-medium text-blue-800 mb-2">Matériaux spécifiques</h4>
+              <p class="text-sm text-blue-700">{{ project.materiaux_specifiques }}</p>
+            </div>
+            {% endif %} {% if project.contraintes_horaires %}
+            <div class="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <h4 class="text-sm font-medium text-orange-800 mb-2">Contraintes horaires</h4>
+              <p class="text-sm text-orange-700">{{ project.contraintes_horaires }}</p>
+            </div>
+            {% endif %} {% if project.acces_difficile %}
+            <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <h4 class="text-sm font-medium text-red-800 mb-2 flex items-center gap-2">
+                <i class="fas fa-exclamation-circle"></i>
+                Accès difficile
+              </h4>
+              <p class="text-sm text-red-700">
+                Des contraintes d'accès ou difficultés particulières sont signalées.
+              </p>
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Adresse et Contact -->
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-map-marker-alt text-blue-600 text-xl"></i>
+          <h2 class="text-xl font-semibold text-gray-900">Adresse et Contact</h2>
+        </div>
+        <div class="detail-content">
+          <div class="info-grid">
+            <div class="info-item">
+              <i class="fas fa-home text-green-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Adresse des travaux</div>
+                <div class="info-value">
+                  {{ project.adresse_travaux }} {% if project.complement_adresse %}
+                  <br /><span class="text-gray-600">{{ project.complement_adresse }}</span>
+                  {% endif %}
+                  <br />{{ project.code_postal }} {{ project.ville }} {% if project.pays and
+                  project.pays != 'France' %} <br />{{ project.pays }} {% endif %}
+                </div>
+              </div>
+            </div>
+
+            {% if project.contact_nom or project.contact_telephone %}
+            <div class="info-item">
+              <i class="fas fa-user text-purple-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Contact sur site</div>
+                <div class="info-value">
+                  {% if project.contact_nom %}{{ project.contact_nom }}{% endif %} {% if
+                  project.contact_telephone %}
+                  <br /><a
+                    href="tel:{{ project.contact_telephone }}"
+                    class="text-blue-600 hover:underline"
+                  >
+                    {{ project.contact_telephone }}
+                  </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Planning et Budget -->
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-calendar-alt text-blue-600 text-xl"></i>
+          <h2 class="text-xl font-semibold text-gray-900">Planning et Budget</h2>
+        </div>
+        <div class="detail-content">
+          <div class="info-grid">
+            {% if project.date_debut_souhaitee %}
+            <div class="info-item">
+              <i class="fas fa-play text-green-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Date de début souhaitée</div>
+                <div class="info-value">{{ project.date_debut_souhaitee|date:"d/m/Y" }}</div>
+              </div>
+            </div>
+            {% endif %} {% if project.date_fin_souhaitee %}
+            <div class="info-item">
+              <i class="fas fa-stop text-red-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Date de fin souhaitée</div>
+                <div class="info-value">{{ project.date_fin_souhaitee|date:"d/m/Y" }}</div>
+              </div>
+            </div>
+            {% endif %} {% if project.budget_minimum or project.budget_maximum %}
+            <div class="info-item md:col-span-2">
+              <i class="fas fa-euro-sign text-blue-600 text-lg flex-shrink-0 mt-0.5"></i>
+              <div>
+                <div class="info-label">Budget estimé</div>
+                <div class="info-value">
+                  {% if project.budget_minimum and project.budget_maximum %} {{
+                  project.budget_minimum|floatformat:0 }}€ - {{ project.budget_maximum|floatformat:0
+                  }}€ {% elif project.budget_minimum %} À partir de {{
+                  project.budget_minimum|floatformat:0 }}€ {% elif project.budget_maximum %} Jusqu'à
+                  {{ project.budget_maximum|floatformat:0 }}€ {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes du client -->
+      {% if project.notes_client %}
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-sticky-note text-blue-600 text-xl"></i>
+          <h2 class="text-xl font-semibold text-gray-900">Notes du Client</h2>
+        </div>
+        <div class="detail-content">
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p class="text-gray-900 leading-relaxed">{{ project.notes_client|linebreaks }}</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Devis associés -->
+      {% if devis_list %}
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-file-invoice-dollar text-blue-600 text-xl"></i>
+          <h2 class="text-xl font-semibold text-gray-900">Devis Associés</h2>
+          <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+            {{ devis_list.count }}
+          </span>
+        </div>
+        <div class="detail-content">
+          <div class="space-y-4">
+            {% for devis in devis_list %}
+            <div class="devis-card">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center gap-3 mb-2">
+                    <h3 class="font-medium text-gray-900">
+                      <a
+                        href="{% url 'projects:devis_detail' pk=devis.pk %}"
+                        class="hover:text-blue-600 transition-colors duration-200"
+                      >
+                        {{ devis.reference }}
+                      </a>
+                    </h3>
+                    <span
+                      class="status-badge {% if devis.status == 'brouillon' %}bg-gray-100 text-gray-800 {% elif devis.status == 'envoye' %}bg-blue-100 text-blue-800 {% elif devis.status == 'vu' %}bg-yellow-100 text-yellow-800 {% elif devis.status == 'accepte' %}bg-green-100 text-green-800 {% elif devis.status == 'refuse' %}bg-red-100 text-red-800 {% else %}bg-gray-100 text-gray-800{% endif %}"
+                    >
+                      {{ devis.get_status_display }}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center gap-4 text-sm text-gray-600">
+                    <span>{{ devis.title|truncatechars:50 }}</span>
+                    <span>{{ devis.date_created|date:"d/m/Y" }}</span>
+                    {% if devis.total %}
+                    <span class="font-medium text-blue-600">{{ devis.total|floatformat:2 }}€</span>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <a
+                    href="{% url 'projects:devis_detail' pk=devis.pk %}"
+                    class="text-blue-600 hover:text-blue-700 p-2 hover:bg-blue-50 rounded transition-colors duration-200"
+                    title="Voir le devis"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </a>
+
+                  {% if is_staff and devis.status == 'brouillon' %}
+                  <a
+                    href="{% url 'projects:devis_edit' pk=devis.pk %}"
+                    class="text-green-600 hover:text-green-700 p-2 hover:bg-green-50 rounded transition-colors duration-200"
+                    title="Modifier"
+                  >
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  {% endif %} {% if is_staff and devis.status == 'brouillon' %}
+                  <form
+                    method="post"
+                    action="{% url 'projects:devis_send' pk=devis.pk %}"
+                    class="inline"
+                  >
+                    {% csrf_token %}
+                    <button
+                      type="submit"
+                      class="text-orange-600 hover:text-orange-700 p-2 hover:bg-orange-50 rounded transition-colors duration-200"
+                      title="Envoyer"
+                      onclick="return confirm('Envoyer ce devis au client ?')"
+                    >
+                      <i class="fas fa-paper-plane"></i>
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Status et Progress -->
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-chart-pie text-blue-600 text-xl"></i>
+          <h3 class="text-lg font-semibold text-gray-900">État du Projet</h3>
+        </div>
+        <div class="detail-content text-center">
+          <!-- Progress Circle -->
+          <div class="relative inline-flex items-center justify-center mb-4">
+            <svg class="progress-ring w-24 h-24" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" stroke="#e5e7eb" stroke-width="8" fill="none" />
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                stroke="{% if project.progress_percentage < 30 %}#ef4444{% elif project.progress_percentage < 70 %}#f59e0b{% else %}#10b981{% endif %}"
+                stroke-width="8"
+                fill="none"
+                stroke-dasharray="251.2"
+                stroke-dashoffset="{{ 251.2|floatformat:1|sub:project.progress_percentage|mul:2.512 }}"
+                stroke-linecap="round"
+              />
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-2xl font-bold text-gray-900"
+                >{{ project.progress_percentage }}%</span
+              >
+            </div>
+          </div>
+
+          <!-- Status actual -->
+          <div class="mb-4">
+            <span
+              class="status-badge {% if project.status == 'brouillon' %}bg-gray-100 text-gray-800 {% elif project.status == 'soumis' %}bg-blue-100 text-blue-800 {% elif project.status == 'en_examen' %}bg-yellow-100 text-yellow-800 {% elif project.status == 'devis_demande' %}bg-orange-100 text-orange-800 {% elif project.status == 'devis_envoye' %}bg-purple-100 text-purple-800 {% elif project.status == 'devis_accepte' %}bg-green-100 text-green-800 {% elif project.status == 'termine' %}bg-emerald-100 text-emerald-800 {% else %}bg-gray-100 text-gray-800{% endif %}"
+            >
+              {{ project.get_status_display }}
+            </span>
+          </div>
+
+          <!-- Form admin para mudança de status -->
+          {% if is_staff %}
+          <form
+            method="post"
+            action="{% url 'projects:update_status' pk=project.pk %}"
+            class="mt-4"
+          >
+            {% csrf_token %}
+            <div class="space-y-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Changer le statut
+                </label>
+                {{ status_form.status }}
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"> Assigner à </label>
+                {{ status_form.assigned_to }}
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"> Notes internes </label>
+                {{ status_form.notes_internes }}
+              </div>
+
+              <button type="submit" class="w-full action-btn btn-primary">
+                <i class="fas fa-save"></i>
+                Mettre à jour
+              </button>
+            </div>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Informations rapides -->
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-info text-blue-600 text-xl"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Informations Rapides</h3>
+        </div>
+        <div class="detail-content">
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Référence:</span>
+              <span class="font-mono text-gray-900">{{ project.reference }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Type:</span>
+              <span class="text-gray-900">{{ project.get_type_projet_display }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Surface:</span>
+              <span class="text-gray-900">{{ project.surface_totale }}m²</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Pièces:</span>
+              <span class="text-gray-900">{{ project.nombre_pieces }}</span>
+            </div>
+            {% if devis_list.count %}
+            <div class="flex justify-between">
+              <span class="text-gray-600">Devis:</span>
+              <span class="text-gray-900">{{ devis_list.count }}</span>
+            </div>
+            {% endif %}
+            <div class="flex justify-between">
+              <span class="text-gray-600">Créé:</span>
+              <span class="text-gray-900">{{ project.created_at|date:"d/m/Y" }}</span>
+            </div>
+            {% if project.assigned_to %}
+            <div class="flex justify-between">
+              <span class="text-gray-600">Assigné à:</span>
+              <span class="text-gray-900"
+                >{{ project.assigned_to.get_full_name|default:project.assigned_to.username }}</span
+              >
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions rapides -->
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-bolt text-blue-600 text-xl"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Actions Rapides</h3>
+        </div>
+        <div class="detail-content">
+          <div class="space-y-3">
+            {% if can_edit %}
+            <a
+              href="{% url 'projects:edit' pk=project.pk %}"
+              class="w-full action-btn btn-secondary justify-center"
+            >
+              <i class="fas fa-edit"></i>
+              Modifier le projet
+            </a>
+            {% endif %}
+
+            <a
+              href="{% url 'projects:list' %}"
+              class="w-full action-btn btn-secondary justify-center"
+            >
+              <i class="fas fa-list"></i>
+              Tous mes projets
+            </a>
+
+            {% if devis_list %}
+            <a
+              href="{% url 'projects:devis_list' %}"
+              class="w-full action-btn btn-secondary justify-center"
+            >
+              <i class="fas fa-file-invoice-dollar"></i>
+              Mes devis
+            </a>
+            {% endif %}
+
+            <a
+              href="{% url 'projects:create' %}"
+              class="w-full action-btn btn-primary justify-center"
+            >
+              <i class="fas fa-plus"></i>
+              Nouveau projet
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-history text-blue-600 text-xl"></i>
+          <h3 class="text-lg font-semibold text-gray-900">Historique</h3>
+        </div>
+        <div class="detail-content">
+          <div class="space-y-4">
+            <div class="timeline-item">
+              <div class="timeline-dot bg-green-500"></div>
+              <div>
+                <div class="text-sm font-medium text-gray-900">Projet créé</div>
+                <div class="text-xs text-gray-600">{{ project.created_at|date:"d/m/Y à H:i" }}</div>
+              </div>
+            </div>
+
+            {% if project.updated_at != project.created_at %}
+            <div class="timeline-item">
+              <div class="timeline-dot bg-blue-500"></div>
+              <div>
+                <div class="text-sm font-medium text-gray-900">Dernière modification</div>
+                <div class="text-xs text-gray-600">{{ project.updated_at|date:"d/m/Y à H:i" }}</div>
+              </div>
+            </div>
+            {% endif %} {% for devis in devis_list %}
+            <div class="timeline-item">
+              <div
+                class="timeline-dot {% if devis.status == 'accepte' %}bg-green-500 {% elif devis.status == 'refuse' %}bg-red-500 {% elif devis.status == 'envoye' %}bg-blue-500 {% else %}bg-gray-400{% endif %}"
+              ></div>
+              <div>
+                <div class="text-sm font-medium text-gray-900">
+                  Devis {{ devis.get_status_display|lower }}
+                </div>
+                <div class="text-xs text-gray-600">{{ devis.reference }}</div>
+                <div class="text-xs text-gray-600">
+                  {% if devis.status == 'accepte' and devis.date_response %} {{
+                  devis.date_response|date:"d/m/Y à H:i" }} {% elif devis.status == 'refuse' and
+                  devis.date_response %} {{ devis.date_response|date:"d/m/Y à H:i" }} {% elif
+                  devis.status == 'envoye' and devis.date_sent %} {{ devis.date_sent|date:"d/m/Y à
+                  H:i" }} {% else %} {{ devis.date_created|date:"d/m/Y à H:i" }} {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      // Animate progress circle
+      const progressCircle = document.querySelector('.progress-ring circle:last-child');
+      if (progressCircle) {
+          const progress = {{ project.progress_percentage }};
+          const circumference = 2 * Math.PI * 40; // radius = 40
+          const offset = circumference - (progress / 100) * circumference;
+
+          // Animate from 100% to actual value
+          progressCircle.style.strokeDashoffset = circumference;
+          setTimeout(() => {
+              progressCircle.style.transition = 'stroke-dashoffset 1s ease-in-out';
+              progressCircle.style.strokeDashoffset = offset;
+          }, 100);
+      }
+
+      // Auto-submit status form on change
+      const statusSelect = document.querySelector('select[name="status"]');
+      if (statusSelect) {
+          statusSelect.addEventListener('change', function() {
+              if (confirm('Changer le statut du projet ?')) {
+                  this.form.submit();
+              }
+          });
+      }
+
+      // Confirmation for important actions
+      const dangerButtons = document.querySelectorAll('.btn-danger');
+      dangerButtons.forEach(button => {
+          button.addEventListener('click', function(e) {
+              if (!confirm('Cette action est irréversible. Continuer ?')) {
+                  e.preventDefault();
+              }
+          });
+      });
+
+      // Smooth scroll to sections
+      const sectionLinks = document.querySelectorAll('a[href^="#"]');
+      sectionLinks.forEach(link => {
+          link.addEventListener('click', function(e) {
+              e.preventDefault();
+              const target = document.querySelector(this.getAttribute('href'));
+              if (target) {
+                  target.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start'
+                  });
+              }
+          });
+      });
+  });
+</script>
+{% endblock %}

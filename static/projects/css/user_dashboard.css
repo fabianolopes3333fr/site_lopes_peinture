@@ -1,0 +1,84 @@
+.project-card {
+  @apply bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden;
+}
+.project-card:hover {
+  @apply transform -translate-y-1 shadow-lg;
+}
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+.priority-badge {
+  @apply inline-flex items-center px-2 py-1 rounded text-xs font-medium;
+}
+.welcome-banner {
+  @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-6 mb-8;
+}
+.stat-card {
+  @apply bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-all duration-200;
+}
+.icon-card {
+  @apply w-12 h-12 rounded-lg flex items-center justify-center mb-4;
+}
+.action-btn {
+  @apply px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2;
+}
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md;
+}
+.btn-secondary {
+  @apply bg-gray-100 hover:bg-gray-200 text-gray-700;
+}
+.btn-success {
+  @apply bg-green-600 hover:bg-green-700 text-white;
+}
+.btn-outline {
+  @apply border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white;
+}
+.timeline-item {
+  @apply relative pl-8 pb-6;
+}
+.timeline-dot {
+  @apply absolute left-0 top-1 w-3 h-3 rounded-full;
+}
+.timeline-line {
+  @apply absolute left-1.5 top-3 w-0.5 h-full bg-gray-200;
+}
+.notification-card {
+  @apply bg-white border border-gray-200 rounded-lg p-4 shadow-sm;
+}
+.notification-icon {
+  @apply w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0;
+}
+.quick-action-card {
+  @apply bg-white border border-gray-200 rounded-lg p-4 text-center hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 cursor-pointer;
+}
+.document-card {
+  @apply bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200;
+}
+.progress-ring {
+  @apply transform -rotate-90;
+}
+.empty-state {
+  @apply text-center py-16;
+}
+.empty-icon {
+  @apply w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center;
+}
+.badge-new {
+  @apply absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center;
+}
+.weather-card {
+  @apply bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-lg p-4;
+}
+.tips-card {
+  @apply bg-gradient-to-br from-green-400 to-green-600 text-white rounded-lg p-4;
+}
+.testimonial-card {
+  @apply bg-gradient-to-br from-purple-400 to-purple-600 text-white rounded-lg p-4;
+}
+.card-animate {
+  @apply opacity-0 transform translate-y-4;
+}
+.card-animate.show {
+  @apply opacity-100 transform translate-y-0 transition-all duration-500;
+}

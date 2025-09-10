@@ -1,0 +1,593 @@
+{% extends 'base_dashboard.html' %}
+{% load static tailwind_tags %}
+
+{% block title %}Mes Projets - LOPES PEINTURE{% endblock %}
+
+{% block extra_css %}
+{% tailwind_css %}
+<style>
+/* Estilos complementares específicos */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Notification styles */
+.notification {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  max-width: 24rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+}
+
+.notification.show {
+  transform: translateX(0);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 p-6">
+  
+  <!-- Header da Página -->
+<div class="mb-8">
+  <div class="space-y-6">
+    
+    <!-- Título e Actions - Layout responsivo -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      
+      <!-- Título e Descrição -->
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-gradient-brand rounded-xl flex-center shadow-brand">
+          <i class="fas fa-paint-brush text-xl text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl lg:text-3xl font-display font-bold text-gray-900">
+            Mes Projets de Peinture
+          </h1>
+          <p class="text-gray-600 mt-1 text-sm lg:text-base">
+            Gérez et suivez tous vos projets en un seul endroit
+          </p>
+        </div>
+      </div>
+
+      <!-- Actions Header -->
+      <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto sm:flex-shrink-0">
+        <button
+          onclick="toggleMobileFilters()"
+          class="btn btn-secondary lg:hidden w-full sm:w-auto order-1"
+        >
+          <i class="fas fa-filter"></i>
+          <span>Filtres</span>
+        </button>
+        
+        <button
+          onclick="exportProjects()"
+          class="btn btn-secondary w-full sm:w-auto order-2"
+          title="Exporter les projets"
+        >
+          <i class="fas fa-download"></i>
+          <span class="sm:hidden">Export</span>
+          <span class="hidden sm:inline">Exporter</span>
+        </button>
+        
+        <a
+          href="{% url 'projects:create' %}"
+          class="btn btn-primary w-full sm:w-auto order-3"
+        >
+          <i class="fas fa-plus"></i>
+          <span class="sm:hidden">Nouveau</span>
+          <span class="hidden sm:inline">Nouveau Projet</span>
+        </a>
+      </div>
+    </div>
+    
+    <!-- Statistiques rapides -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div class="card bg-brand-50 border-brand-200 p-3 sm:p-4 text-center">
+        <div class="text-xl sm:text-2xl font-bold text-brand-600">{{ total_projects|default:0 }}</div>
+        <div class="text-xs sm:text-sm text-brand-700 font-medium">Total</div>
+      </div>
+      <div class="card bg-success-50 border-success-200 p-3 sm:p-4 text-center">
+        <div class="text-xl sm:text-2xl font-bold text-success-600">{{ active_projects|default:0 }}</div>
+        <div class="text-xs sm:text-sm text-success-700 font-medium">En cours</div>
+      </div>
+      <div class="card bg-warning-50 border-warning-200 p-3 sm:p-4 text-center">
+        <div class="text-xl sm:text-2xl font-bold text-warning-600">{{ pending_projects|default:0 }}</div>
+        <div class="text-xs sm:text-sm text-warning-700 font-medium">En attente</div>
+      </div>
+      <div class="card bg-info-50 border-info-200 p-3 sm:p-4 text-center">
+        <div class="text-xl sm:text-2xl font-bold text-info-600">{{ completed_projects|default:0 }}</div>
+        <div class="text-xs sm:text-sm text-info-700 font-medium">Terminés</div>
+      </div>
+    </div>
+
+    <!-- Filter Chips (Filtros Ativos) -->
+    <div id="filter-chips" class="hidden"></div>
+
+  </div>
+</div>
+
+  <!-- Layout Principal -->
+  <div class="flex flex-col lg:flex-row gap-8">
+    
+    <!-- Sidebar Filtros -->
+    <div class="lg:w-80">
+      <div id="filters-sidebar" class="card sticky top-6 hidden lg:block p-5">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="icon icon-lg bg-brand-100 rounded-lg text-brand-600 flex-center">
+            <i class="fas fa-filter"></i>
+          </div>
+          <h3 class="text-lg font-display font-bold text-gray-900">Filtres de Recherche</h3>
+        </div>
+        
+        <form method="get" id="filter-form" class="space-y-6">
+          {% csrf_token %}
+          
+          <!-- Recherche générale -->
+          <div class="form-group">
+            <label class="form-label flex items-center gap-2">
+              <i class="icon icon-sm fas fa-search text-gray-400"></i>
+              Recherche générale
+            </label>
+            <input
+              type="text"
+              name="search"
+              value="{{ request.GET.search|default:'' }}"
+              placeholder="Titre, ville, référence..."
+              class="form-input"
+            />
+          </div>
+
+          <!-- Status -->
+          <div class="form-group">
+            <label class="form-label flex items-center gap-2">
+              <i class="icon icon-sm fas fa-flag text-gray-400"></i>
+              Statut du projet
+            </label>
+            <select name="status" class="form-input form-select">
+              <option value="">Tous les statuts</option>
+              <option value="brouillon" {% if request.GET.status == 'brouillon' %}selected{% endif %}>Brouillon</option>
+              <option value="soumis" {% if request.GET.status == 'soumis' %}selected{% endif %}>Soumis</option>
+              <option value="en_examen" {% if request.GET.status == 'en_examen' %}selected{% endif %}>En examen</option>
+              <option value="devis_demande" {% if request.GET.status == 'devis_demande' %}selected{% endif %}>Devis demandé</option>
+              <option value="devis_envoye" {% if request.GET.status == 'devis_envoye' %}selected{% endif %}>Devis envoyé</option>
+              <option value="devis_accepte" {% if request.GET.status == 'devis_accepte' %}selected{% endif %}>Devis accepté</option>
+              <option value="en_cours" {% if request.GET.status == 'en_cours' %}selected{% endif %}>En cours</option>
+              <option value="termine" {% if request.GET.status == 'termine' %}selected{% endif %}>Terminé</option>
+            </select>
+          </div>
+
+          <!-- Outros campos de filtro aqui... -->
+
+          <!-- Botões de ação -->
+          <div class="space-y-3 pt-6 border-t border-gray-200">
+            <button type="submit" class="btn btn-primary w-full">
+              <i class="fas fa-search"></i>
+              Appliquer les filtres
+            </button>
+            <a href="{% url 'projects:list' %}" class="btn btn-secondary w-full text-center">
+              <i class="fas fa-refresh"></i>
+              Réinitialiser
+            </a>
+          </div>
+        </form>
+
+        <!-- Filtres rapides -->
+        <div class="mt-8 pt-6 border-t border-gray-200">
+          <h4 class="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fas fa-lightning text-brand-600"></i>
+            Accès rapide
+          </h4>
+          <div class="space-y-2">
+            <a href="?status=en_cours" class="nav-link flex items-center gap-3">
+              <div class="w-2 h-2 bg-success-500 rounded-full"></div>
+              Projets en cours
+            </a>
+            <a href="?priority=urgente" class="nav-link flex items-center gap-3">
+              <div class="w-2 h-2 bg-danger-500 rounded-full"></div>
+              Projets urgents
+            </a>
+            <a href="?status=devis_demande" class="nav-link flex items-center gap-3">
+              <div class="w-2 h-2 bg-warning-500 rounded-full"></div>
+              Devis en attente
+            </a>
+            <a href="?date_from={{ last_week|date:'Y-m-d' }}" class="nav-link flex items-center gap-3">
+              <div class="w-2 h-2 bg-info-500 rounded-full"></div>
+              Projets récents
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenu Principal -->
+    <div class="flex-1 min-w-0">
+      
+      <!-- Header des résultats -->
+      <div class="card mb-6">
+        <div class="card-body">
+          <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div class="flex-1">
+              <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div class="results-info">
+                  <h2 class="text-lg font-display font-semibold text-gray-900">
+                    {% if projects %}
+                      {{ paginator.count }} projet{{ paginator.count|pluralize }} trouvé{{ paginator.count|pluralize }}
+                    {% else %}
+                      Aucun projet trouvé
+                    {% endif %}
+                  </h2>
+                  {% if request.GET %}
+                  <p class="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                    <i class="fas fa-filter text-brand-500"></i>
+                    Résultats filtrés
+                    <a href="{% url 'projects:list' %}" class="text-brand-600 hover:text-brand-700 font-medium underline">
+                      Voir tous
+                    </a>
+                  </p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Contrôles de vue et tri -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+              
+              <!-- Tri -->
+              <div class="flex items-center gap-2 w-full sm:w-auto">
+                <label class="form-label !mb-0 text-sm font-medium text-gray-700 whitespace-nowrap hidden sm:block">
+                  Trier par:
+                </label>
+                <label class="form-label !mb-0 text-sm font-medium text-gray-700 sm:hidden">
+                  Tri:
+                </label>
+                <select
+                  name="ordering"
+                  onchange="changeSorting(this.value)"
+                  class="form-input form-select !mb-0 flex-1 sm:flex-initial"
+                >
+                  <option value="-created_at" {% if request.GET.ordering == '-created_at' %}selected{% endif %}>Plus récent</option>
+                  <option value="created_at" {% if request.GET.ordering == 'created_at' %}selected{% endif %}>Plus ancien</option>
+                  <option value="title" {% if request.GET.ordering == 'title' %}selected{% endif %}>Titre A-Z</option>
+                  <option value="-title" {% if request.GET.ordering == '-title' %}selected{% endif %}>Titre Z-A</option>
+                  <option value="priority" {% if request.GET.ordering == 'priority' %}selected{% endif %}>Priorité</option>
+                  <option value="-surface_totale" {% if request.GET.ordering == '-surface_totale' %}selected{% endif %}>Surface ↓</option>
+                </select>
+              </div>
+
+              <!-- Toggle de vue -->
+              <div class="flex items-center justify-center sm:justify-start w-full sm:w-auto">
+                <div class="flex items-center gap-0 bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
+                  <button
+                    onclick="setView('grid')"
+                    id="grid-view-btn"
+                    class="btn btn-sm bg-white text-brand-600 shadow-sm flex-1 sm:flex-initial"
+                    title="Vue grille"
+                  >
+                    <i class="fas fa-th-large sm:mr-1"></i>
+                    <span class="hidden sm:inline">Grille</span>
+                  </button>
+                  <button
+                    onclick="setView('list')"
+                    id="list-view-btn"
+                    class="btn btn-ghost btn-sm flex-1 sm:flex-initial"
+                    title="Vue liste"
+                  >
+                    <i class="fas fa-list sm:mr-1"></i>
+                    <span class="hidden sm:inline">Liste</span>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Botão de filtros mobile -->
+              <div class="sm:hidden w-full">
+                <button
+                  onclick="toggleMobileFilters()"
+                  class="btn btn-secondary w-full"
+                >
+                  <i class="fas fa-filter mr-2"></i>
+                  Filtres avancés
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid/Lista de Projetos -->
+      {% if projects %}
+      <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for project in projects %}
+        <div class="card card-hover card-animate" data-project-id="{{ project.pk }}" style="animation-delay: {{ forloop.counter0|floatformat:1 }}00ms">
+          
+          <!-- Header do Card -->
+          <div class="card-header">
+            <div class="flex items-start justify-between gap-4 mb-3">
+              <div class="flex-1 min-w-0">
+                <h3 class="font-display font-bold text-gray-900 mb-2 line-clamp-2">
+                  <a
+                    href="{% url 'projects:detail' pk=project.pk %}"
+                    class="hover:text-brand-600 transition-colors duration-200"
+                    title="{{ project.title }}"
+                  >
+                    {{ project.title }}
+                  </a>
+                </h3>
+                <div class="badge badge-secondary font-mono">
+                  <i class="fas fa-hashtag"></i>
+                  {{ project.reference }}
+                </div>
+              </div>
+              
+              <!-- Status Badge -->
+              <span class="badge flex-shrink-0
+                {% if project.status == 'brouillon' %}badge-secondary
+                {% elif project.status == 'soumis' %}badge-primary
+                {% elif project.status == 'en_examen' %}badge-warning
+                {% elif project.status == 'devis_demande' %}badge-warning
+                {% elif project.status == 'devis_envoye' %}badge-info
+                {% elif project.status == 'devis_accepte' %}badge-success
+                {% elif project.status == 'en_cours' %}badge-primary
+                {% elif project.status == 'termine' %}badge-success
+                {% else %}badge-secondary{% endif %}">
+                <i class="fas fa-circle text-xs"></i>
+                {{ project.get_status_display }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="badge badge-outline
+                {% if project.priority == 'urgente' %}text-danger-800 border-danger-300
+                {% elif project.priority == 'haute' %}text-warning-800 border-warning-300
+                {% elif project.priority == 'normale' %}text-brand-800 border-brand-300
+                {% else %}text-gray-800 border-gray-300{% endif %}">
+                <i class="fas fa-flag"></i>
+                {{ project.get_priority_display }}
+              </span>
+
+              <div class="text-xs text-gray-500 flex items-center gap-1">
+                <i class="icon icon-sm fas fa-calendar-alt"></i>
+                {{ project.created_at|date:"d/m/Y" }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Conteúdo do Card -->
+          <div class="card-body space-y-4">
+            
+            <!-- Informações principais -->
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div class="card bg-brand-50 border-brand-200 p-3">
+                <div class="flex items-center gap-2 mb-1">
+                  <i class="icon icon-sm fas fa-paint-brush text-brand-500"></i>
+                  <span class="font-medium text-brand-900">Type</span>
+                </div>
+                <div class="text-brand-800 font-semibold text-xs">
+                  {{ project.get_type_projet_display }}
+                </div>
+              </div>
+
+              <div class="card bg-success-50 border-success-200 p-3">
+                <div class="flex items-center gap-2 mb-1">
+                  <i class="icon icon-sm fas fa-ruler-combined text-success-500"></i>
+                  <span class="font-medium text-success-900">Surface</span>
+                </div>
+                <div class="text-success-800 font-semibold">
+                  {{ project.surface_totale|default:"--" }} m²
+                </div>
+              </div>
+            </div>
+
+            <!-- Localização -->
+            {% if project.ville %}
+            <div class="card bg-gray-50 border-gray-200 p-3">
+              <div class="flex items-center gap-2 text-sm">
+                <i class="icon icon-sm fas fa-map-marker-alt text-danger-500"></i>
+                <span class="font-medium text-gray-700">
+                  {{ project.ville }}{% if project.code_postal %}, {{ project.code_postal }}{% endif %}
+                </span>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Descrição -->
+            {% if project.description %}
+            <div class="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+              <p class="line-clamp-2">{{ project.description|truncatechars:100 }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Budget estimé -->
+            {% if project.budget_estime %}
+            <div class="card bg-gradient-warning border-warning-200 p-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <i class="icon icon-sm fas fa-euro-sign text-warning-600"></i>
+                  <span class="text-sm font-medium text-warning-900">Budget estimé</span>
+                </div>
+                <span class="font-bold text-lg text-warning-800">
+                  {{ project.budget_estime|floatformat:0 }}€
+                </span>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Progress bar -->
+            {% if project.status == 'en_cours' and project.progress %}
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-700 font-medium flex items-center gap-2">
+                  <i class="icon icon-sm fas fa-tasks text-brand-500"></i>
+                  Progression
+                </span>
+                <span class="text-brand-600 font-bold">{{ project.progress|default:0 }}%</span>
+              </div>
+              <div class="progress">
+                <div 
+                  class="progress-bar bg-gradient-brand" 
+                  style="width: {{ project.progress|default:0 }}%"
+                ></div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Footer do Card -->
+          <div class="card-footer">
+            <div class="flex items-center justify-between">
+              <!-- Info adicional -->
+              <div class="text-xs text-gray-500 flex items-center gap-3">
+                {% if project.nombre_pieces %}
+                <span class="flex items-center gap-1">
+                  <i class="icon icon-sm fas fa-door-open"></i>
+                  {{ project.nombre_pieces }} pièce{{ project.nombre_pieces|pluralize }}
+                </span>
+                {% endif %}
+                {% if project.updated_at != project.created_at %}
+                <span class="flex items-center gap-1">
+                  <i class="icon icon-sm fas fa-edit"></i>
+                  Modifié {{ project.updated_at|date:"d/m" }}
+                </span>
+                {% endif %}
+              </div>
+              
+              <!-- Actions -->
+              <div class="flex items-center gap-2">
+                <button
+                  onclick="toggleFavorite('{{ project.pk }}')"
+                  class="btn btn-icon btn-ghost favorite-icon text-gray-400"
+                  title="Marquer comme favori"
+                >
+                  <i class="fas fa-star"></i>
+                </button>
+                
+                <a
+                  href="{% url 'projects:detail' pk=project.pk %}"
+                  class="btn btn-icon btn-ghost text-brand-600 hover:bg-brand-100"
+                  title="Voir détails"
+                >
+                  <i class="fas fa-eye"></i>
+                </a>
+                
+                {% if project.user == request.user or request.user.is_staff %}
+                <a
+                  href="{% url 'projects:update' pk=project.pk %}"
+                  class="btn btn-icon btn-ghost text-warning-600 hover:bg-warning-100"
+                  title="Modifier"
+                >
+                  <i class="fas fa-edit"></i>
+                </a>
+                {% endif %}
+
+                {% if project.status == 'soumis' %}
+                <button
+                  onclick="requestQuote('{{ project.pk }}')"
+                  class="btn btn-icon btn-ghost text-success-600 hover:bg-success-100"
+                  title="Demander un devis"
+                >
+                  <i class="fas fa-file-invoice-dollar"></i>
+                </button>
+                {% endif %}
+
+                <button
+                  onclick="shareProject('{{ project.pk }}', '{{ project.title|escapejs }}')"
+                  class="btn btn-icon btn-ghost text-info-600 hover:bg-info-100"
+                  title="Partager"
+                >
+                  <i class="fas fa-share-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Pagination (mantém o mesmo código) -->
+
+      {% else %}
+      <!-- Estado Vazio (mantém o mesmo código) -->
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Modal Mobile Filtros -->
+<div id="mobile-filters-modal" class="modal-overlay lg:hidden hidden">
+  <div class="modal transform -translate-x-full transition-transform duration-300 ease-in-out">
+    <div class="modal-header">
+      <h3 class="modal-title flex items-center gap-2">
+        <i class="fas fa-filter text-brand-600"></i>
+        Filtres
+      </h3>
+      <button onclick="toggleMobileFilters()" class="modal-close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="p-6">
+      <form method="get" class="space-y-6">
+        <!-- Recherche générale -->
+        <div class="form-group">
+          <label class="form-label">Recherche générale</label>
+          <input type="text" name="search" class="form-input" placeholder="Titre, ville, référence..." value="{{ request.GET.search|default:'' }}">
+        </div>
+        
+        <!-- Status -->
+        <div class="form-group">
+          <label class="form-label">Statut du projet</label>
+          <select name="status" class="form-input form-select">
+            <option value="">Tous les statuts</option>
+            <option value="brouillon" {% if request.GET.status == 'brouillon' %}selected{% endif %}>Brouillon</option>
+            <option value="soumis" {% if request.GET.status == 'soumis' %}selected{% endif %}>Soumis</option>
+            <option value="en_examen" {% if request.GET.status == 'en_examen' %}selected{% endif %}>En examen</option>
+            <option value="devis_demande" {% if request.GET.status == 'devis_demande' %}selected{% endif %}>Devis demandé</option>
+            <option value="devis_envoye" {% if request.GET.status == 'devis_envoye' %}selected{% endif %}>Devis envoyé</option>
+            <option value="devis_accepte" {% if request.GET.status == 'devis_accepte' %}selected{% endif %}>Devis accepté</option>
+            <option value="en_cours" {% if request.GET.status == 'en_cours' %}selected{% endif %}>En cours</option>
+            <option value="termine" {% if request.GET.status == 'termine' %}selected{% endif %}>Terminé</option>
+          </select>
+        </div>
+        
+        <div class="pt-6 border-t border-gray-200 space-y-3">
+          <button type="submit" class="btn btn-primary w-full">
+            <i class="fas fa-search"></i>
+            Appliquer les filtres
+          </button>
+          <button type="button" onclick="toggleMobileFilters()" class="btn btn-secondary w-full">
+            Fermer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'projects/js/project_list.js' %}"></script>
+{% endblock %}

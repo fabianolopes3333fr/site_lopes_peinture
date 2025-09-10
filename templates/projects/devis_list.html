@@ -1,0 +1,842 @@
+{% extends 'base_dashboard.html' %}
+{% load static tailwind_tags %}
+
+{% block title %}Mes Devis - LOPES PEINTURE{% endblock %}
+
+{% block extra_css %}
+{% tailwind_css %}
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <i class="fas fa-file-invoice-dollar text-blue-600"></i>
+          Mes Devis
+        </h1>
+        <p class="text-gray-600 mt-1">
+          Gérez et suivez tous vos devis de peinture.
+        </p>
+      </div>
+      
+      <div class="flex gap-3">
+        <button
+          onclick="toggleFilters()"
+          class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 lg:hidden"
+        >
+          <i class="fas fa-filter"></i>
+          Filtres
+        </button>
+        
+        {% if is_staff %}
+        <a
+          href="{% url 'projects:devis_create' %}"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2"
+        >
+          <i class="fas fa-plus"></i>
+          Nouveau Devis
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistiques -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="stats-card from-blue-500 to-blue-600">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-blue-100 text-sm font-medium">Total Devis</p>
+          <p class="amount-display">{{ stats.total_devis }}</p>
+        </div>
+        <div class="bg-blue-400 bg-opacity-30 rounded-full p-3">
+          <i class="fas fa-file-invoice text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-card from-green-500 to-green-600">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-green-100 text-sm font-medium">Acceptés</p>
+          <p class="amount-display">{{ stats.acceptes }}</p>
+        </div>
+        <div class="bg-green-400 bg-opacity-30 rounded-full p-3">
+          <i class="fas fa-check-circle text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-card from-orange-500 to-orange-600">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-orange-100 text-sm font-medium">En Attente</p>
+          <p class="amount-display">{{ stats.en_attente }}</p>
+        </div>
+        <div class="bg-orange-400 bg-opacity-30 rounded-full p-3">
+          <i class="fas fa-clock text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-card from-purple-500 to-purple-600">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-purple-100 text-sm font-medium">Montant Total</p>
+          <p class="amount-display">{{ stats.montant_total|floatformat:0 }}€</p>
+        </div>
+        <div class="bg-purple-400 bg-opacity-30 rounded-full p-3">
+          <i class="fas fa-euro-sign text-xl"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col lg:flex-row gap-6">
+    <!-- Sidebar Filtros -->
+    <div id="filters-sidebar" class="lg:w-80 hidden lg:block">
+      <div class="filter-sidebar">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <i class="fas fa-filter text-blue-600"></i>
+          Filtres
+        </h3>
+        
+        <form method="get" class="space-y-4">
+          <!-- Busca -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Recherche
+            </label>
+            <input
+              type="text"
+              name="search"
+              value="{{ filter_form.search.value|default:'' }}"
+              placeholder="Référence, projet, ville..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <!-- Status -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Statut
+            </label>
+            <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              <option value="">Tous les statuts</option>
+              <option value="brouillon" {% if filter_form.status.value == 'brouillon' %}selected{% endif %}>
+                Brouillon
+              </option>
+              <option value="envoye" {% if filter_form.status.value == 'envoye' %}selected{% endif %}>
+                Envoyé
+              </option>
+              <option value="vu" {% if filter_form.status.value == 'vu' %}selected{% endif %}>
+                Vu par le client
+              </option>
+              <option value="accepte" {% if filter_form.status.value == 'accepte' %}selected{% endif %}>
+                Accepté
+              </option>
+              <option value="refuse" {% if filter_form.status.value == 'refuse' %}selected{% endif %}>
+                Refusé
+              </option>
+              <option value="expire" {% if filter_form.status.value == 'expire' %}selected{% endif %}>
+                Expiré
+              </option>
+            </select>
+          </div>
+
+          <!-- Projet -->
+          {% if is_staff %}
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Projet
+            </label>
+            <select name="project" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              <option value="">Tous les projets</option>
+              {% for project in projects_list %}
+              <option value="{{ project.id }}" {% if filter_form.project.value == project.id|stringformat:"s" %}selected{% endif %}>
+                {{ project.title|truncatechars:30 }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          <!-- Montant -->
+          <div class="grid grid-cols-1 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Montant min (€)
+              </label>
+              <input
+                type="number"
+                name="montant_min"
+                value="{{ filter_form.montant_min.value|default:'' }}"
+                step="0.01"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Montant max (€)
+              </label>
+              <input
+                type="number"
+                name="montant_max"
+                value="{{ filter_form.montant_max.value|default:'' }}"
+                step="0.01"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <!-- Dates -->
+          <div class="grid grid-cols-1 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Date création
+              </label>
+              <input
+                type="date"
+                name="date_from"
+                value="{{ filter_form.date_from.value|default:'' }}"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Date limite
+              </label>
+              <input
+                type="date"
+                name="date_limite"
+                value="{{ filter_form.date_limite.value|default:'' }}"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <!-- Trier par -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Trier par
+            </label>
+            <select name="sort_by" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              <option value="-date_created" {% if filter_form.sort_by.value == '-date_created' %}selected{% endif %}>
+                Plus récents
+              </option>
+              <option value="date_created" {% if filter_form.sort_by.value == 'date_created' %}selected{% endif %}>
+                Plus anciens
+              </option>
+              <option value="-total" {% if filter_form.sort_by.value == '-total' %}selected{% endif %}>
+                Montant décroissant
+              </option>
+              <option value="total" {% if filter_form.sort_by.value == 'total' %}selected{% endif %}>
+                Montant croissant
+              </option>
+              <option value="date_limite" {% if filter_form.sort_by.value == 'date_limite' %}selected{% endif %}>
+                Date limite
+              </option>
+            </select>
+          </div>
+
+          <!-- Botões -->
+          <div class="flex gap-2 pt-4">
+            <button
+              type="submit"
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+            >
+              Filtrer
+            </button>
+            <a
+              href="{% url 'projects:devis_list' %}"
+              class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium text-center"
+            >
+              Reset
+            </a>
+          </div>
+        </form>
+
+        <!-- Statistiques locales -->
+        <div class="mt-6 pt-6 border-t border-gray-200">
+          <h4 class="font-medium text-gray-900 mb-3">Résultats</h4>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Total:</span>
+              <span class="font-medium">{{ paginator.count }}</span>
+            </div>
+            {% if devis_list %}
+            <div class="flex justify-between">
+              <span class="text-gray-600">Montant affiché:</span>
+              <span class="font-medium text-green-600">{{ total_amount_displayed|floatformat:0 }}€</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="mt-6 pt-6 border-t border-gray-200">
+          <h4 class="font-medium text-gray-900 mb-3">Actions rapides</h4>
+          <div class="space-y-2">
+            <a
+              href="{% url 'projects:list' %}"
+              class="w-full action-btn btn-secondary justify-center text-xs"
+            >
+              <i class="fas fa-paint-brush"></i>
+              Mes projets
+            </a>
+            {% if is_staff %}
+            <a
+              href="{% url 'projects:admin_dashboard' %}"
+              class="w-full action-btn btn-secondary justify-center text-xs"
+            >
+              <i class="fas fa-chart-line"></i>
+              Dashboard
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Devis -->
+    <div class="flex-1">
+      <!-- Resultados info -->
+      <div class="flex items-center justify-between mb-6">
+        <p class="text-gray-600">
+          {% if devis_list %}
+            {{ paginator.count }} devis trouvé{{ paginator.count|pluralize }}
+            {% if total_amount_displayed %}
+            • Total: {{ total_amount_displayed|floatformat:0 }}€
+            {% endif %}
+          {% else %}
+            Aucun devis trouvé
+          {% endif %}
+        </p>
+        
+        <!-- View toggle -->
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Vue:</span>
+          <div class="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onclick="setView('cards')"
+              id="cards-view"
+              class="px-3 py-1 rounded text-sm font-medium bg-blue-600 text-white"
+            >
+              <i class="fas fa-th-large"></i>
+            </button>
+            <button
+              onclick="setView('table')"
+              id="table-view"
+              class="px-3 py-1 rounded text-sm font-medium text-gray-600 hover:text-gray-900"
+            >
+              <i class="fas fa-table"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cards View -->
+      {% if devis_list %}
+      <div id="devis-cards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {% for devis in devis_list %}
+        <div class="devis-card">
+          <!-- Header do Card -->
+          <div class="p-4 border-b border-gray-100">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex-1">
+                <h3 class="font-semibold text-gray-900 mb-1">
+                  <a
+                    href="{% url 'projects:devis_detail' pk=devis.pk %}"
+                    class="hover:text-blue-600 transition-colors duration-200"
+                  >
+                    {{ devis.reference }}
+                  </a>
+                </h3>
+                <p class="text-sm text-gray-600">
+                  <a
+                    href="{% url 'projects:detail' pk=devis.project.pk %}"
+                    class="hover:text-blue-600"
+                  >
+                    {{ devis.project.title|truncatechars:30 }}
+                  </a>
+                </p>
+              </div>
+              
+              <!-- Status Badge -->
+              <span class="status-badge 
+                {% if devis.status == 'brouillon' %}bg-gray-100 text-gray-800
+                {% elif devis.status == 'envoye' %}bg-blue-100 text-blue-800
+                {% elif devis.status == 'vu' %}bg-yellow-100 text-yellow-800
+                {% elif devis.status == 'accepte' %}bg-green-100 text-green-800
+                {% elif devis.status == 'refuse' %}bg-red-100 text-red-800
+                {% elif devis.status == 'expire' %}bg-gray-100 text-gray-600
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ devis.get_status_display }}
+              </span>
+            </div>
+
+            <!-- Montant -->
+            {% if devis.total %}
+            <div class="text-center py-2">
+              <span class="text-2xl font-bold text-blue-600">{{ devis.total|floatformat:2 }}€</span>
+              {% if devis.total_ht %}
+              <p class="text-xs text-gray-500">{{ devis.total_ht|floatformat:2 }}€ HT</p>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Conteúdo do Card -->
+          <div class="p-4">
+            <div class="space-y-3">
+              <!-- Título do devis -->
+              <div class="text-sm">
+                <span class="font-medium text-gray-900">{{ devis.title|truncatechars:40 }}</span>
+              </div>
+
+              <!-- Cliente -->
+              <div class="flex items-center text-sm text-gray-600">
+                <i class="fas fa-user text-gray-400 mr-2"></i>
+                {{ devis.project.user.get_full_name|default:devis.project.user.username }}
+              </div>
+
+              <!-- Localização -->
+              <div class="flex items-center text-sm text-gray-600">
+                <i class="fas fa-map-marker-alt text-gray-400 mr-2"></i>
+                {{ devis.project.ville }}, {{ devis.project.code_postal }}
+              </div>
+
+              <!-- Data limite -->
+              {% if devis.date_limite %}
+              <div class="{% if devis.is_expired %}deadline-warning{% else %}deadline-normal{% endif %}">
+                <div class="flex items-center text-sm">
+                  <i class="fas fa-calendar-alt mr-2 {% if devis.is_expired %}text-red-600{% else %}text-blue-600{% endif %}"></i>
+                  <span class="{% if devis.is_expired %}text-red-800 font-medium{% else %}text-blue-800{% endif %}">
+                    {% if devis.is_expired %}
+                      Expiré le {{ devis.date_limite|date:"d/m/Y" }}
+                    {% else %}
+                      Expire le {{ devis.date_limite|date:"d/m/Y" }}
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Data criação -->
+              <div class="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+                <span>Créé le {{ devis.date_created|date:"d/m/Y" }}</span>
+                {% if devis.date_sent %}
+                <span>Envoyé le {{ devis.date_sent|date:"d/m/Y" }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+            <!-- Botões principais -->
+            <div class="flex gap-2">
+              <a
+                href="{% url 'projects:devis_detail' pk=devis.pk %}"
+                class="text-blue-600 hover:text-blue-700 p-2 hover:bg-blue-50 rounded transition-colors duration-200"
+                title="Visualiser"
+              >
+                <i class="fas fa-eye"></i>
+              </a>
+              
+              {% if is_staff and devis.status == 'brouillon' %}
+              <a
+                href="{% url 'projects:devis_edit' pk=devis.pk %}"
+                class="text-green-600 hover:text-green-700 p-2 hover:bg-green-50 rounded transition-colors duration-200"
+                title="Modifier"
+              >
+                <i class="fas fa-edit"></i>
+              </a>
+              {% endif %}
+
+              {% if is_staff and devis.can_be_sent %}
+              <form method="post" action="{% url 'projects:devis_send' pk=devis.pk %}" class="inline">
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="text-orange-600 hover:text-orange-700 p-2 hover:bg-orange-50 rounded transition-colors duration-200"
+                  title="Envoyer"
+                  onclick="return confirm('Envoyer ce devis au client ?')"
+                >
+                  <i class="fas fa-paper-plane"></i>
+                </button>
+              </form>
+              {% endif %}
+
+              {% if devis.can_download_pdf %}
+              <a
+                href="{% url 'projects:devis_pdf' pk=devis.pk %}"
+                class="text-purple-600 hover:text-purple-700 p-2 hover:bg-purple-50 rounded transition-colors duration-200"
+                title="Télécharger PDF"
+                target="_blank"
+              >
+                <i class="fas fa-file-pdf"></i>
+              </a>
+              {% endif %}
+
+              {% if is_staff and devis.status == 'brouillon' %}
+              <a
+                href="{% url 'projects:devis_delete' pk=devis.pk %}"
+                class="text-red-600 hover:text-red-700 p-2 hover:bg-red-50 rounded transition-colors duration-200"
+                title="Supprimer"
+                onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce devis ?')"
+              >
+                <i class="fas fa-trash"></i>
+              </a>
+              {% endif %}
+            </div>
+
+            <!-- Indicador de urgência -->
+            {% if devis.is_urgent %}
+            <div class="flex items-center gap-1 text-xs text-red-600">
+              <div class="priority-indicator bg-red-500"></div>
+              <span>Urgent</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Table View (hidden by default) -->
+      <div id="devis-table" class="hidden">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr>
+                <th class="table-header px-6 py-3">Référence</th>
+                <th class="table-header px-6 py-3">Projet</th>
+                <th class="table-header px-6 py-3">Client</th>
+                <th class="table-header px-6 py-3">Statut</th>
+                <th class="table-header px-6 py-3">Montant</th>
+                <th class="table-header px-6 py-3">Date limite</th>
+                <th class="table-header px-6 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              {% for devis in devis_list %}
+              <tr class="table-row">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <a
+                    href="{% url 'projects:devis_detail' pk=devis.pk %}"
+                    class="hover:text-blue-600"
+                  >
+                    {{ devis.reference }}
+                  </a>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <a
+                    href="{% url 'projects:detail' pk=devis.project.pk %}"
+                    class="hover:text-blue-600"
+                  >
+                    {{ devis.project.title|truncatechars:30 }}
+                  </a>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ devis.project.user.get_full_name|default:devis.project.user.username }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="status-badge 
+                    {% if devis.status == 'brouillon' %}bg-gray-100 text-gray-800
+                    {% elif devis.status == 'envoye' %}bg-blue-100 text-blue-800
+                    {% elif devis.status == 'vu' %}bg-yellow-100 text-yellow-800
+                    {% elif devis.status == 'accepte' %}bg-green-100 text-green-800
+                    {% elif devis.status == 'refuse' %}bg-red-100 text-red-800
+                    {% elif devis.status == 'expire' %}bg-gray-100 text-gray-600
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ devis.get_status_display }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {% if devis.total %}
+                    <span class="font-medium">{{ devis.total|floatformat:2 }}€</span>
+                  {% else %}
+                    <span class="text-gray-400">-</span>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {% if devis.date_limite %}
+                    <span class="{% if devis.is_expired %}text-red-600 font-medium{% endif %}">
+                      {{ devis.date_limite|date:"d/m/Y" }}
+                    </span>
+                  {% else %}
+                    <span class="text-gray-400">-</span>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <div class="flex items-center gap-2">
+                    <a
+                      href="{% url 'projects:devis_detail' pk=devis.pk %}"
+                      class="text-blue-600 hover:text-blue-700"
+                      title="Voir"
+                    >
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    
+                    {% if is_staff and devis.status == 'brouillon' %}
+                    <a
+                      href="{% url 'projects:devis_edit' pk=devis.pk %}"
+                      class="text-green-600 hover:text-green-700"
+                      title="Modifier"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    {% endif %}
+
+                    {% if devis.can_download_pdf %}
+                    <a
+                      href="{% url 'projects:devis_pdf' pk=devis.pk %}"
+                      class="text-purple-600 hover:text-purple-700"
+                      title="PDF"
+                      target="_blank"
+                    >
+                      <i class="fas fa-file-pdf"></i>
+                    </a>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Paginação -->
+      {% if is_paginated %}
+      <div class="mt-8 flex justify-center">
+        <nav class="flex items-center space-x-2">
+          {% if page_obj.has_previous %}
+          <a
+            href="?{{ request.GET.urlencode }}&page=1"
+            class="px-3 py-2 text-sm text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300"
+          >
+            Première
+          </a>
+          <a
+            href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}"
+            class="px-3 py-2 text-sm text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300"
+          >
+            Précédente
+          </a>
+          {% endif %}
+
+          <span class="px-3 py-2 text-sm text-gray-700 bg-blue-100 border border-blue-300 rounded-lg">
+            Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+          </span>
+
+          {% if page_obj.has_next %}
+          <a
+            href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}"
+            class="px-3 py-2 text-sm text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300"
+          >
+            Suivante
+          </a>
+          <a
+            href="?{{ request.GET.urlencode }}&page={{ page_obj.paginator.num_pages }}"
+            class="px-3 py-2 text-sm text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300"
+          >
+            Dernière
+          </a>
+          {% endif %}
+        </nav>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <!-- Estado vazio -->
+      <div class="text-center py-12">
+        <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+          <i class="fas fa-file-invoice-dollar text-gray-400 text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun devis trouvé</h3>
+        <p class="text-gray-600 mb-6">
+          {% if request.GET %}
+          Aucun devis ne correspond à vos critères de recherche.
+          {% else %}
+          {% if is_staff %}
+          Commencez par créer votre premier devis.
+          {% else %}
+          Vous n'avez pas encore de devis. Créez un projet pour recevoir un devis.
+          {% endif %}
+          {% endif %}
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          {% if request.GET %}
+          <a
+            href="{% url 'projects:devis_list' %}"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium"
+          >
+            Voir tous les devis
+          </a>
+          {% endif %}
+          
+          {% if is_staff %}
+          <a
+            href="{% url 'projects:devis_create' %}"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+          >
+            Créer un devis
+          </a>
+          {% else %}
+          <a
+            href="{% url 'projects:create' %}"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+          >
+            Créer un projet
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle filtros no mobile
+    window.toggleFilters = function() {
+        const sidebar = document.getElementById('filters-sidebar');
+        sidebar.classList.toggle('hidden');
+    };
+
+    // Toggle view (cards/table)
+    window.setView = function(view) {
+        const cardsBtn = document.getElementById('cards-view');
+        const tableBtn = document.getElementById('table-view');
+        const cardsContainer = document.getElementById('devis-cards');
+        const tableContainer = document.getElementById('devis-table');
+        
+        if (view === 'cards') {
+            cardsBtn.classList.add('bg-blue-600', 'text-white');
+            cardsBtn.classList.remove('text-gray-600');
+            tableBtn.classList.remove('bg-blue-600', 'text-white');
+            tableBtn.classList.add('text-gray-600');
+            cardsContainer.classList.remove('hidden');
+            tableContainer.classList.add('hidden');
+        } else {
+            tableBtn.classList.add('bg-blue-600', 'text-white');
+            tableBtn.classList.remove('text-gray-600');
+            cardsBtn.classList.remove('bg-blue-600', 'text-white');
+            cardsBtn.classList.add('text-gray-600');
+            cardsContainer.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+        }
+        
+        localStorage.setItem('devisView', view);
+    };
+
+    // Restore view preference
+    const savedView = localStorage.getItem('devisView') || 'cards';
+    setView(savedView);
+
+    // Auto-submit filters on change
+    const filterForm = document.querySelector('form[method="get"]');
+    if (filterForm) {
+        const selects = filterForm.querySelectorAll('select');
+        selects.forEach(select => {
+            select.addEventListener('change', () => {
+                filterForm.submit();
+            });
+        });
+    }
+
+    // Animate cards on load
+    const cards = document.querySelectorAll('.devis-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Destacar devis próximos do vencimento
+    const urgentDevis = document.querySelectorAll('.deadline-warning');
+    urgentDevis.forEach(element => {
+        element.style.animation = 'pulse 2s infinite';
+    });
+
+    // Status color animation
+    const statusBadges = document.querySelectorAll('.status-badge');
+    statusBadges.forEach(badge => {
+        if (badge.textContent.trim() === 'Accepté') {
+            badge.style.animation = 'glow-green 2s ease-in-out infinite alternate';
+        } else if (badge.textContent.trim() === 'Expiré') {
+            badge.style.animation = 'glow-red 2s ease-in-out infinite alternate';
+        }
+    });
+
+    // Confirmation for important actions
+    const dangerButtons = document.querySelectorAll('a[onclick*="confirm"]');
+    dangerButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            if (!confirm(this.getAttribute('onclick').match(/'([^']+)'/)[1])) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + F para focar na busca
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            const searchInput = document.querySelector('input[name="search"]');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }
+        
+        // V para alternar view
+        if (e.key === 'v' && !e.ctrlKey && !e.altKey) {
+            const currentView = localStorage.getItem('devisView') || 'cards';
+            setView(currentView === 'cards' ? 'table' : 'cards');
+        }
+    });
+
+    // Auto-refresh para atualizar status
+    setInterval(function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.get('status') || urlParams.get('status') === 'envoye') {
+            // Apenas refresh se estiver vendo devis enviados ou todos
+            location.reload();
+        }
+    }, 300000); // 5 minutos
+});
+
+// CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes glow-green {
+        from { box-shadow: 0 0 5px rgba(34, 197, 94, 0.5); }
+        to { box-shadow: 0 0 20px rgba(34, 197, 94, 0.8); }
+    }
+    
+    @keyframes glow-red {
+        from { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
+        to { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

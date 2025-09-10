@@ -1,0 +1,287 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-gray-50">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Dashboard administratif - LOPES PEINTURE - Gestion des projets de peinture et services"
+    />
+    <meta name="keywords" content="dashboard, peinture, administration, projets, LOPES PEINTURE" />
+    <meta name="author" content="LOPES PEINTURE" />
+    <title>{% block title %}Dashboard - LOPES PEINTURE{% endblock %}</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    {% tailwind_css %}
+    <!-- CSS -->
+    
+    <!-- Font Awesome -->
+    <script
+      defer
+      src="https://use.fontawesome.com/releases/v6.4.0/js/all.js"
+      crossorigin="anonymous"
+    ></script>
+    
+    <link rel="stylesheet" href="{% static 'config/css/base_dashboard.css' %}" />
+    <link rel="stylesheet" href="{% static 'config/css/components/logout-modal.css' %}">
+
+
+    {% block extra_css %}
+    
+    
+    {% endblock %}
+  </head>
+  <body class="h-full bg-gray-50 font-sans antialiased">
+    {% include 'components/logout.html' %}
+
+    <!-- Header Fixo -->
+    <header
+      class="fixed top-0 left-0 right-0 z-50 bg-white shadow-lg border-b border-gray-200"
+      style="height: var(--header-height)"
+    >
+      <div class="h-full px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-full">
+          <!-- Logo e Toggle Sidebar -->
+          <div class="flex items-center space-x-4">
+            <!-- Toggle Sidebar Button -->
+            <button
+              id="sidebarToggle"
+              class="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <i class="fas fa-bars text-xl"></i>
+            </button>
+
+            <!-- Logo -->
+            <a href="/" class="flex items-center space-x-3">
+              <img
+                src="{% static 'base/images/logo-220x80-preto.svg' %}"
+                class="h-10 w-auto"
+                alt="LOPES PEINTURE"
+                loading="lazy"
+              />
+              <span class="text-xl font-bold text-blue-600 hidden sm:block"></span>
+            </a>
+          </div>
+
+          <!-- User Menu -->
+          <div class="flex items-center space-x-4">
+            <!-- Notifications -->
+            <button
+              class="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-all duration-200 relative"
+            >
+              <i class="fas fa-bell text-lg"></i>
+              <span
+                class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                >3</span
+              >
+            </button>
+
+            <!-- User Info -->
+            <div class="hidden md:flex items-center space-x-3 text-gray-700">
+              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-user text-blue-600 text-sm"></i>
+              </div>
+              <span class="text-sm font-medium"
+                >{{user.first_name|default:"Utilisateur"}} {{user.last_name}}</span
+              >
+            </div>
+
+            <!-- Logout Button (atualizar a linha existente) -->
+            <button
+              onclick="openLogoutModal()"
+              class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            >
+              <i class="fas fa-sign-out-alt mr-2"></i>
+              <span class="hidden sm:inline">Déconnexion</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside
+      id="sidebar"
+      class="fixed left-0 z-40 bg-white shadow-xl border-r border-gray-200 transition-all duration-300 ease-in-out"
+      style="top: var(--header-height); bottom: var(--footer-height); width: var(--sidebar-width)"
+    >
+      <!-- Sidebar Header -->
+      <div class="p-6 border-b border-gray-200">
+        <div class="sidebar-header-text">
+          <h2 class="text-lg font-semibold text-gray-800">Menu Principal</h2>
+        </div>
+        <div class="sidebar-header-icon hidden">
+          <i class="fas fa-th-large text-gray-600 text-xl"></i>
+        </div>
+      </div>
+
+      <!-- Sidebar Navigation -->
+      <nav class="flex-1 px-4 py-6 space-y-2">
+        <a
+          href="{% url 'pages:home' %}"
+          class="relative flex items-center px-4 py-3 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors duration-200 group"
+        >
+          <i class="sidebar-icon fas fa-arrow-left mr-3 text-amber-600 group-hover:text-amber-700 flex-shrink-0"></i>
+          <span class="sidebar-text">Retour au Site</span>
+          <div class="sidebar-tooltip">Retour au Site</div>
+        </a>
+
+        <!-- ✅ DASHBOARD -->
+        <a
+          href="{% url 'projects:dashboard' %}"
+          class="relative flex items-center px-4 py-3 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors duration-200 group"
+        >
+          <i class="sidebar-icon fas fa-tachometer-alt mr-3 text-blue-600 group-hover:text-blue-700 flex-shrink-0"></i>
+          <span class="sidebar-text">Tableau de Bord</span>
+          <div class="sidebar-tooltip">Tableau de Bord</div>
+        </a>
+
+        <!-- ✅ PROJETOS -->
+        <a
+          href="{% url 'projects:list' %}"
+          class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 group"
+        >
+          <i class="sidebar-icon fas fa-paint-brush mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"></i>
+          <span class="sidebar-text">Mes Projets</span>
+          <div class="sidebar-tooltip">Mes Projets</div>
+        </a>
+
+        <!-- ✅ DEVIS -->
+        <a
+          href="{% url 'projects:devis_list' %}"
+          class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 group"
+        >
+          <i class="sidebar-icon fas fa-file-invoice-dollar mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"></i>
+          <span class="sidebar-text">Mes Devis</span>
+          <div class="sidebar-tooltip">Mes Devis</div>
+        </a>
+
+        <!-- ✅ ADMINISTRAÇÃO (apenas staff) -->
+        {% if user.is_staff %}
+        <div class="pt-4 border-t border-gray-200 mt-4">
+          <h3 class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Administration</h3>
+          
+          <a
+            href="{% url 'projects:admin_dashboard' %}"
+            class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors duration-200 group"
+          >
+            <i class="sidebar-icon fas fa-chart-line mr-3 text-gray-500 group-hover:text-purple-600 flex-shrink-0"></i>
+            <span class="sidebar-text">Dashboard Admin</span>
+            <div class="sidebar-tooltip">Dashboard Admin</div>
+          </a>
+
+          <a
+            href="{% url 'projects:admin_product_list' %}"
+            class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors duration-200 group"
+          >
+            <i class="sidebar-icon fas fa-box mr-3 text-gray-500 group-hover:text-purple-600 flex-shrink-0"></i>
+            <span class="sidebar-text">Produits</span>
+            <div class="sidebar-tooltip">Gestion des Produits</div>
+          </a>
+        </div>
+        {% endif %}
+
+        <!-- ✅ PERFIL -->
+        <a
+          href="{% url 'profiles:detail' %}"
+          class="relative flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 group"
+        >
+          <i class="sidebar-icon fas fa-user mr-3 text-gray-500 group-hover:text-blue-600 flex-shrink-0"></i>
+          <span class="sidebar-text">Mon Profil</span>
+          <div class="sidebar-tooltip">Mon Profil</div>
+        </a>
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="p-4 border-t border-gray-200">
+        <div class="flex items-center space-x-3 text-sm text-gray-600">
+          <div
+            class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0"
+          >
+            <i class="fas fa-circle text-green-500 text-xs"></i>
+          </div>
+          <span class="sidebar-text">Système en ligne</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Overlay para mobile -->
+    <div
+      id="sidebarOverlay"
+      class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden hidden transition-opacity duration-300"
+    ></div>
+
+    <!-- Main Content -->
+    <main
+      id="mainContent"
+      class="transition-all duration-300 ease-in-out content-normal overflow-hidden"
+      style="padding-top: var(--header-height); padding-bottom: var(--footer-height)"
+    >
+      <!-- Content Container -->
+      <div class="h-full overflow-y-auto overflow-x-hidden">
+        <div class="mx-2.5 my-6 lg:mx-4">
+          <!-- Messages -->
+          {% if messages %}
+          <div class="mb-6">
+            {% for message in messages %}
+            <div
+              class="alert alert-{{ message.tags }} bg-{{ message.tags }}-50 border border-{{ message.tags }}-200 text-{{ message.tags }}-800 px-4 py-3 rounded-lg mb-3"
+              role="alert"
+            >
+              <div class="flex items-center">
+                <i class="fas fa-info-circle mr-2"></i>
+                {{ message }}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Page Content -->
+          <div
+            class="bg-white rounded-lg shadow-sm border border-gray-200 min-h-[calc(100vh-140px)]"
+          >
+            {% block content %}
+            
+            {% endblock %}
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer Fixo -->
+    <footer
+      class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200"
+      style="height: var(--footer-height)"
+    >
+      <div class="h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+        <div class="text-sm text-gray-600">© 2024 LOPES PEINTURE. Tous droits réservés.</div>
+        <div class="hidden sm:flex items-center space-x-4 text-sm text-gray-600">
+          <span>Version 1.0.0</span>
+          <span>•</span>
+          <a href="#" class="hover:text-blue-600 transition-colors duration-200">Support</a>
+          <span>•</span>
+          <a href="#" class="hover:text-blue-600 transition-colors duration-200">Documentation</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- JavaScript -->
+    
+    <script src="{% static 'config/js/base_dashboard.js' %}"></script>
+    <!-- Adicionar antes do fechamento do </body> -->
+    <script src="{% static 'config/js/components/logout-modal.js' %}"></script>
+    {% block extra_js %}
+    
+    {% endblock %}
+  </body>
+</html>

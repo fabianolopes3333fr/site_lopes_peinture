@@ -1,0 +1,177 @@
+<!-- Modal de Logout -->
+<div
+  id="logoutModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4"
+>
+  <div
+    class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-95 opacity-0"
+    id="logoutModalContent"
+  >
+    <!-- Header do Modal -->
+    <div class="px-6 py-4 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+          <i class="fas fa-sign-out-alt text-red-600 mr-3"></i>
+          Confirmer la déconnexion
+        </h3>
+        <button
+          type="button"
+          onclick="closeLogoutModal()"
+          class="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+        >
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Corpo do Modal -->
+    <div class="p-6">
+      <div class="flex items-start mb-6">
+        <div
+          class="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4"
+        >
+          <i class="fas fa-question-circle text-red-600 text-xl"></i>
+        </div>
+        <div>
+          <p class="text-sm text-gray-700 mb-2">Êtes-vous sûr de vouloir vous déconnecter ?</p>
+          <p class="text-sm text-gray-500">
+            Vous devrez vous reconnecter pour accéder à votre compte.
+          </p>
+        </div>
+      </div>
+
+      <!-- Informações do usuário -->
+      {% if user.is_authenticated %}
+      <div class="bg-gray-50 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+          <div
+            class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mr-3"
+          >
+            {% if user.profile.avatar %}
+            <img
+              class="w-10 h-10 rounded-full object-cover"
+              src="{{ user.profile.avatar.url }}"
+              alt="{{ user.get_full_name }}"
+            />
+            {% else %}
+            <span class="text-white font-semibold text-sm"
+              >{{ user.first_name.0 }}{{ user.last_name.0 }}</span
+            >
+            {% endif %}
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-900">{{ user.get_full_name }}</p>
+            <p class="text-sm text-gray-500">{{ user.email }}</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Botões de ação -->
+      <div class="flex justify-end space-x-3">
+        <button
+          type="button"
+          onclick="closeLogoutModal()"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+        >
+          <i class="fas fa-times mr-2"></i>
+          Annuler
+        </button>
+
+        <!-- Form de logout -->
+        <form method="post" action="{% url 'accounts:logout' %}" class="inline" id="logoutForm">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% url 'pages:home' %}" />
+          <button
+            type="submit"
+            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            onclick="handleLogout(event)"
+          >
+            <i class="fas fa-sign-out-alt mr-2"></i>
+            Se déconnecter
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ✅ Funções para controlar o modal de logout
+  function openLogoutModal() {
+    const modal = document.getElementById('logoutModal');
+    const modalContent = document.getElementById('logoutModalContent');
+
+    if (!modal || !modalContent) {
+      console.error('Modal elements not found');
+      return;
+    }
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Animação de entrada
+    setTimeout(() => {
+      modalContent.classList.remove('scale-95', 'opacity-0');
+      modalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
+  }
+
+  function closeLogoutModal() {
+    const modal = document.getElementById('logoutModal');
+    const modalContent = document.getElementById('logoutModalContent');
+
+    if (!modal || !modalContent) {
+      console.error('Modal elements not found');
+      return;
+    }
+
+    // Animação de saída
+    modalContent.classList.remove('scale-100', 'opacity-100');
+    modalContent.classList.add('scale-95', 'opacity-0');
+
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }, 300);
+  }
+
+  // Função para tratar o logout
+  function handleLogout(event) {
+    console.log('Logout form submitted');
+
+    // Fechar modal imediatamente
+    closeLogoutModal();
+
+    // Mostrar loading
+    const button = event.target;
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Déconnexion...';
+    }
+
+    // Form será submetido normalmente
+    return true;
+  }
+
+  // Event listeners
+  document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('logoutModal');
+
+    if (modal) {
+      // Fechar modal ao clicar fora dele
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) {
+          closeLogoutModal();
+        }
+      });
+    }
+
+    // Fechar modal com ESC
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+        closeLogoutModal();
+      }
+    });
+  });
+</script>
