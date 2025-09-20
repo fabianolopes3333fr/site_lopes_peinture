@@ -8,8 +8,90 @@ from decimal import Decimal
 import uuid
 import re
 import logging
+from accounts.models import User
 
 logger = logging.getLogger(__name__)
+
+
+class ProjectType(models.TextChoices):
+    INTERIOR = "peinture_interieure", _("Peinture Intérieure")
+    EXTERIOR = "peinture_exterieure", _("Peinture Extérieure")
+    DECORATION = "decoration", _("Décoration")
+    RENOVATION = "renovation", _("Rénovation")
+    WALL_COVERING = "revetement_mural", _("Revêtement Mural")
+    COMMERCIAL = "commercial", _("Peinture Commerciale")
+    RESIDENTIAL = "residentiel", _("Résidentiel")
+    OTHER = "autre", _("Autre")
+
+
+class Status(models.TextChoices):
+    DRAFT = "brouillon", _("Brouillon")
+    SUBMITTED = "soumis", _("Soumis")
+    UNDER_REVIEW = "en_examen", _("En examen")
+    QUOTE_REQUESTED = "devis_demande", _("Devis demandé")
+    QUOTE_SENT = "devis_envoye", _("Devis envoyé")
+    QUOTE_ACCEPTED = "devis_accepte", _("Devis accepté")
+    QUOTE_REFUSED = "devis_refuse", _("Devis refusé")
+    SCHEDULED = "planifie", _("Planifié")
+    IN_PROGRESS = "en_cours", _("En cours")
+    COMPLETED = "termine", _("Terminé")
+    CANCELLED = "annule", _("Annulé")
+    EN_ATTENTE = "en_attente", _("En attente")
+
+
+class Priority(models.TextChoices):
+    LOW = "faible", _("Faible")
+    NORMAL = "normale", _("Normale")
+    HIGH = "elevee", _("Élevée")
+    URGENT = "urgente", _("Urgente")
+
+
+class SurfaceCondition(models.TextChoices):
+    EXCELLENT = "excellent", _("Excellent")
+    GOOD = "bon", _("Bon")
+    FAIR = "moyen", _("Moyen")
+    POOR = "mauvais", _("Mauvais")
+    DAMAGED = "abime", _("Abîmé")
+
+
+class FinishType(models.TextChoices):
+    MATTE = "mat", _("Mat")
+    SATIN = "satin", _("Satin")
+    SEMI_GLOSS = "semi_brillant", _("Semi-brillant")
+    GLOSS = "brillant", _("Brillant")
+    TEXTURED = "texture", _("Texturé")
+
+
+class ProductType(models.TextChoices):
+    PAINT = "peinture", _("Peinture")
+    PRIMER = "sous_couche", _("Sous-couche")
+    LABOR = "main_oeuvre", _("Main d'œuvre")
+    MATERIAL = "materiel", _("Matériel")
+    EQUIPMENT = "equipement", _("Équipement")
+    SERVICE = "service", _("Service")
+    OTHER = "autre", _("Autre")
+
+
+class Unit(models.TextChoices):
+    M2 = "m2", _("M²")
+    ML = "ml", _("ML")
+    UNIT = "unite", _("U")
+    PIECE = "piece", _("Pièce")
+    HOUR = "heure", _("Heure")
+    DAY = "jour", _("Jour")
+    LITER = "litre", _("Litre")
+    KG = "kg", _("Kg")
+    PACKAGE = "forfait", _("F")
+
+
+class DevisStatus(models.TextChoices):
+    DRAFT = "brouillon", _("Brouillon")
+    SENT = "envoye", _("Envoyé")
+    VIEWED = "vu", _("Vu par le client")
+    ACCEPTED = "accepte", _("Accepté")
+    REFUSED = "refuse", _("Refusé")
+    EXPIRED = "expire", _("Expiré")
+    CANCELLED = "annule", _("Annulé")
 
 
 class Project(models.Model):
@@ -17,76 +99,28 @@ class Project(models.Model):
     Modelo completo para gerenciamento de projetos de pintura.
     """
 
-    class ProjectType(models.TextChoices):
-        INTERIOR = "peinture_interieure", _("Peinture Intérieure")
-        EXTERIOR = "peinture_exterieure", _("Peinture Extérieure")
-        DECORATION = "decoration", _("Décoration")
-        RENOVATION = "renovation", _("Rénovation")
-        WALL_COVERING = "revetement_mural", _("Revêtement Mural")
-        COMMERCIAL = "commercial", _("Peinture Commerciale")
-        RESIDENTIAL = "residentiel", _("Résidentiel")
-        OTHER = "autre", _("Autre")
-
-    class Status(models.TextChoices):
-        DRAFT = "brouillon", _("Brouillon")
-        SUBMITTED = "soumis", _("Soumis")
-        UNDER_REVIEW = "en_examen", _("En examen")
-        QUOTE_REQUESTED = "devis_demande", _("Devis demandé")
-        QUOTE_SENT = "devis_envoye", _("Devis envoyé")
-        QUOTE_ACCEPTED = "devis_accepte", _("Devis accepté")
-        QUOTE_REFUSED = "devis_refuse", _("Devis refusé")
-        SCHEDULED = "planifie", _("Planifié")
-        IN_PROGRESS = "en_cours", _("En cours")
-        COMPLETED = "termine", _("Terminé")
-        CANCELLED = "annule", _("Annulé")
-        ON_HOLD = "en_attente", _("En attente")
-
-    class Priority(models.TextChoices):
-        LOW = "faible", _("Faible")
-        NORMAL = "normale", _("Normale")
-        HIGH = "elevee", _("Élevée")
-        URGENT = "urgente", _("Urgente")
-
-    class RoomType(models.TextChoices):
-        LIVING_ROOM = "salon", _("Salon")
-        KITCHEN = "cuisine", _("Cuisine")
-        BEDROOM = "chambre", _("Chambre")
-        BATHROOM = "salle_de_bain", _("Salle de bain")
-        OFFICE = "bureau", _("Bureau")
-        HALLWAY = "couloir", _("Couloir")
-        BASEMENT = "sous_sol", _("Sous-sol")
-        ATTIC = "grenier", _("Grenier")
-        GARAGE = "garage", _("Garage")
-        EXTERIOR = "exterieur", _("Extérieur")
-
-    class SurfaceCondition(models.TextChoices):
-        EXCELLENT = "excellent", _("Excellent")
-        GOOD = "bon", _("Bon")
-        FAIR = "moyen", _("Moyen")
-        POOR = "mauvais", _("Mauvais")
-        DAMAGED = "abime", _("Abîmé")
-
-    class FinishType(models.TextChoices):
-        MATTE = "mat", _("Mat")
-        SATIN = "satin", _("Satin")
-        SEMI_GLOSS = "semi_brillant", _("Semi-brillant")
-        GLOSS = "brillant", _("Brillant")
-        TEXTURED = "texture", _("Texturé")
-
-    # ================================
+    # ====
     # IDENTIFICATION & RELATIONS
-    # ================================
+    # ====
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+    # user = models.ForeignKey(
+    #     settings.AUTH_USER_MODEL,
+    #     on_delete=models.CASCADE,
+    #     related_name="projects",
+    #     verbose_name=_("Créé par"),
+    # )
+    created_by = models.ForeignKey(
+        User,
         on_delete=models.CASCADE,
-        related_name="projects",
-        verbose_name=_("Client"),
+        related_name="projets",
+        verbose_name="Créé par",
+        null=True,
+        blank=True,
     )
 
     assigned_to = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        User,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -95,9 +129,9 @@ class Project(models.Model):
         limit_choices_to={"is_staff": True},
     )
 
-    # ================================
+    # ====
     # INFORMATIONS GÉNÉRALES
-    # ================================
+    # ====
     title = models.CharField(
         _("Titre du projet"),
         max_length=200,
@@ -113,8 +147,12 @@ class Project(models.Model):
         help_text=_("Référence unique générée automatiquement"),
     )
 
-    type_projet = models.CharField(
-        _("Type de projet"), max_length=50, choices=ProjectType.choices, db_index=True
+    project_type = models.CharField(
+        _("Type de projet"),
+        max_length=50,
+        choices=ProjectType.choices,
+        db_index=True,
+        default=ProjectType.INTERIOR,
     )
 
     description = models.TextField(
@@ -122,9 +160,9 @@ class Project(models.Model):
         help_text=_("Description complète du projet et des attentes"),
     )
 
-    # ================================
+    # ====
     # DÉTAILS TECHNIQUES COMPLETS
-    # ================================
+    # ====
 
     # Surfaces
     surface_totale = models.DecimalField(
@@ -135,43 +173,16 @@ class Project(models.Model):
         help_text=_("Surface totale à traiter"),
     )
 
-    surface_murs = models.DecimalField(
-        _("Surface murs (m²)"),
-        max_digits=8,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text=_("Surface des murs à peindre"),
-    )
-
-    surface_plafond = models.DecimalField(
-        _("Surface plafond (m²)"),
-        max_digits=8,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text=_("Surface du plafond à peindre"),
-    )
-
-    hauteur_sous_plafond = models.DecimalField(
-        _("Hauteur sous plafond (m)"),
-        max_digits=4,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text=_("Hauteur sous plafond en mètres"),
-    )
-
     # Pièces et types
-    nombre_pieces = models.PositiveIntegerField(
+    nombre_pieces = models.IntegerField(
         _("Nombre de pièces"),
         default=1,
         help_text=_("Nombre total de pièces concernées"),
     )
 
-    types_pieces = models.JSONField(
+    types_pieces = models.CharField(
         _("Types de pièces"),
-        default=list,
+        max_length=200,
         blank=True,
         help_text=_("Liste des types de pièces concernées"),
     )
@@ -183,12 +194,6 @@ class Project(models.Model):
         choices=SurfaceCondition.choices,
         default=SurfaceCondition.GOOD,
         help_text=_("État actuel des surfaces à traiter"),
-    )
-
-    preparation_necessaire = models.TextField(
-        _("Préparation nécessaire"),
-        blank=True,
-        help_text=_("Travaux de préparation requis"),
     )
 
     # Finitions et matériaux
@@ -213,22 +218,14 @@ class Project(models.Model):
         help_text=_("Matériaux ou marques spécifiques demandés"),
     )
 
-    # Contraintes
-    acces_difficile = models.BooleanField(
-        _("Accès difficile"),
-        default=False,
-        help_text=_("Accès difficile ou contraintes particulières"),
-    )
-
+    # ====
+    # DATES ET PLANNING
+    # ====
     contraintes_horaires = models.TextField(
         _("Contraintes horaires"),
         blank=True,
         help_text=_("Contraintes d'horaires ou de planning"),
     )
-
-    # ================================
-    # DATES ET PLANNING
-    # ================================
     date_debut_souhaitee = models.DateField(
         _("Date de début souhaitée"),
         null=True,
@@ -249,17 +246,9 @@ class Project(models.Model):
 
     date_fin_prevue = models.DateField(_("Date de fin prévue"), null=True, blank=True)
 
-    date_debut_effective = models.DateField(
-        _("Date de début effective"), null=True, blank=True
-    )
-
-    date_fin_effective = models.DateField(
-        _("Date de fin effective"), null=True, blank=True
-    )
-
-    # ================================
+    # ====
     # ADRESSE ET CONTACT
-    # ================================
+    # ====
     adresse_travaux = models.CharField(
         _("Adresse des travaux"),
         max_length=255,
@@ -298,9 +287,9 @@ class Project(models.Model):
         help_text=_("Numéro de téléphone du contact sur site"),
     )
 
-    # ================================
+    # ====
     # BUDGET ET FINANCES
-    # ================================
+    # ====
     budget_minimum = models.DecimalField(
         _("Budget minimum (€)"),
         max_digits=10,
@@ -319,14 +308,14 @@ class Project(models.Model):
         help_text=_("Budget maximum envisagé"),
     )
 
-    # ================================
+    # ====
     # STATUT ET PRIORITÉ
-    # ================================
+    # ====
     status = models.CharField(
         _("Statut"),
         max_length=20,
         choices=Status.choices,
-        default=Status.DRAFT,
+        default=Status.EN_ATTENTE,
         db_index=True,
     )
 
@@ -338,9 +327,9 @@ class Project(models.Model):
         db_index=True,
     )
 
-    # ================================
+    # ====
     # NOTES ET COMMENTAIRES
-    # ================================
+    # ====
     notes_client = models.TextField(
         _("Notes du client"),
         blank=True,
@@ -351,9 +340,9 @@ class Project(models.Model):
         _("Notes internes"), blank=True, help_text=_("Notes internes pour l'équipe")
     )
 
-    # ================================
+    # ====
     # MÉTADONNÉES
-    # ================================
+    # ====
     created_at = models.DateTimeField(_("Créé le"), auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(_("Mis à jour le"), auto_now=True)
     completed_at = models.DateTimeField(_("Terminé le"), null=True, blank=True)
@@ -363,8 +352,8 @@ class Project(models.Model):
         verbose_name_plural = _("Projets")
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["user", "status"]),
-            models.Index(fields=["type_projet", "status"]),
+            models.Index(fields=["created_by", "status"]),  # era "user"
+            models.Index(fields=["project_type", "status"]),  # era "type_projet"
             models.Index(fields=["created_at"]),
             models.Index(fields=["priority", "status"]),
             models.Index(fields=["reference"]),
@@ -373,32 +362,12 @@ class Project(models.Model):
     def __str__(self):
         return f"[{self.reference}] {self.title}"
 
-    def save(self, *args, **kwargs):
-        # Gerar referência se não existir
-        if not self.reference:
-            self.reference = self.generate_reference()
-
-        # Gerar título inteligente se não existir ou se ainda for o padrão
-
-        if not self.title or self.title.startswith("Projet -"):
-            if self.ville and self.type_projet:
-                self.title = f"{self.get_type_projet_display()} - {self.ville}"
-            elif self.type_projet:
-                self.title = f"{self.get_type_projet_display()}"
-            else:
-                self.title = f"Projet - {timezone.now().strftime('%d/%m/%Y')}"
-
-        super().save(*args, **kwargs)
-
     def generate_reference(self):
         """Gera uma referência única para o projeto."""
         import datetime
 
         year = datetime.datetime.now().year
-
-        # Contar projetos do ano
         count = Project.objects.filter(created_at__year=year).count() + 1
-
         return f"PROJ-{year}-{count:04d}"
 
     def get_absolute_url(self):
@@ -408,9 +377,9 @@ class Project(models.Model):
     def can_be_edited(self):
         """Verifica se o projeto pode ser editado."""
         readonly_statuses = [
-            self.Status.COMPLETED,
-            self.Status.CANCELLED,
-            self.Status.IN_PROGRESS,
+            Status.COMPLETED,
+            Status.CANCELLED,
+            Status.IN_PROGRESS,
         ]
         return self.status not in readonly_statuses
 
@@ -418,55 +387,55 @@ class Project(models.Model):
     def can_request_quote(self):
         """Verifica se pode solicitar orçamento."""
         allowed_statuses = [
-            self.Status.DRAFT,
-            self.Status.SUBMITTED,
-            self.Status.UNDER_REVIEW,
+            Status.DRAFT,
+            Status.SUBMITTED,
+            Status.UNDER_REVIEW,
         ]
         return self.status in allowed_statuses
+
+    @property
+    def can_be_deleted(self):
+        """Verificar se projeto pode ser deletado"""
+        # Não pode deletar se tem devis enviados ou aceitos
+        if hasattr(self, "devis") and self.devis.exclude(status=Status.DRAFT).exists():
+            return False
+
+        # Não pode deletar se está em execução
+        if self.status in [Status.IN_PROGRESS, Status.COMPLETED]:
+            return False
+
+        # Pode deletar se é brouillon ou rejeitado
+        return self.status in [Status.DRAFT, Status.SUBMITTED, Status.QUOTE_REFUSED]
 
     @property
     def progress_percentage(self):
         """Calcula porcentagem de progresso."""
         progress_map = {
-            self.Status.DRAFT: 5,
-            self.Status.SUBMITTED: 15,
-            self.Status.UNDER_REVIEW: 25,
-            self.Status.QUOTE_REQUESTED: 35,
-            self.Status.QUOTE_SENT: 50,
-            self.Status.QUOTE_ACCEPTED: 70,
-            self.Status.QUOTE_REFUSED: 30,
-            self.Status.SCHEDULED: 80,
-            self.Status.IN_PROGRESS: 90,
-            self.Status.COMPLETED: 100,
-            self.Status.CANCELLED: 0,
-            self.Status.ON_HOLD: 40,
+            Status.DRAFT: 5,
+            Status.SUBMITTED: 15,
+            Status.UNDER_REVIEW: 25,
+            Status.QUOTE_REQUESTED: 35,
+            Status.QUOTE_SENT: 50,
+            Status.QUOTE_ACCEPTED: 70,
+            Status.QUOTE_REFUSED: 30,
+            Status.SCHEDULED: 80,
+            Status.IN_PROGRESS: 90,
+            Status.COMPLETED: 100,
+            Status.CANCELLED: 0,
+            Status.EN_ATTENTE: 40,
         }
         return progress_map.get(self.status, 0)
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            self.reference = self.generate_reference()  # Remover "PRJ-" duplicado
+        super().save(*args, **kwargs)
 
 
 class Product(models.Model):
     """
     Modelo para produtos/serviços que podem ser incluídos nos devis.
     """
-
-    class ProductType(models.TextChoices):
-        PAINT = "peinture", _("Peinture")
-        PRIMER = "sous_couche", _("Sous-couche")
-        LABOR = "main_oeuvre", _("Main d'œuvre")
-        MATERIAL = "materiel", _("Matériel")
-        EQUIPMENT = "equipement", _("Équipement")
-        SERVICE = "service", _("Service")
-        OTHER = "autre", _("Autre")
-
-    class Unit(models.TextChoices):
-        M2 = "m2", _("m²")
-        ML = "ml", _("ml")
-        PIECE = "piece", _("Pièce")
-        HOUR = "heure", _("Heure")
-        DAY = "jour", _("Jour")
-        LITER = "litre", _("Litre")
-        KG = "kg", _("Kg")
-        PACKAGE = "forfait", _("Forfait")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -486,7 +455,7 @@ class Product(models.Model):
         _("Description"), blank=True, help_text=_("Description détaillée du produit")
     )
 
-    type_product = models.CharField(
+    type_produit = models.CharField(
         _("Type de produit"), max_length=20, choices=ProductType.choices, db_index=True
     )
 
@@ -496,6 +465,7 @@ class Product(models.Model):
         max_length=20,
         choices=Unit.choices,
         help_text=_("Unité de mesure pour ce produit"),
+        default=Unit.M2,
     )
 
     price_unit = models.DecimalField(
@@ -513,13 +483,13 @@ class Product(models.Model):
     created_at = models.DateTimeField(_("Créé le"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Mis à jour le"), auto_now=True)
 
-    class Meta:
-        verbose_name = _("Produit")
-        verbose_name_plural = _("Produits")
-        ordering = ["type_product", "name"]
-
     def __str__(self):
-        return f"[{self.code}] {self.name}"
+        return f"{self.code} - {self.name}"
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Produit"
+        verbose_name_plural = "Produits"
 
     def save(self, *args, **kwargs):
         if not self.code:
@@ -532,37 +502,14 @@ class Product(models.Model):
 
         year = datetime.datetime.now().year % 100  # 2 dígitos
         count = Product.objects.count() + 1
-        type_prefix = self.type_product[:3].upper()
+        type_prefix = self.type_produit[:3].upper()
         return f"{type_prefix}-{year}{count:04d}"
-
-    # No modelo Project:
-    def can_be_deleted(self):
-        """Verificar se projeto pode ser deletado"""
-        # Não pode deletar se tem devis enviados ou aceitos
-        if self.devis.exclude(status="brouillon").exists():
-            return False
-
-        # Não pode deletar se está em execução
-        if self.status in ["en_cours", "termine"]:
-            return False
-
-        # Pode deletar se é brouillon ou rejeitado
-        return self.status in ["brouillon", "nouveau", "refuse"]
 
 
 class Devis(models.Model):
     """
     Modelo para gerenciamento de devis (orçamentos).
     """
-
-    class Status(models.TextChoices):
-        DRAFT = "brouillon", _("Brouillon")
-        SENT = "envoye", _("Envoyé")
-        VIEWED = "vu", _("Vu par le client")
-        ACCEPTED = "accepte", _("Accepté")
-        REFUSED = "refuse", _("Refusé")
-        EXPIRED = "expire", _("Expiré")
-        CANCELLED = "annule", _("Annulé")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -574,7 +521,7 @@ class Devis(models.Model):
         verbose_name=_("Projet"),
     )
 
-    created_by = models.ForeignKey(
+    user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="created_devis",
@@ -582,126 +529,186 @@ class Devis(models.Model):
     )
 
     # Informations devis
-    reference = models.CharField(_("Référence"), max_length=20, unique=True, blank=True)
+    reference = models.CharField(max_length=50, unique=True, verbose_name="Référence")
 
     title = models.CharField(
-        _("Titre du devis"),
         max_length=200,
         blank=True,
         help_text=_("Titre descriptif du devis"),
+        verbose_name=_("Titre du devis"),
     )
 
     description = models.TextField(
-        _("Description"), blank=True, help_text=_("Description des travaux proposés")
-    )
-
-    # Dates et validité
-    date_created = models.DateTimeField(_("Date de création"), auto_now_add=True)
-    date_sent = models.DateTimeField(_("Date d'envoi"), null=True, blank=True)
-    date_viewed = models.DateTimeField(_("Date de consultation"), null=True, blank=True)
-    date_response = models.DateTimeField(_("Date de réponse"), null=True, blank=True)
-    date_expiry = models.DateField(
-        _("Date d'expiration"), help_text=_("Date limite de validité du devis")
+        blank=True,
+        help_text=_("Description des travaux proposés"),
+        verbose_name=_("Description détaillée du devis"),
     )
 
     # Statut
     status = models.CharField(
         _("Statut"),
         max_length=20,
-        choices=Status.choices,
-        default=Status.DRAFT,
+        choices=DevisStatus.choices,
+        default=DevisStatus.DRAFT,
         db_index=True,
+    )
+
+    # Donnees de l'entreprise
+    company_name = models.CharField(
+        max_length=100,
+        default="Ma Société",
+        verbose_name=_("Nom de l'entreprise"),
+    )
+    company_address = models.CharField(
+        max_length=255,
+        default="123 Rue de l'Entreprise",
+        verbose_name=_("Adresse de l'entreprise"),
+    )
+    company_siret = models.CharField(
+        max_length=14,
+        default="12345678901234",
+        verbose_name=_("Numéro SIRET"),
+    )
+    company_postal_code = models.CharField(
+        max_length=10,
+        default="75001",
+        verbose_name=_("Code postal de l'entreprise"),
+    )
+    company_city = models.CharField(
+        max_length=100,
+        default="Paris",
+        verbose_name=_("Ville de l'entreprise"),
+    )
+    company_phone = models.CharField(
+        max_length=20,
+        default="01 23 45 67 89",
+        verbose_name=_("Numéro de téléphone"),
+    )
+    company_email = models.EmailField(
+        max_length=254,
+        default="contact@entreprise.com",
+        verbose_name=_("Email de l'entreprise"),
+    )
+    company_website = models.URLField(
+        max_length=200,
+        blank=True,
+        default="https://www.entreprise.com",
+        verbose_name=_("Site web de l'entreprise"),
+    )
+    company_logo = models.ImageField(
+        upload_to="logos/",
+        blank=True,
+        verbose_name=_("Logo de l'entreprise"),
     )
 
     # Montants
     subtotal = models.DecimalField(
-        _("Sous-total (€)"), max_digits=10, decimal_places=2, default=Decimal("0.00")
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        verbose_name=_("Sous-total"),
     )
 
     tax_rate = models.DecimalField(
-        _("Taux TVA (%)"), max_digits=5, decimal_places=2, default=Decimal("20.00")
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("20.00"),
+        verbose_name=_("Taux TVA"),
     )
 
     tax_amount = models.DecimalField(
-        _("Montant TVA (€)"), max_digits=10, decimal_places=2, default=Decimal("0.00")
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        verbose_name=_("Montant TVA"),
     )
 
     total = models.DecimalField(
-        _("Total TTC (€)"), max_digits=10, decimal_places=2, default=Decimal("0.00")
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        verbose_name=_("Total TTC"),
     )
 
     # Notes
     terms_conditions = models.TextField(
-        _("Conditions générales"),
         blank=True,
         help_text=_("Conditions générales de vente et modalités"),
+        verbose_name=_("Conditions générales"),
     )
 
     notes = models.TextField(
-        _("Notes"), blank=True, help_text=_("Notes additionnelles")
+        blank=True,
+        help_text=_("Notes additionnelles"),
+        verbose_name=_("Notes"),
     )
 
     # Métadonnées
-    updated_at = models.DateTimeField(_("Mis à jour le"), auto_now=True)
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date de création")
+    )
+    date_updated = models.DateTimeField(
+        auto_now=True, verbose_name=_("Date de modification")
+    )
+    date_sent = models.DateTimeField(
+        null=True, blank=True, verbose_name=_("Date d'envoi")
+    )
+    date_viewed = models.DateTimeField(
+        null=True, blank=True, verbose_name=_("Date de consultation")
+    )
+    date_accepted = models.DateTimeField(
+        null=True, blank=True, verbose_name=_("Date d'acceptation")
+    )
+    date_refused = models.DateTimeField(
+        null=True, blank=True, verbose_name=_("Date de refus")
+    )
+    date_expiry = models.DateField(
+        null=True, blank=True, verbose_name=_("Date d'expiration")
+    )
 
     class Meta:
         verbose_name = _("Devis")
         verbose_name_plural = _("Devis")
         ordering = ["-date_created"]
 
-    def __str__(self):
-        return f"[{self.reference}] {self.title}"
-
     def save(self, *args, **kwargs):
         if not self.reference:
-            self.reference = self.generate_reference()
+            count = Devis.objects.count()
+            self.reference = f"DEV-{timezone.now().year}-{count + 1:04d}"
 
-        # Gerar título inteligente se não existir ou se ainda for o padrão
-        if not self.title or self.title.startswith("Devis -"):
-            if self.project and self.project.title:
-                self.title = f"Devis - {self.project.title}"
-            elif self.project:
-                self.title = f"Devis - {self.project.get_type_projet_display()}"
-            else:
-                self.title = f"Devis - {timezone.now().strftime('%d/%m/%Y')}"
+        # Calcul des montants - Forcer tous les types en Decimal
+        from decimal import Decimal
+
+        # Assurer que tous les calculs utilisent des Decimal
+        subtotal_decimal = (
+            Decimal(str(self.subtotal)) if self.subtotal else Decimal("0")
+        )
+        tax_rate_decimal = (
+            Decimal(str(self.tax_rate)) if self.tax_rate else Decimal("0")
+        )
+
+        # Calcul avec types consistents
+        self.tax_amount = (subtotal_decimal * tax_rate_decimal) / Decimal("100")
+        self.total = subtotal_decimal + self.tax_amount
 
         super().save(*args, **kwargs)
 
-    # No modelo Devis:
-    def can_be_deleted(self):
-        """Verificar se devis pode ser deletado"""
-        # Não pode deletar devis aceitos (exceto superuser)
-        if self.status == "accepte":
-            return False
-
-        # Não pode deletar se projeto está em execução
-        if self.project.status == "en_cours":
-            return False
-
-        # Pode deletar brouillons e alguns outros status
-        return self.status in ["brouillon", "refuse"]
-
-    def is_expired(self):
-        """Verificar se devis expirou"""
-        if not self.date_expiry:
-            return False
-        return timezone.now().date() > self.date_expiry
+    def __str__(self):
+        return f"{self.reference} - {self.title}"
 
     def generate_reference(self):
-        """Gera referência única para o devis."""
-        import datetime
+        """Génère une référence unique pour le devis"""
+        from django.utils import timezone
 
-        year = datetime.datetime.now().year
+        year = timezone.now().year
         count = Devis.objects.filter(date_created__year=year).count() + 1
         return f"DEV-{year}-{count:04d}"
 
     def calculate_totals(self):
-        """Calcula os totais do devis."""
-        lines = self.lines.all()
-        self.subtotal = sum(line.total for line in lines)
+        """Calcule les totaux du devis"""
+        self.subtotal = sum(line.total for line in self.lines.all())
         self.tax_amount = self.subtotal * (self.tax_rate / 100)
         self.total = self.subtotal + self.tax_amount
-        self.save(update_fields=["subtotal", "tax_amount", "total"])
 
     @property
     def is_expired(self):
@@ -712,9 +719,23 @@ class Devis(models.Model):
     def can_be_accepted(self):
         """Verifica se o devis pode ser aceito."""
         return (
-            self.status in [self.Status.SENT, self.Status.VIEWED]
+            self.status in [DevisStatus.SENT, DevisStatus.VIEWED]
             and not self.is_expired
         )
+
+    @property
+    def can_be_deleted(self):
+        """Verificar se devis pode ser deletado"""
+        # Não pode deletar devis aceitos (exceto superuser)
+        if self.status == DevisStatus.ACCEPTED:
+            return False
+
+        # Não pode deletar se projeto está em execução
+        if self.project.status in [Status.IN_PROGRESS, Status.COMPLETED]:
+            return False
+
+        # Pode deletar brouillons e alguns outros status
+        return self.status in [DevisStatus.DRAFT, DevisStatus.REFUSED]
 
 
 class DevisLine(models.Model):
@@ -728,7 +749,7 @@ class DevisLine(models.Model):
         Devis, on_delete=models.CASCADE, related_name="lines", verbose_name=_("Devis")
     )
 
-    product = models.ForeignKey(
+    produit = models.ForeignKey(
         Product, on_delete=models.CASCADE, verbose_name=_("Produit")
     )
 
@@ -740,14 +761,14 @@ class DevisLine(models.Model):
         help_text=_("Quantité de ce produit"),
     )
 
-    unit_price = models.DecimalField(
+    price_unit = models.DecimalField(
         _("Prix unitaire (€)"),
         max_digits=10,
         decimal_places=2,
         help_text=_("Prix unitaire au moment du devis"),
     )
 
-    total = models.DecimalField(
+    total_line = models.DecimalField(
         _("Total ligne (€)"),
         max_digits=10,
         decimal_places=2,
@@ -771,11 +792,11 @@ class DevisLine(models.Model):
         ordering = ["order", "id"]
 
     def __str__(self):
-        return f"{self.product.name} x {self.quantity}"
+        return f"{self.devis.reference} - {self.produit.name}"
 
     def save(self, *args, **kwargs):
         # Calculer le total
-        self.total = self.quantity * self.unit_price
+        self.total_line = self.quantity * self.price_unit
         super().save(*args, **kwargs)
 
         # Recalculer les totaux du devis

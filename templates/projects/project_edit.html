@@ -1,1069 +1,1007 @@
 {% extends 'base_dashboard.html' %} 
 {% load static tailwind_tags %} 
 {% block title %}Modifier {{ project.title }} - LOPES PEINTURE {% endblock %} 
+
 {% block extra_css %}
 {% tailwind_css %}
+<style>
+/* Campos de formulário modernos */
+.modern-input {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-xl text-base 
+         focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+         transition-all duration-200 bg-white shadow-sm
+         hover:border-gray-400;
+}
+
+.modern-input:focus {
+  @apply shadow-md transform scale-[1.02];
+}
+
+.modern-textarea {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-xl text-base 
+         focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+         transition-all duration-200 bg-white shadow-sm resize-none
+         hover:border-gray-400;
+}
+
+.modern-select {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-xl text-base 
+         focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+         transition-all duration-200 bg-white shadow-sm
+         hover:border-gray-400 appearance-none cursor-pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 1rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 3rem;
+}
+
+/* Labels modernos */
+.modern-label {
+  @apply block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2;
+}
+
+.required-star {
+  @apply text-red-500 font-bold;
+}
+
+/* Cards de seção */
+.section-card {
+  @apply bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-8;
+}
+
+.section-header {
+  @apply px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100;
+}
+
+.section-title {
+  @apply text-2xl font-bold text-gray-900 flex items-center gap-3;
+}
+
+.section-icon {
+  @apply w-8 h-8 text-blue-600 bg-blue-100 rounded-lg flex items-center justify-center;
+}
+
+.section-content {
+  @apply p-8;
+}
+
+/* Subsections */
+.subsection {
+  @apply mb-8 last:mb-0;
+}
+
+.subsection-title {
+  @apply text-lg font-semibold text-gray-800 mb-6 flex items-center gap-3 pb-3 border-b border-gray-200;
+}
+
+.subsection-icon {
+  @apply w-6 h-6 text-gray-600;
+}
+
+/* Form groups */
+.form-group {
+  @apply space-y-2;
+}
+
+/* Grid layouts */
+.form-grid-2 {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+}
+
+.form-grid-3 {
+  @apply grid grid-cols-1 md:grid-cols-3 gap-6;
+}
+
+.form-grid-4 {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6;
+}
+
+/* Botões modernos */
+.btn-modern {
+  @apply inline-flex items-center px-6 py-3 rounded-xl font-semibold text-sm 
+         transition-all duration-200 shadow-md hover:shadow-lg 
+         focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+}
+
+.btn-success {
+  @apply bg-green-600 text-white hover:bg-green-700 focus:ring-green-500;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-500;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+}
+
+/* Sidebar cards */
+.sidebar-card {
+  @apply bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6;
+}
+
+.sidebar-title {
+  @apply text-lg font-semibold text-gray-900 mb-4 flex items-center gap-3;
+}
+
+/* Status indicators */
+.status-badge {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+}
+
+/* Indicadores de mudança */
+.change-indicator {
+  @apply absolute -top-2 -right-2 w-4 h-4 bg-orange-400 border-2 border-white rounded-full opacity-0 transition-all duration-300;
+}
+
+.change-indicator.visible {
+  @apply opacity-100 animate-pulse;
+}
+
+/* Tooltips e helps */
+.help-text {
+  @apply text-xs text-gray-500 mt-1 italic;
+}
+
+.error-text {
+  @apply text-sm text-red-600 mt-1 flex items-center gap-1;
+}
+
+/* Alertas */
+.alert {
+  @apply rounded-xl p-4 mb-6 border-l-4;
+}
+
+.alert-warning {
+  @apply bg-yellow-50 border-yellow-400 text-yellow-800;
+}
+
+.alert-info {
+  @apply bg-blue-50 border-blue-400 text-blue-800;
+}
+
+/* Animações */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Hover effects */
+.hover-lift {
+  @apply transition-transform duration-200 hover:transform hover:-translate-y-1;
+}
+</style>
 {% endblock %} 
+
 {% block content %}
-<div class="p-6 max-w-7xl mx-auto">
-  <!-- Header -->
-  <div class="mb-8">
-    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-      <div class="flex-1">
-        <div class="flex items-center gap-3 mb-2">
-          <a
-            href="{% url 'projects:detail' pk=project.pk %}"
-            class="text-gray-600 hover:text-blue-600 transition-colors duration-200"
-            title="Retour aux détails"
-          >
-            <i class="fas fa-arrow-left text-lg"></i>
-          </a>
-          <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <i class="fas fa-edit text-blue-600"></i>
-            Modifier le Projet
-          </h1>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-          <div class="flex items-center gap-2">
-            <i class="fas fa-hashtag text-gray-400"></i>
-            <span class="font-mono">{{ project.reference }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <i class="fas fa-calendar text-gray-400"></i>
-            <span>Créé le {{ project.created_at|date:"d/m/Y" }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <i class="fas fa-user text-gray-400"></i>
-            <span>{{ project.user.get_full_name|default:project.user.username }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Status atual -->
-      <div class="flex items-center gap-3">
-        <span
-          class="status-indicator {% if project.status == 'brouillon' %}bg-gray-100 text-gray-800 {% elif project.status == 'soumis' %}bg-blue-100 text-blue-800 {% elif project.status == 'en_examen' %}bg-yellow-100 text-yellow-800 {% elif project.status == 'devis_demande' %}bg-orange-100 text-orange-800 {% elif project.status == 'devis_envoye' %}bg-purple-100 text-purple-800 {% elif project.status == 'devis_accepte' %}bg-green-100 text-green-800 {% elif project.status == 'termine' %}bg-emerald-100 text-emerald-800 {% else %}bg-gray-100 text-gray-800{% endif %}"
-        >
-          {{ project.get_status_display }}
-        </span>
-
-        {% if project.status == 'brouillon' %}
-        <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-          <i class="fas fa-info-circle mr-1"></i>
-          Modifiable
-        </span>
-        {% else %}
-        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-          <i class="fas fa-lock mr-1"></i>
-          Modifications limitées
-        </span>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-
-  <!-- Alertes -->
-  {% if project.status != 'brouillon' %}
-  <div class="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-    <div class="flex items-start">
-      <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
-      <div>
-        <h3 class="text-sm font-medium text-yellow-800 mb-1">Projet soumis</h3>
-        <p class="text-sm text-yellow-700">
-          Ce projet a été soumis et ne peut plus être modifié librement. Seules certaines
-          informations peuvent être mises à jour. {% if is_staff %} En tant qu'administrateur, vous
-          pouvez effectuer toutes les modifications. {% endif %}
-        </p>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Layout principal -->
-  <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
-    <!-- Formulaire principal -->
-    <div class="xl:col-span-3">
-      <form method="post" id="project-edit-form" class="space-y-8">
-        {% csrf_token %}
-
-        <!-- ================================ -->
-        <!-- SECTION 1: INFORMATIONS GÉNÉRALES -->
-        <!-- ================================ -->
-        <div class="form-section">
-          <div class="form-section-header">
-            <i class="fas fa-info-circle text-blue-600 text-xl"></i>
-            <h2 class="text-xl font-semibold text-gray-900">Informations Générales</h2>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Titre -->
-            <div class="form-group lg:col-span-2 relative">
-              <label for="{{ form.title.id_for_label }}" class="form-label">
-                Titre du projet <span class="text-red-500">*</span>
-              </label>
-              {{ form.title }}
-              <div class="change-indicator" id="indicator-title"></div>
-              {% if form.title.errors %}
-              <div class="form-error">{{ form.title.errors.0 }}</div>
-              {% endif %}
-              <p class="text-xs text-gray-500 mt-1">Donnez un titre descriptif à votre projet</p>
-            </div>
-
-            <!-- Type de projet -->
-            <div class="form-group relative">
-              <label for="{{ form.type_projet.id_for_label }}" class="form-label">
-                Type de projet <span class="text-red-500">*</span>
-              </label>
-              {{ form.type_projet }}
-              <div class="change-indicator" id="indicator-type_projet"></div>
-              {% if form.type_projet.errors %}
-              <div class="form-error">{{ form.type_projet.errors.0 }}</div>
-              {% endif %} {% if project.status != 'brouillon' %}
-              <p class="text-xs text-orange-600 mt-1">
-                <i class="fas fa-lock mr-1"></i>
-                Modification limitée après soumission
-              </p>
-              {% endif %}
-            </div>
-
-            <!-- Priorité -->
-            <div class="form-group relative">
-              <label for="{{ form.priority.id_for_label }}" class="form-label"> Priorité </label>
-              {{ form.priority }}
-              <div class="change-indicator" id="indicator-priority"></div>
-              {% if form.priority.errors %}
-              <div class="form-error">{{ form.priority.errors.0 }}</div>
-              {% endif %}
-            </div>
-
-            <!-- Description -->
-            <div class="form-group lg:col-span-2 relative">
-              <label for="{{ form.description.id_for_label }}" class="form-label">
-                Description détaillée <span class="text-red-500">*</span>
-              </label>
-              {{ form.description }}
-              <div class="change-indicator" id="indicator-description"></div>
-              {% if form.description.errors %}
-              <div class="form-error">{{ form.description.errors.0 }}</div>
-              {% endif %}
-              <p class="text-xs text-gray-500 mt-1">
-                Décrivez votre projet en détail : ce que vous souhaitez faire, vos attentes, etc.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ================================ -->
-        <!-- SECTION 2: DÉTAILS TECHNIQUES -->
-        <!-- ================================ -->
-        <div class="form-section">
-          <div class="form-section-header">
-            <i class="fas fa-cogs text-blue-600 text-xl"></i>
-            <h2 class="text-xl font-semibold text-gray-900">Détails Techniques</h2>
-          </div>
-
-          <!-- Surfaces et Dimensions -->
-          <div class="mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-ruler-combined text-gray-600"></i>
-              Surfaces et Dimensions
-            </h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div class="form-group relative">
-                <label for="{{ form.surface_totale.id_for_label }}" class="form-label">
-                  Surface totale (m²) <span class="text-red-500">*</span>
-                </label>
-                {{ form.surface_totale }}
-                <div class="change-indicator" id="indicator-surface_totale"></div>
-                {% if form.surface_totale.errors %}
-                <div class="form-error">{{ form.surface_totale.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group relative">
-                <label for="{{ form.surface_murs.id_for_label }}" class="form-label">
-                  Surface murs (m²)
-                </label>
-                {{ form.surface_murs }}
-                <div class="change-indicator" id="indicator-surface_murs"></div>
-                {% if form.surface_murs.errors %}
-                <div class="form-error">{{ form.surface_murs.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group relative">
-                <label for="{{ form.surface_plafond.id_for_label }}" class="form-label">
-                  Surface plafond (m²)
-                </label>
-                {{ form.surface_plafond }}
-                <div class="change-indicator" id="indicator-surface_plafond"></div>
-                {% if form.surface_plafond.errors %}
-                <div class="form-error">{{ form.surface_plafond.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group relative">
-                <label for="{{ form.hauteur_sous_plafond.id_for_label }}" class="form-label">
-                  Hauteur sous plafond (m)
-                </label>
-                {{ form.hauteur_sous_plafond }}
-                <div class="change-indicator" id="indicator-hauteur_sous_plafond"></div>
-                {% if form.hauteur_sous_plafond.errors %}
-                <div class="form-error">{{ form.hauteur_sous_plafond.errors.0 }}</div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-
-          <!-- Pièces -->
-          <div class="mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-home text-gray-600"></i>
-              Pièces concernées
-            </h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="form-group relative">
-                <label for="{{ form.nombre_pieces.id_for_label }}" class="form-label">
-                  Nombre de pièces <span class="text-red-500">*</span>
-                </label>
-                {{ form.nombre_pieces }}
-                <div class="change-indicator" id="indicator-nombre_pieces"></div>
-                {% if form.nombre_pieces.errors %}
-                <div class="form-error">{{ form.nombre_pieces.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Types de pièces</label>
-                <div class="checkbox-grid">
-                  <div class="checkbox-item" data-checkbox="pieces_salon">
-                    {{ form.pieces_salon }}
-                    <label
-                      for="{{ form.pieces_salon.id_for_label }}"
-                      class="text-sm cursor-pointer"
-                    >
-                      {{ form.pieces_salon.label }}
-                    </label>
-                  </div>
-                  <div class="checkbox-item" data-checkbox="pieces_cuisine">
-                    {{ form.pieces_cuisine }}
-                    <label
-                      for="{{ form.pieces_cuisine.id_for_label }}"
-                      class="text-sm cursor-pointer"
-                    >
-                      {{ form.pieces_cuisine.label }}
-                    </label>
-                  </div>
-                  <div class="checkbox-item" data-checkbox="pieces_chambre">
-                    {{ form.pieces_chambre }}
-                    <label
-                      for="{{ form.pieces_chambre.id_for_label }}"
-                      class="text-sm cursor-pointer"
-                    >
-                      {{ form.pieces_chambre.label }}
-                    </label>
-                  </div>
-                  <div class="checkbox-item" data-checkbox="pieces_salle_de_bain">
-                    {{ form.pieces_salle_de_bain }}
-                    <label
-                      for="{{ form.pieces_salle_de_bain.id_for_label }}"
-                      class="text-sm cursor-pointer"
-                    >
-                      {{ form.pieces_salle_de_bain.label }}
-                    </label>
-                  </div>
-                  <div class="checkbox-item" data-checkbox="pieces_bureau">
-                    {{ form.pieces_bureau }}
-                    <label
-                      for="{{ form.pieces_bureau.id_for_label }}"
-                      class="text-sm cursor-pointer"
-                    >
-                      {{ form.pieces_bureau.label }}
-                    </label>
-                  </div>
-                  <div class="checkbox-item" data-checkbox="pieces_couloir">
-                    {{ form.pieces_couloir }}
-                    <label
-                      for="{{ form.pieces_couloir.id_for_label }}"
-                      class="text-sm cursor-pointer"
-                    >
-                      {{ form.pieces_couloir.label }}
-                    </label>
-                  </div>
-                  <div class="checkbox-item" data-checkbox="pieces_exterieur">
-                    {{ form.pieces_exterieur }}
-                    <label
-                      for="{{ form.pieces_exterieur.id_for_label }}"
-                      class="text-sm cursor-pointer"
-                    >
-                      {{ form.pieces_exterieur.label }}
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- État et Finitions -->
-          <div class="mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-palette text-gray-600"></i>
-              État et Finitions
-            </h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="form-group relative">
-                <label for="{{ form.etat_support.id_for_label }}" class="form-label">
-                  État du support <span class="text-red-500">*</span>
-                </label>
-                {{ form.etat_support }}
-                <div class="change-indicator" id="indicator-etat_support"></div>
-                {% if form.etat_support.errors %}
-                <div class="form-error">{{ form.etat_support.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group relative">
-                <label for="{{ form.type_finition.id_for_label }}" class="form-label">
-                  Type de finition <span class="text-red-500">*</span>
-                </label>
-                {{ form.type_finition }}
-                <div class="change-indicator" id="indicator-type_finition"></div>
-                {% if form.type_finition.errors %}
-                <div class="form-error">{{ form.type_finition.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group md:col-span-2 relative">
-                <label for="{{ form.preparation_necessaire.id_for_label }}" class="form-label">
-                  Préparation nécessaire
-                </label>
-                {{ form.preparation_necessaire }}
-                <div class="change-indicator" id="indicator-preparation_necessaire"></div>
-                {% if form.preparation_necessaire.errors %}
-                <div class="form-error">{{ form.preparation_necessaire.errors.0 }}</div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-
-          <!-- Couleurs -->
-          <div class="mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-paint-brush text-gray-600"></i>
-              Couleurs souhaitées
-            </h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="form-group relative">
-                <label for="{{ form.couleur_murs.id_for_label }}" class="form-label">
-                  Couleur des murs
-                </label>
-                {{ form.couleur_murs }}
-                <div class="change-indicator" id="indicator-couleur_murs"></div>
-                {% if form.couleur_murs.errors %}
-                <div class="form-error">{{ form.couleur_murs.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group relative">
-                <label for="{{ form.couleur_plafond.id_for_label }}" class="form-label">
-                  Couleur du plafond
-                </label>
-                {{ form.couleur_plafond }}
-                <div class="change-indicator" id="indicator-couleur_plafond"></div>
-                {% if form.couleur_plafond.errors %}
-                <div class="form-error">{{ form.couleur_plafond.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group relative">
-                <label for="{{ form.couleur_boiseries.id_for_label }}" class="form-label">
-                  Couleur des boiseries
-                </label>
-                {{ form.couleur_boiseries }}
-                <div class="change-indicator" id="indicator-couleur_boiseries"></div>
-                {% if form.couleur_boiseries.errors %}
-                <div class="form-error">{{ form.couleur_boiseries.errors.0 }}</div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-
-          <!-- Matériaux et Contraintes -->
-          <div class="mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-tools text-gray-600"></i>
-              Matériaux et Contraintes
-            </h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="form-group relative">
-                <label for="{{ form.materiaux_specifiques.id_for_label }}" class="form-label">
-                  Matériaux spécifiques
-                </label>
-                {{ form.materiaux_specifiques }}
-                <div class="change-indicator" id="indicator-materiaux_specifiques"></div>
-                {% if form.materiaux_specifiques.errors %}
-                <div class="form-error">{{ form.materiaux_specifiques.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group relative">
-                <label for="{{ form.contraintes_horaires.id_for_label }}" class="form-label">
-                  Contraintes horaires
-                </label>
-                {{ form.contraintes_horaires }}
-                <div class="change-indicator" id="indicator-contraintes_horaires"></div>
-                {% if form.contraintes_horaires.errors %}
-                <div class="form-error">{{ form.contraintes_horaires.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group md:col-span-2">
-                <div class="flex items-center space-x-3">
-                  {{ form.acces_difficile }}
-                  <label
-                    for="{{ form.acces_difficile.id_for_label }}"
-                    class="text-sm font-medium text-gray-700 cursor-pointer"
-                  >
-                    Accès difficile ou contraintes particulières
-                  </label>
-                </div>
-                {% if form.acces_difficile.errors %}
-                <div class="form-error">{{ form.acces_difficile.errors.0 }}</div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ================================ -->
-        <!-- SECTION 3: ADRESSE ET CONTACT -->
-        <!-- ================================ -->
-        <div class="form-section">
-          <div class="form-section-header">
-            <i class="fas fa-map-marker-alt text-blue-600 text-xl"></i>
-            <h2 class="text-xl font-semibold text-gray-900">Adresse et Contact</h2>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <!-- Adresse -->
-            <div class="form-group md:col-span-2 relative">
-              <label for="{{ form.adresse_travaux.id_for_label }}" class="form-label">
-                Adresse des travaux <span class="text-red-500">*</span>
-              </label>
-              {{ form.adresse_travaux }}
-              <div class="change-indicator" id="indicator-adresse_travaux"></div>
-              {% if form.adresse_travaux.errors %}
-              <div class="form-error">{{ form.adresse_travaux.errors.0 }}</div>
-              {% endif %}
-            </div>
-
-            <div class="form-group relative">
-              <label for="{{ form.complement_adresse.id_for_label }}" class="form-label">
-                Complément d'adresse
-              </label>
-              {{ form.complement_adresse }}
-              <div class="change-indicator" id="indicator-complement_adresse"></div>
-              {% if form.complement_adresse.errors %}
-              <div class="form-error">{{ form.complement_adresse.errors.0 }}</div>
-              {% endif %}
-            </div>
-
-            <div class="form-group relative">
-              <label for="{{ form.code_postal.id_for_label }}" class="form-label">
-                Code postal <span class="text-red-500">*</span>
-              </label>
-              {{ form.code_postal }}
-              <div class="change-indicator" id="indicator-code_postal"></div>
-              {% if form.code_postal.errors %}
-              <div class="form-error">{{ form.code_postal.errors.0 }}</div>
-              {% endif %}
-            </div>
-
-            <div class="form-group relative">
-              <label for="{{ form.ville.id_for_label }}" class="form-label">
-                Ville <span class="text-red-500">*</span>
-              </label>
-              {{ form.ville }}
-              <div class="change-indicator" id="indicator-ville"></div>
-              {% if form.ville.errors %}
-              <div class="form-error">{{ form.ville.errors.0 }}</div>
-              {% endif %}
-            </div>
-
-            <div class="form-group relative">
-              <label for="{{ form.pays.id_for_label }}" class="form-label"> Pays </label>
-              {{ form.pays }}
-              <div class="change-indicator" id="indicator-pays"></div>
-              {% if form.pays.errors %}
-              <div class="form-error">{{ form.pays.errors.0 }}</div>
-              {% endif %}
-            </div>
-          </div>
-
-          <!-- Contact -->
-          <div class="mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-user text-gray-600"></i>
-              Contact sur site
-            </h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="form-group relative">
-                <label for="{{ form.contact_nom.id_for_label }}" class="form-label">
-                  Nom du contact
-                </label>
-                {{ form.contact_nom }}
-                <div class="change-indicator" id="indicator-contact_nom"></div>
-                {% if form.contact_nom.errors %}
-                <div class="form-error">{{ form.contact_nom.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group relative">
-                <label for="{{ form.contact_telephone.id_for_label }}" class="form-label">
-                  Téléphone du contact
-                </label>
-                {{ form.contact_telephone }}
-                <div class="change-indicator" id="indicator-contact_telephone"></div>
-                {% if form.contact_telephone.errors %}
-                <div class="form-error">{{ form.contact_telephone.errors.0 }}</div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-
-          <!-- Dates -->
-          <div class="mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-calendar text-gray-600"></i>
-              Planning souhaité
-            </h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="form-group relative">
-                <label for="{{ form.date_debut_souhaitee.id_for_label }}" class="form-label">
-                  Date de début souhaitée
-                </label>
-                {{ form.date_debut_souhaitee }}
-                <div class="change-indicator" id="indicator-date_debut_souhaitee"></div>
-                {% if form.date_debut_souhaitee.errors %}
-                <div class="form-error">{{ form.date_debut_souhaitee.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group relative">
-                <label for="{{ form.date_fin_souhaitee.id_for_label }}" class="form-label">
-                  Date de fin souhaitée
-                </label>
-                {{ form.date_fin_souhaitee }}
-                <div class="change-indicator" id="indicator-date_fin_souhaitee"></div>
-                {% if form.date_fin_souhaitee.errors %}
-                <div class="form-error">{{ form.date_fin_souhaitee.errors.0 }}</div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-
-          <!-- Budget -->
-          <div class="mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-euro-sign text-gray-600"></i>
-              Budget estimé
-            </h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="form-group relative">
-                <label for="{{ form.budget_minimum.id_for_label }}" class="form-label">
-                  Budget minimum (€)
-                </label>
-                {{ form.budget_minimum }}
-                <div class="change-indicator" id="indicator-budget_minimum"></div>
-                {% if form.budget_minimum.errors %}
-                <div class="form-error">{{ form.budget_minimum.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-              <div class="form-group relative">
-                <label for="{{ form.budget_maximum.id_for_label }}" class="form-label">
-                  Budget maximum (€)
-                </label>
-                {{ form.budget_maximum }}
-                <div class="change-indicator" id="indicator-budget_maximum"></div>
-                {% if form.budget_maximum.errors %}
-                <div class="form-error">{{ form.budget_maximum.errors.0 }}</div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-
-          <!-- Notes -->
-          <div class="mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-sticky-note text-gray-600"></i>
-              Notes et commentaires
-            </h3>
-
-            <div class="form-group relative">
-              <label for="{{ form.notes_client.id_for_label }}" class="form-label">
-                Remarques et demandes spécifiques
-              </label>
-              {{ form.notes_client }}
-              <div class="change-indicator" id="indicator-notes_client"></div>
-              {% if form.notes_client.errors %}
-              <div class="form-error">{{ form.notes_client.errors.0 }}</div>
-              {% endif %}
-              <p class="text-xs text-gray-500 mt-1">
-                Ajoutez toute information importante ou demande spécifique pour votre projet.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="form-section">
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <!-- Boutons secondaires -->
-            <div class="flex gap-3">
-              <a href="{% url 'projects:detail' pk=project.pk %}" class="action-btn btn-secondary">
-                <i class="fas fa-times"></i>
-                Annuler
-              </a>
-
-              {% if project.status == 'brouillon' %}
-              <button type="submit" name="save_draft" class="action-btn btn-secondary">
-                <i class="fas fa-save"></i>
-                Sauvegarder brouillon
-              </button>
-              {% endif %}
-            </div>
-
-            <!-- Bouton principal -->
-            <div class="flex gap-3">
-              {% if project.status == 'brouillon' %}
-              <button
-                type="submit"
-                name="submit_project"
-                class="action-btn btn-success"
-                onclick="return confirm('Soumettre ce projet pour examen ? Il ne pourra plus être modifié librement.')"
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
+  <div class="max-w-7xl mx-auto px-6">
+    
+    <!-- ===== HEADER PRINCIPAL ===== -->
+    <div class="mb-8 animate-slide-in">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          
+          <!-- Título e informações -->
+          <div class="flex-1">
+            <div class="flex items-center gap-4 mb-4">
+              <a
+                href="{% url 'projects:projet_detail' pk=project.pk %}"
+                class="text-gray-500 hover:text-blue-600 transition-colors duration-200 p-2 rounded-lg hover:bg-gray-100"
+                title="Retour aux détails"
               >
-                <i class="fas fa-paper-plane"></i>
-                Soumettre le projet
-              </button>
-              {% endif %}
+                <i class="fas fa-arrow-left text-xl"></i>
+              </a>
+              <div>
+                <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                  <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-edit text-blue-600"></i>
+                  </div>
+                  Modifier le Projet
+                </h1>
+                <p class="text-gray-600 mt-1">{{ project.title }}</p>
+              </div>
+            </div>
 
-              <button type="submit" class="action-btn btn-primary" id="save-button">
-                <i class="fas fa-check"></i>
-                Enregistrer les modifications
-              </button>
+            <div class="flex flex-wrap items-center gap-6 text-sm text-gray-600">
+              <div class="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-lg">
+                <i class="fas fa-hashtag text-gray-400"></i>
+                <span class="font-mono">{{ project.reference }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <i class="fas fa-calendar text-gray-400"></i>
+                <span>Créé le {{ project.created_at|date:"d/m/Y" }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <i class="fas fa-user text-gray-400"></i>
+                <span>{{ project.created_by.get_full_name|default:project.created_by.username }}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Erreurs globales -->
-        {% if form.non_field_errors %}
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div class="flex items-center">
-            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
-            <h3 class="text-sm font-medium text-red-800">Erreurs de validation</h3>
+          <!-- Status et badges -->
+          <div class="flex flex-col items-end gap-3">
+            <span class="status-badge {% if project.status == 'brouillon' %}bg-gray-100 text-gray-800 {% elif project.status == 'soumis' %}bg-blue-100 text-blue-800 {% elif project.status == 'en_examen' %}bg-yellow-100 text-yellow-800 {% elif project.status == 'devis_demande' %}bg-orange-100 text-orange-800 {% elif project.status == 'devis_envoye' %}bg-purple-100 text-purple-800 {% elif project.status == 'devis_accepte' %}bg-green-100 text-green-800 {% elif project.status == 'termine' %}bg-emerald-100 text-emerald-800 {% else %}bg-gray-100 text-gray-800{% endif %}">
+              <i class="fas fa-circle text-xs mr-2"></i>
+              {{ project.get_status_display }}
+            </span>
+
+            {% if project.status == 'brouillon' %}
+            <div class="status-badge bg-green-100 text-green-800">
+              <i class="fas fa-edit mr-2"></i>
+              Modifiable
+            </div>
+            {% else %}
+            <div class="status-badge bg-orange-100 text-orange-800">
+              <i class="fas fa-lock mr-2"></i>
+              Modifications limitées
+            </div>
+            {% endif %}
           </div>
-          <div class="mt-2 text-sm text-red-700">{{ form.non_field_errors }}</div>
         </div>
-        {% endif %}
-      </form>
+      </div>
     </div>
 
-    <!-- Sidebar -->
-    <div class="space-y-6">
-      <!-- Résumé des modifications -->
-      <div class="sidebar-card">
-        <div class="flex items-center gap-3 mb-4">
-          <i class="fas fa-history text-blue-600 text-lg"></i>
-          <h3 class="text-lg font-semibold text-gray-900">Modifications</h3>
+    <!-- ===== ALERTE DE STATUT ===== -->
+    {% if project.status != 'brouillon' %}
+    <div class="alert alert-warning animate-slide-in">
+      <div class="flex items-start gap-3">
+        <i class="fas fa-exclamation-triangle text-yellow-600 mt-1"></i>
+        <div>
+          <h3 class="font-semibold mb-1">Projet soumis</h3>
+          <p>Ce projet a été soumis et ne peut plus être modifié librement. Seules certaines informations peuvent être mises à jour. {% if is_staff %}En tant qu'administrateur, vous pouvez effectuer toutes les modifications.{% endif %}</p>
         </div>
+      </div>
+    </div>
+    {% endif %}
 
-        <div id="changes-summary" class="space-y-2 text-sm">
-          <p class="text-gray-600">Aucune modification détectée</p>
-        </div>
+    <!-- ===== LAYOUT PRINCIPAL ===== -->
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+      
+      <!-- ===== FORMULAIRE PRINCIPAL ===== -->
+      <div class="xl:col-span-3 space-y-8">
+        <form method="post" id="project-edit-form">
+          {% csrf_token %}
 
-        <div class="mt-4 pt-4 border-t border-gray-200">
+          <!-- ================================ -->
+          <!-- SECTION 1: INFORMATIONS GÉNÉRALES -->
+          <!-- ================================ -->
+          <div class="section-card animate-slide-in hover-lift">
+            <div class="section-header">
+              <h2 class="section-title">
+                <div class="section-icon">
+                  <i class="fas fa-info-circle"></i>
+                </div>
+                Informations Générales
+              </h2>
+            </div>
+
+            <div class="section-content">
+              <div class="form-grid-2">
+                <!-- Titre -->
+                <div class="form-group md:col-span-2 relative">
+                  <label for="{{ form.title.id_for_label }}" class="modern-label">
+                    <i class="fas fa-heading text-blue-500"></i>
+                    Titre du projet
+                    <span class="required-star">*</span>
+                  </label>
+                  <input type="text" id="{{ form.title.id_for_label }}" name="{{ form.title.name }}" value="{{ form.title.value|default:'' }}" class="modern-input" placeholder="Donnez un titre descriptif à votre projet">
+                  <div class="change-indicator" id="indicator-title"></div>
+                  {% if form.title.errors %}
+                  <div class="error-text">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ form.title.errors.0 }}
+                  </div>
+                  {% endif %}
+                  <p class="help-text">Un titre clair facilite l'identification de votre projet</p>
+                </div>
+
+                <!-- Type de projet -->
+                <div class="form-group relative">
+                  <label for="{{ form.project_type.id_for_label }}" class="modern-label">
+                    <i class="fas fa-home text-green-500"></i>
+                    Type de projet
+                    <span class="required-star">*</span>
+                  </label>
+                  <select id="{{ form.project_type.id_for_label }}" name="{{ form.project_type.name }}" class="modern-select">
+                    <option value="">-- Sélectionner --</option>
+                    <option value="interieur" {% if form.project_type.value == 'interieur' %}selected{% endif %}>Peinture intérieure</option>
+                    <option value="exterieur" {% if form.project_type.value == 'exterieur' %}selected{% endif %}>Peinture extérieure</option>
+                    <option value="decoration" {% if form.project_type.value == 'decoration' %}selected{% endif %}>Décoration</option>
+                    <option value="renovation" {% if form.project_type.value == 'renovation' %}selected{% endif %}>Rénovation</option>
+                  </select>
+                  <div class="change-indicator" id="indicator-project_type"></div>
+                  {% if form.project_type.errors %}
+                  <div class="error-text">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ form.project_type.errors.0 }}
+                  </div>
+                  {% endif %}
+                </div>
+
+                <!-- Priorité -->
+                <div class="form-group relative">
+                  <label for="{{ form.priority.id_for_label }}" class="modern-label">
+                    <i class="fas fa-flag text-orange-500"></i>
+                    Priorité
+                  </label>
+                  <select id="{{ form.priority.id_for_label }}" name="{{ form.priority.name }}" class="modern-select">
+                    <option value="normale" {% if form.priority.value == 'normale' %}selected{% endif %}>Normale</option>
+                    <option value="elevee" {% if form.priority.value == 'elevee' %}selected{% endif %}>Élevée</option>
+                    <option value="urgente" {% if form.priority.value == 'urgente' %}selected{% endif %}>Urgente</option>
+                  </select>
+                  <div class="change-indicator" id="indicator-priority"></div>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group md:col-span-2 relative">
+                  <label for="{{ form.description.id_for_label }}" class="modern-label">
+                    <i class="fas fa-align-left text-purple-500"></i>
+                    Description détaillée
+                    <span class="required-star">*</span>
+                  </label>
+                  <textarea id="{{ form.description.id_for_label }}" name="{{ form.description.name }}" rows="4" class="modern-textarea" placeholder="Décrivez votre projet en détail : ce que vous souhaitez faire, vos attentes, contraintes particulières...">{{ form.description.value|default:'' }}</textarea>
+                  <div class="change-indicator" id="indicator-description"></div>
+                  {% if form.description.errors %}
+                  <div class="error-text">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ form.description.errors.0 }}
+                  </div>
+                  {% endif %}
+                  <p class="help-text">Plus votre description est détaillée, plus précis sera le devis</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================================ -->
+          <!-- SECTION 2: SURFACES ET DIMENSIONS -->
+          <!-- ================================ -->
+          <div class="section-card animate-slide-in hover-lift">
+            <div class="section-header">
+              <h2 class="section-title">
+                <div class="section-icon">
+                  <i class="fas fa-ruler-combined"></i>
+                </div>
+                Surfaces et Dimensions
+              </h2>
+            </div>
+
+            <div class="section-content">
+              <div class="form-grid-4">
+                <!-- Surface totale -->
+                <div class="form-group relative">
+                  <label for="{{ form.surface_totale.id_for_label }}" class="modern-label">
+                    <i class="fas fa-expand-arrows-alt text-blue-500"></i>
+                    Surface totale (m²)
+                    <span class="required-star">*</span>
+                  </label>
+                  <input type="number" id="{{ form.surface_totale.id_for_label }}" name="{{ form.surface_totale.name }}" value="{{ form.surface_totale.value|default:'' }}" step="0.01" class="modern-input" placeholder="Ex: 50.00">
+                  <div class="change-indicator" id="indicator-surface_totale"></div>
+                  {% if form.surface_totale.errors %}
+                  <div class="error-text">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ form.surface_totale.errors.0 }}
+                  </div>
+                  {% endif %}
+                </div>
+
+                <!-- Surface murs -->
+                {% if form.surface_murs %}
+                <div class="form-group relative">
+                  <label for="{{ form.surface_murs.id_for_label }}" class="modern-label">
+                    <i class="fas fa-square text-green-500"></i>
+                    Surface murs (m²)
+                  </label>
+                  <input type="number" id="{{ form.surface_murs.id_for_label }}" name="{{ form.surface_murs.name }}" value="{{ form.surface_murs.value|default:'' }}" step="0.01" class="modern-input" placeholder="Ex: 40.00">
+                  <div class="change-indicator" id="indicator-surface_murs"></div>
+                </div>
+                {% endif %}
+
+                <!-- Surface plafond -->
+                {% if form.surface_plafond %}
+                <div class="form-group relative">
+                  <label for="{{ form.surface_plafond.id_for_label }}" class="modern-label">
+                    <i class="fas fa-minus text-purple-500"></i>
+                    Surface plafond (m²)
+                  </label>
+                  <input type="number" id="{{ form.surface_plafond.id_for_label }}" name="{{ form.surface_plafond.name }}" value="{{ form.surface_plafond.value|default:'' }}" step="0.01" class="modern-input" placeholder="Ex: 25.00">
+                  <div class="change-indicator" id="indicator-surface_plafond"></div>
+                </div>
+                {% endif %}
+
+                <!-- Hauteur sous plafond -->
+                {% if form.hauteur_sous_plafond %}
+                <div class="form-group relative">
+                  <label for="{{ form.hauteur_sous_plafond.id_for_label }}" class="modern-label">
+                    <i class="fas fa-arrows-alt-v text-orange-500"></i>
+                    Hauteur (m)
+                  </label>
+                  <input type="number" id="{{ form.hauteur_sous_plafond.id_for_label }}" name="{{ form.hauteur_sous_plafond.name }}" value="{{ form.hauteur_sous_plafond.value|default:'' }}" step="0.01" class="modern-input" placeholder="Ex: 2.50">
+                  <div class="change-indicator" id="indicator-hauteur_sous_plafond"></div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- ================================ -->
+          <!-- SECTION 3: PIÈCES ET FINITIONS -->
+          <!-- ================================ -->
+          <div class="section-card animate-slide-in hover-lift">
+            <div class="section-header">
+              <h2 class="section-title">
+                <div class="section-icon">
+                  <i class="fas fa-home"></i>
+                </div>
+                Pièces et Finitions
+              </h2>
+            </div>
+
+            <div class="section-content space-y-8">
+              <!-- Pièces -->
+              <div class="subsection">
+                <h3 class="subsection-title">
+                  <i class="fas fa-door-open subsection-icon"></i>
+                  Pièces concernées
+                </h3>
+                
+                <div class="form-grid-2">
+                  <div class="form-group relative">
+                    <label for="{{ form.nombre_pieces.id_for_label }}" class="modern-label">
+                      <i class="fas fa-hashtag text-blue-500"></i>
+                      Nombre de pièces
+                      <span class="required-star">*</span>
+                    </label>
+                    <input type="number" id="{{ form.nombre_pieces.id_for_label }}" name="{{ form.nombre_pieces.name }}" value="{{ form.nombre_pieces.value|default:'' }}" min="1" class="modern-input" placeholder="Ex: 3">
+                    <div class="change-indicator" id="indicator-nombre_pieces"></div>
+                  </div>
+
+                  <div class="form-group relative">
+                    <label for="{{ form.types_pieces.id_for_label }}" class="modern-label">
+                      <i class="fas fa-list text-green-500"></i>
+                      Types de pièces
+                    </label>
+                    <input type="text" id="{{ form.types_pieces.id_for_label }}" name="{{ form.types_pieces.name }}" value="{{ form.types_pieces.value|default:'' }}" class="modern-input" placeholder="Ex: salon, cuisine, chambre">
+                    <div class="change-indicator" id="indicator-types_pieces"></div>
+                    <p class="help-text">Séparez les types par des virgules</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- État et finitions -->
+              <div class="subsection">
+                <h3 class="subsection-title">
+                  <i class="fas fa-palette subsection-icon"></i>
+                  État et finitions
+                </h3>
+                
+                <div class="form-grid-2">
+                  <div class="form-group relative">
+                    <label for="{{ form.etat_support.id_for_label }}" class="modern-label">
+                      <i class="fas fa-tools text-orange-500"></i>
+                      État du support
+                      <span class="required-star">*</span>
+                    </label>
+                    <select id="{{ form.etat_support.id_for_label }}" name="{{ form.etat_support.name }}" class="modern-select">
+                      <option value="">-- Sélectionner --</option>
+                      <option value="bon" {% if form.etat_support.value == 'bon' %}selected{% endif %}>Bon état</option>
+                      <option value="moyen" {% if form.etat_support.value == 'moyen' %}selected{% endif %}>État moyen</option>
+                      <option value="mauvais" {% if form.etat_support.value == 'mauvais' %}selected{% endif %}>Mauvais état</option>
+                    </select>
+                    <div class="change-indicator" id="indicator-etat_support"></div>
+                  </div>
+
+                  <div class="form-group relative">
+                    <label for="{{ form.type_finition.id_for_label }}" class="modern-label">
+                      <i class="fas fa-paint-brush text-purple-500"></i>
+                      Type de finition
+                      <span class="required-star">*</span>
+                    </label>
+                    <select id="{{ form.type_finition.id_for_label }}" name="{{ form.type_finition.name }}" class="modern-select">
+                      <option value="">-- Sélectionner --</option>
+                      <option value="mate" {% if form.type_finition.value == 'mate' %}selected{% endif %}>Mate</option>
+                      <option value="satinee" {% if form.type_finition.value == 'satinee' %}selected{% endif %}>Satinée</option>
+                      <option value="brillante" {% if form.type_finition.value == 'brillante' %}selected{% endif %}>Brillante</option>
+                    </select>
+                    <div class="change-indicator" id="indicator-type_finition"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Couleurs -->
+              {% if form.couleur_murs or form.couleur_plafond or form.couleur_boiseries %}
+              <div class="subsection">
+                <h3 class="subsection-title">
+                  <i class="fas fa-tint subsection-icon"></i>
+                  Couleurs souhaitées
+                </h3>
+                
+                <div class="form-grid-3">
+                  {% if form.couleur_murs %}
+                  <div class="form-group relative">
+                    <label for="{{ form.couleur_murs.id_for_label }}" class="modern-label">
+                      <i class="fas fa-square text-blue-500"></i>
+                      Couleur des murs
+                    </label>
+                    <input type="text" id="{{ form.couleur_murs.id_for_label }}" name="{{ form.couleur_murs.name }}" value="{{ form.couleur_murs.value|default:'' }}" class="modern-input" placeholder="Ex: Blanc cassé">
+                    <div class="change-indicator" id="indicator-couleur_murs"></div>
+                  </div>
+                  {% endif %}
+
+                  {% if form.couleur_plafond %}
+                  <div class="form-group relative">
+                    <label for="{{ form.couleur_plafond.id_for_label }}" class="modern-label">
+                      <i class="fas fa-minus text-green-500"></i>
+                      Couleur du plafond
+                    </label>
+                    <input type="text" id="{{ form.couleur_plafond.id_for_label }}" name="{{ form.couleur_plafond.name }}" value="{{ form.couleur_plafond.value|default:'' }}" class="modern-input" placeholder="Ex: Blanc">
+                    <div class="change-indicator" id="indicator-couleur_plafond"></div>
+                  </div>
+                  {% endif %}
+
+                  {% if form.couleur_boiseries %}
+                  <div class="form-group relative">
+                    <label for="{{ form.couleur_boiseries.id_for_label }}" class="modern-label">
+                      <i class="fas fa-border-style text-orange-500"></i>
+                      Couleur des boiseries
+                    </label>
+                    <input type="text" id="{{ form.couleur_boiseries.id_for_label }}" name="{{ form.couleur_boiseries.name }}" value="{{ form.couleur_boiseries.value|default:'' }}" class="modern-input" placeholder="Ex: Blanc satiné">
+                    <div class="change-indicator" id="indicator-couleur_boiseries"></div>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- ================================ -->
+          <!-- SECTION 4: ADRESSE ET CONTACT -->
+          <!-- ================================ -->
+          <div class="section-card animate-slide-in hover-lift">
+            <div class="section-header">
+              <h2 class="section-title">
+                <div class="section-icon">
+                  <i class="fas fa-map-marker-alt"></i>
+                </div>
+                Adresse et Contact
+              </h2>
+            </div>
+
+            <div class="section-content space-y-8">
+              <!-- Adresse -->
+              <div class="subsection">
+                <h3 class="subsection-title">
+                  <i class="fas fa-home subsection-icon"></i>
+                  Lieu des travaux
+                </h3>
+                
+                <div class="form-grid-2">
+                  <div class="form-group md:col-span-2 relative">
+                    <label for="{{ form.adresse_travaux.id_for_label }}" class="modern-label">
+                      <i class="fas fa-map-pin text-red-500"></i>
+                      Adresse des travaux
+                      <span class="required-star">*</span>
+                    </label>
+                    <input type="text" id="{{ form.adresse_travaux.id_for_label }}" name="{{ form.adresse_travaux.name }}" value="{{ form.adresse_travaux.value|default:'' }}" class="modern-input" placeholder="123 rue de la République">
+                    <div class="change-indicator" id="indicator-adresse_travaux"></div>
+                  </div>
+
+                  {% if form.complement_adresse %}
+                  <div class="form-group relative">
+                    <label for="{{ form.complement_adresse.id_for_label }}" class="modern-label">
+                      <i class="fas fa-building text-gray-500"></i>
+                      Complément d'adresse
+                    </label>
+                    <input type="text" id="{{ form.complement_adresse.id_for_label }}" name="{{ form.complement_adresse.name }}" value="{{ form.complement_adresse.value|default:'' }}" class="modern-input" placeholder="Apt 2B, Bâtiment A">
+                    <div class="change-indicator" id="indicator-complement_adresse"></div>
+                  </div>
+                  {% endif %}
+
+                  <div class="form-group relative">
+                    <label for="{{ form.code_postal.id_for_label }}" class="modern-label">
+                      <i class="fas fa-mail-bulk text-blue-500"></i>
+                      Code postal
+                      <span class="required-star">*</span>
+                    </label>
+                    <input type="text" id="{{ form.code_postal.id_for_label }}" name="{{ form.code_postal.name }}" value="{{ form.code_postal.value|default:'' }}" class="modern-input" placeholder="75001">
+                    <div class="change-indicator" id="indicator-code_postal"></div>
+                  </div>
+
+                  <div class="form-group relative">
+                    <label for="{{ form.ville.id_for_label }}" class="modern-label">
+                      <i class="fas fa-city text-green-500"></i>
+                      Ville
+                      <span class="required-star">*</span>
+                    </label>
+                    <input type="text" id="{{ form.ville.id_for_label }}" name="{{ form.ville.name }}" value="{{ form.ville.value|default:'' }}" class="modern-input" placeholder="Paris">
+                    <div class="change-indicator" id="indicator-ville"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contact -->
+              <div class="subsection">
+                <h3 class="subsection-title">
+                  <i class="fas fa-user subsection-icon"></i>
+                  Contact sur site
+                </h3>
+                
+                <div class="form-grid-2">
+                  <div class="form-group relative">
+                    <label for="{{ form.contact_nom.id_for_label }}" class="modern-label">
+                      <i class="fas fa-user-circle text-purple-500"></i>
+                      Nom du contact
+                    </label>
+                    <input type="text" id="{{ form.contact_nom.id_for_label }}" name="{{ form.contact_nom.name }}" value="{{ form.contact_nom.value|default:'' }}" class="modern-input" placeholder="Jean Dupont">
+                    <div class="change-indicator" id="indicator-contact_nom"></div>
+                  </div>
+
+                  <div class="form-group relative">
+                    <label for="{{ form.contact_telephone.id_for_label }}" class="modern-label">
+                      <i class="fas fa-phone text-green-500"></i>
+                      Téléphone du contact
+                    </label>
+                    <input type="tel" id="{{ form.contact_telephone.id_for_label }}" name="{{ form.contact_telephone.name }}" value="{{ form.contact_telephone.value|default:'' }}" class="modern-input" placeholder="06 12 34 56 78">
+                    <div class="change-indicator" id="indicator-contact_telephone"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Planning et Budget -->
+              <div class="subsection">
+                <h3 class="subsection-title">
+                  <i class="fas fa-calendar-dollar subsection-icon"></i>
+                  Planning et Budget
+                </h3>
+                
+                <div class="form-grid-2">
+                  <div class="form-group relative">
+                    <label for="{{ form.date_debut_souhaitee.id_for_label }}" class="modern-label">
+                      <i class="fas fa-play text-green-500"></i>
+                      Date de début souhaitée
+                    </label>
+                    <input type="date" id="{{ form.date_debut_souhaitee.id_for_label }}" name="{{ form.date_debut_souhaitee.name }}" value="{{ form.date_debut_souhaitee.value|default:'' }}" class="modern-input">
+                    <div class="change-indicator" id="indicator-date_debut_souhaitee"></div>
+                  </div>
+
+                  <div class="form-group relative">
+                    <label for="{{ form.date_fin_souhaitee.id_for_label }}" class="modern-label">
+                      <i class="fas fa-stop text-red-500"></i>
+                      Date de fin souhaitée
+                    </label>
+                    <input type="date" id="{{ form.date_fin_souhaitee.id_for_label }}" name="{{ form.date_fin_souhaitee.name }}" value="{{ form.date_fin_souhaitee.value|default:'' }}" class="modern-input">
+                    <div class="change-indicator" id="indicator-date_fin_souhaitee"></div>
+                  </div>
+
+                  <div class="form-group relative">
+                    <label for="{{ form.budget_minimum.id_for_label }}" class="modern-label">
+                      <i class="fas fa-euro-sign text-green-500"></i>
+                      Budget minimum (€)
+                    </label>
+                    <input type="number" id="{{ form.budget_minimum.id_for_label }}" name="{{ form.budget_minimum.name }}" value="{{ form.budget_minimum.value|default:'' }}" step="0.01" class="modern-input" placeholder="1000">
+                    <div class="change-indicator" id="indicator-budget_minimum"></div>
+                  </div>
+
+                  <div class="form-group relative">
+                    <label for="{{ form.budget_maximum.id_for_label }}" class="modern-label">
+                      <i class="fas fa-euro-sign text-red-500"></i>
+                      Budget maximum (€)
+                    </label>
+                    <input type="number" id="{{ form.budget_maximum.id_for_label }}" name="{{ form.budget_maximum.name }}" value="{{ form.budget_maximum.value|default:'' }}" step="0.01" class="modern-input" placeholder="5000">
+                    <div class="change-indicator" id="indicator-budget_maximum"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes -->
+              <div class="subsection">
+                <h3 class="subsection-title">
+                  <i class="fas fa-sticky-note subsection-icon"></i>
+                  Notes et commentaires
+                </h3>
+                
+                <div class="form-group relative">
+                  <label for="{{ form.notes_client.id_for_label }}" class="modern-label">
+                    <i class="fas fa-comment-alt text-blue-500"></i>
+                    Remarques et demandes spécifiques
+                  </label>
+                  <textarea id="{{ form.notes_client.id_for_label }}" name="{{ form.notes_client.name }}" rows="4" class="modern-textarea" placeholder="Ajoutez toute information importante ou demande spécifique...">{{ form.notes_client.value|default:'' }}</textarea>
+                  <div class="change-indicator" id="indicator-notes_client"></div>
+                  <p class="help-text">Ces informations nous aideront à mieux répondre à vos attentes</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================================ -->
+          <!-- ACTIONS DU FORMULAIRE -->
+          <!-- ================================ -->
+          <div class="section-card animate-slide-in">
+            <div class="section-content">
+              <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <!-- Boutons secondaires -->
+                <div class="flex flex-wrap gap-3">
+                  <a href="{% url 'projects:projet_detail' pk=project.pk %}" class="btn-modern btn-secondary">
+                    <i class="fas fa-times mr-2"></i>
+                    Annuler
+                  </a>
+
+                  {% if project.status == 'brouillon' %}
+                  <button type="submit" name="save_draft" class="btn-modern btn-secondary">
+                    <i class="fas fa-save mr-2"></i>
+                    Sauvegarder brouillon
+                  </button>
+                  {% endif %}
+                </div>
+
+                <!-- Boutons principaux -->
+                <div class="flex flex-wrap gap-3">
+                  {% if project.status == 'brouillon' %}
+                  <button
+                    type="submit"
+                    name="submit_project"
+                    class="btn-modern btn-success"
+                    onclick="return confirm('Soumettre ce projet pour examen ? Il ne pourra plus être modifié librement.')"
+                  >
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Soumettre le projet
+                  </button>
+                  {% endif %}
+
+                  <button type="submit" class="btn-modern btn-primary" id="save-button">
+                    <i class="fas fa-check mr-2"></i>
+                    Enregistrer les modifications
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- ===== SIDEBAR ===== -->
+      <div class="space-y-6">
+        
+        <!-- Résumé des modifications -->
+        <div class="sidebar-card animate-slide-in">
+          <h3 class="sidebar-title">
+            <i class="fas fa-history text-orange-600"></i>
+            Modifications
+          </h3>
+          
+          <div id="changes-summary" class="space-y-2 text-sm">
+            <div class="bg-gray-50 rounded-lg p-3 text-center text-gray-600">
+              <i class="fas fa-info-circle mb-2 text-lg"></i>
+              <p>Aucune modification détectée</p>
+            </div>
+          </div>
+
           <button
             type="button"
             onclick="resetForm()"
-            class="w-full action-btn btn-secondary justify-center text-xs"
+            class="w-full mt-4 btn-modern btn-secondary text-sm"
           >
-            <i class="fas fa-undo"></i>
+            <i class="fas fa-undo mr-2"></i>
             Annuler toutes les modifications
           </button>
         </div>
-      </div>
 
-      <!-- Informations du projet -->
-      <div class="sidebar-card">
-        <div class="flex items-center gap-3 mb-4">
-          <i class="fas fa-info-circle text-blue-600 text-lg"></i>
-          <h3 class="text-lg font-semibold text-gray-900">Informations</h3>
+        <!-- Informations du projet -->
+        <div class="sidebar-card animate-slide-in">
+          <h3 class="sidebar-title">
+            <i class="fas fa-info-circle text-blue-600"></i>
+            Informations
+          </h3>
+
+          <div class="space-y-3 text-sm">
+            <div class="bg-gray-50 rounded-lg p-3">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600">Référence</span>
+                <span class="font-mono text-gray-900 bg-white px-2 py-1 rounded">{{ project.reference }}</span>
+              </div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600">Statut</span>
+                <span class="status-badge {% if project.status == 'brouillon' %}bg-gray-100 text-gray-800 {% elif project.status == 'soumis' %}bg-blue-100 text-blue-800 {% elif project.status == 'en_examen' %}bg-yellow-100 text-yellow-800 {% else %}bg-gray-100 text-gray-800{% endif %}">
+                  {{ project.get_status_display }}
+                </span>
+              </div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600">Créé</span>
+                <span class="text-gray-900">{{ project.created_at|date:"d/m/Y" }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600">Modifié</span>
+                <span class="text-gray-900">{{ project.updated_at|date:"d/m/Y" }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="space-y-3 text-sm">
-          <div class="flex justify-between">
-            <span class="text-gray-600">Référence:</span>
-            <span class="font-mono text-gray-900">{{ project.reference }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">Statut:</span>
-            <span
-              class="status-indicator {% if project.status == 'brouillon' %}bg-gray-100 text-gray-800 {% elif project.status == 'soumis' %}bg-blue-100 text-blue-800 {% elif project.status == 'en_examen' %}bg-yellow-100 text-yellow-800 {% elif project.status == 'devis_demande' %}bg-orange-100 text-orange-800 {% elif project.status == 'devis_envoye' %}bg-purple-100 text-purple-800 {% elif project.status == 'devis_accepte' %}bg-green-100 text-green-800 {% elif project.status == 'termine' %}bg-emerald-100 text-emerald-800 {% else %}bg-gray-100 text-gray-800{% endif %}"
+        <!-- Actions rapides -->
+        <div class="sidebar-card animate-slide-in">
+          <h3 class="sidebar-title">
+            <i class="fas fa-bolt text-yellow-600"></i>
+            Actions Rapides
+          </h3>
+
+          <div class="space-y-3">
+            <a href="{% url 'projects:projet_detail' pk=project.pk %}" class="w-full btn-modern btn-secondary text-sm">
+              <i class="fas fa-eye mr-2"></i>
+              Voir le projet
+            </a>
+
+            <a href="{% url 'projects:projet_list' %}" class="w-full btn-modern btn-secondary text-sm">
+              <i class="fas fa-list mr-2"></i>
+              Tous mes projets
+            </a>
+
+            {% if project.status == 'brouillon' %}
+            <a
+              href="{% url 'projects:projet_delete' pk=project.pk %}"
+              class="w-full btn-modern btn-danger text-sm"
+              onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')"
             >
-              {{ project.get_status_display }}
-            </span>
+              <i class="fas fa-trash mr-2"></i>
+              Supprimer
+            </a>
+            {% endif %}
           </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">Créé:</span>
-            <span class="text-gray-900">{{ project.created_at|date:"d/m/Y" }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">Modifié:</span>
-            <span class="text-gray-900">{{ project.updated_at|date:"d/m/Y à H:i" }}</span>
-          </div>
-          {% if project.assigned_to %}
-          <div class="flex justify-between">
-            <span class="text-gray-600">Assigné à:</span>
-            <span class="text-gray-900"
-              >{{ project.assigned_to.get_full_name|default:project.assigned_to.username }}</span
-            >
-          </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Actions rapides -->
-      <div class="sidebar-card">
-        <div class="flex items-center gap-3 mb-4">
-          <i class="fas fa-bolt text-blue-600 text-lg"></i>
-          <h3 class="text-lg font-semibold text-gray-900">Actions Rapides</h3>
         </div>
 
-        <div class="space-y-3">
-          <a
-            href="{% url 'projects:detail' pk=project.pk %}"
-            class="w-full action-btn btn-secondary justify-center"
-          >
-            <i class="fas fa-eye"></i>
-            Voir le projet
-          </a>
+        <!-- Aide contextuelle -->
+        <div class="sidebar-card animate-slide-in">
+          <h3 class="sidebar-title">
+            <i class="fas fa-question-circle text-green-600"></i>
+            Aide
+          </h3>
 
-          <a
-            href="{% url 'projects:list' %}"
-            class="w-full action-btn btn-secondary justify-center"
-          >
-            <i class="fas fa-list"></i>
-            Tous mes projets
-          </a>
+          <div class="space-y-3">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div class="flex items-start gap-2">
+                <i class="fas fa-lightbulb text-blue-600 mt-1"></i>
+                <div>
+                  <p class="font-semibold text-blue-800 text-sm">Conseil</p>
+                  <p class="text-blue-700 text-xs">Plus votre description est détaillée, plus précis sera votre devis.</p>
+                </div>
+              </div>
+            </div>
 
-          {% if project.status == 'brouillon' %}
-          <a
-            href="{% url 'projects:delete' pk=project.pk %}"
-            class="w-full action-btn btn-danger justify-center"
-            onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')"
-          >
-            <i class="fas fa-trash"></i>
-            Supprimer le projet
-          </a>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Aide -->
-      <div class="sidebar-card">
-        <div class="flex items-center gap-3 mb-4">
-          <i class="fas fa-question-circle text-blue-600 text-lg"></i>
-          <h3 class="text-lg font-semibold text-gray-900">Aide</h3>
-        </div>
-
-        <div class="space-y-3 text-sm text-gray-600">
-          <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p class="font-medium text-blue-800 mb-1">💡 Conseil</p>
-            <p class="text-blue-700">
-              Plus votre description est détaillée, plus précis sera votre devis.
-            </p>
+            {% if project.status == 'brouillon' %}
+            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div class="flex items-start gap-2">
+                <i class="fas fa-check-circle text-green-600 mt-1"></i>
+                <div>
+                  <p class="font-semibold text-green-800 text-sm">Brouillon</p>
+                  <p class="text-green-700 text-xs">Vous pouvez modifier ce projet autant que nécessaire.</p>
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <div class="flex items-start gap-2">
+                <i class="fas fa-lock text-orange-600 mt-1"></i>
+                <div>
+                  <p class="font-semibold text-orange-800 text-sm">Projet soumis</p>
+                  <p class="text-orange-700 text-xs">Modifications limitées après soumission.</p>
+                </div>
+              </div>
+            </div>
+            {% endif %}
           </div>
-
-          {% if project.status == 'brouillon' %}
-          <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p class="font-medium text-green-800 mb-1">✅ Brouillon</p>
-            <p class="text-green-700">
-              Vous pouvez modifier ce projet autant que nécessaire avant de le soumettre.
-            </p>
-          </div>
-          {% else %}
-          <div class="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-            <p class="font-medium text-orange-800 mb-1">🔒 Projet soumis</p>
-            <p class="text-orange-700">
-              Modifications limitées après soumission. Contactez-nous pour des changements majeurs.
-            </p>
-          </div>
-          {% endif %}
         </div>
       </div>
     </div>
   </div>
 </div>
-{% endblock %} {% block extra_js %}
+{% endblock %} 
+
+{% block extra_js %}
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
+    // JavaScript básico para detecção de mudanças e indicadores visuais
     let originalFormData = {};
     let hasChanges = false;
 
-    // Armazenar dados originais do formulário
+    // Capturar dados originais
     function captureOriginalData() {
-      const form = document.getElementById('project-edit-form');
-      const formData = new FormData(form);
-
-      for (let [key, value] of formData.entries()) {
-        originalFormData[key] = value;
-      }
-
-      // Capturar checkboxes não marcados
-      const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach((checkbox) => {
-        if (!checkbox.checked) {
-          originalFormData[checkbox.name] = 'false';
+        const form = document.getElementById('project-edit-form');
+        const formData = new FormData(form);
+        for (let [key, value] of formData.entries()) {
+            originalFormData[key] = value;
         }
-      });
     }
 
     // Detectar mudanças
     function detectChanges() {
-      const form = document.getElementById('project-edit-form');
-      const currentData = new FormData(form);
-      const changes = [];
+        const form = document.getElementById('project-edit-form');
+        const currentData = new FormData(form);
+        const changes = [];
 
-      // Verificar campos modificados
-      for (let [key, originalValue] of Object.entries(originalFormData)) {
-        const currentValue = currentData.get(key) || '';
-
-        if (originalValue !== currentValue) {
-          changes.push(key);
-          showChangeIndicator(key);
-        } else {
-          hideChangeIndicator(key);
+        for (let [key, originalValue] of Object.entries(originalFormData)) {
+            const currentValue = currentData.get(key) || '';
+            if (originalValue !== currentValue) {
+                changes.push(key);
+                showChangeIndicator(key);
+            } else {
+                hideChangeIndicator(key);
+            }
         }
-      }
 
-      // Verificar novos campos
-      for (let [key, value] of currentData.entries()) {
-        if (!(key in originalFormData) && value !== '') {
-          changes.push(key);
-          showChangeIndicator(key);
-        }
-      }
-
-      hasChanges = changes.length > 0;
-      updateChangesSummary(changes);
-      updateSaveButton();
+        hasChanges = changes.length > 0;
+        updateChangesSummary(changes);
     }
 
-    // Mostrar indicador de mudança
+    // Mostrar/ocultar indicadores
     function showChangeIndicator(fieldName) {
-      const indicator = document.getElementById(`indicator-${fieldName}`);
-      if (indicator) {
-        indicator.classList.add('visible');
-      }
+        const indicator = document.getElementById(`indicator-${fieldName}`);
+        if (indicator) indicator.classList.add('visible');
     }
 
-    // Ocultar indicador de mudança
     function hideChangeIndicator(fieldName) {
-      const indicator = document.getElementById(`indicator-${fieldName}`);
-      if (indicator) {
-        indicator.classList.remove('visible');
-      }
+        const indicator = document.getElementById(`indicator-${fieldName}`);
+        if (indicator) indicator.classList.remove('visible');
     }
 
-    // Atualizar resumo de mudanças
+    // Atualizar resumo
     function updateChangesSummary(changes) {
-      const summary = document.getElementById('changes-summary');
-
-      if (changes.length === 0) {
-        summary.innerHTML = '<p class="text-gray-600">Aucune modification détectée</p>';
-      } else {
-        const fieldLabels = {
-          title: 'Titre',
-          type_projet: 'Type de projet',
-          description: 'Description',
-          surface_totale: 'Surface totale',
-          nombre_pieces: 'Nombre de pièces',
-          adresse_travaux: 'Adresse',
-          notes_client: 'Notes',
-          // Adicionar mais conforme necessário
-        };
-
-        const changesList = changes
-          .map((change) => {
-            const label = fieldLabels[change] || change.replace('_', ' ');
-            return `<div class="flex items-center gap-2">
-                    <div class="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                    <span class="text-gray-900">${label}</span>
-                </div>`;
-          })
-          .join('');
-
-        summary.innerHTML = `
-                <div class="space-y-1">
-                    <p class="text-sm font-medium text-gray-900">${changes.length} modification${
-          changes.length > 1 ? 's' : ''
-        } détectée${changes.length > 1 ? 's' : ''}</p>
+        const summary = document.getElementById('changes-summary');
+        if (changes.length === 0) {
+            summary.innerHTML = `
+                <div class="bg-gray-50 rounded-lg p-3 text-center text-gray-600">
+                    <i class="fas fa-info-circle mb-2 text-lg"></i>
+                    <p>Aucune modification détectée</p>
+                </div>
+            `;
+        } else {
+            const changesList = changes.map(change => `
+                <div class="flex items-center gap-2 bg-orange-50 rounded p-2">
+                    <div class="w-2 h-2 bg-orange-400 rounded-full"></div>
+                    <span class="text-sm text-orange-800">${change.replace('_', ' ')}</span>
+                </div>
+            `).join('');
+            
+            summary.innerHTML = `
+                <div class="space-y-2">
+                    <p class="text-sm font-semibold text-orange-800">
+                        ${changes.length} modification${changes.length > 1 ? 's' : ''} détectée${changes.length > 1 ? 's' : ''}
+                    </p>
                     ${changesList}
                 </div>
             `;
-      }
+        }
     }
 
-    // Atualizar botão de salvamento
-    function updateSaveButton() {
-      const saveButton = document.getElementById('save-button');
-      if (hasChanges) {
-        saveButton.classList.remove('btn-primary');
-        saveButton.classList.add('btn-success');
-        saveButton.innerHTML = '<i class="fas fa-check"></i> Enregistrer les modifications';
-      } else {
-        saveButton.classList.remove('btn-success');
-        saveButton.classList.add('btn-primary');
-        saveButton.innerHTML = '<i class="fas fa-check"></i> Aucune modification';
-        saveButton.disabled = false; // Permitir sempre o salvamento
-      }
-    }
-
-    // Resetar formulário
-    window.resetForm = function () {
-      if (confirm('Annuler toutes les modifications ?')) {
-        location.reload();
-      }
+    // Reset do formulário
+    window.resetForm = function() {
+        if (confirm('Annuler toutes les modifications ?')) {
+            location.reload();
+        }
     };
 
+    // Inicializar
+    captureOriginalData();
+    
     // Event listeners
     const form = document.getElementById('project-edit-form');
-
-    // Capturar dados originais
-    captureOriginalData();
-
-    // Detectar mudanças em todos os campos
     form.addEventListener('input', detectChanges);
     form.addEventListener('change', detectChanges);
 
-    // Checkbox styling
-    const checkboxItems = document.querySelectorAll('.checkbox-item');
-    checkboxItems.forEach((item) => {
-      const checkbox = item.querySelector('input[type="checkbox"]');
-      if (checkbox) {
-        function updateCheckboxStyle() {
-          if (checkbox.checked) {
-            item.classList.add('checked');
-          } else {
-            item.classList.remove('checked');
-          }
-        }
-
-        updateCheckboxStyle(); // Estado inicial
-        checkbox.addEventListener('change', updateCheckboxStyle);
-      }
+    // Animações de entrada
+    const cards = document.querySelectorAll('.animate-slide-in');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
     });
-
-    // Auto-cálculo de superfícies
-    const surfaceTotale = document.getElementById('{{ form.surface_totale.id_for_label }}');
-    const surfaceMurs = document.getElementById('{{ form.surface_murs.id_for_label }}');
-    const surfacePlafond = document.getElementById('{{ form.surface_plafond.id_for_label }}');
-    const hauteur = document.getElementById('{{ form.hauteur_sous_plafond.id_for_label }}');
-
-    function calculateSurfaces() {
-      const total = parseFloat(surfaceTotale.value) || 0;
-      const h = parseFloat(hauteur.value) || 2.5;
-
-      if (total > 0) {
-        if (!surfacePlafond.value) {
-          surfacePlafond.value = total.toFixed(2);
-        }
-
-        if (!surfaceMurs.value) {
-          const perimeter = Math.sqrt(total) * 4;
-          surfaceMurs.value = (perimeter * h).toFixed(2);
-        }
-      }
-    }
-
-    if (surfaceTotale) {
-      surfaceTotale.addEventListener('blur', calculateSurfaces);
-      hauteur.addEventListener('blur', calculateSurfaces);
-    }
-
-    // Validação antes do submit
-    form.addEventListener('submit', function (e) {
-      // Validações customizadas
-      const title = document.getElementById('{{ form.title.id_for_label }}');
-      const surface = document.getElementById('{{ form.surface_totale.id_for_label }}');
-
-      if (!title.value.trim()) {
-        e.preventDefault();
-        alert('Le titre du projet est requis.');
-        title.focus();
-        return;
-      }
-
-      if (!surface.value || parseFloat(surface.value) <= 0) {
-        e.preventDefault();
-        alert('La surface totale doit être supérieure à 0.');
-        surface.focus();
-        return;
-      }
-
-      // Loading state
-      const submitButton =
-        e.target.querySelector('button[type="submit"]:focus') ||
-        e.target.querySelector('button[type="submit"]');
-      if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enregistrement...';
-      }
-    });
-
-    // Warning avant de quitter avec des changements non sauvés
-    window.addEventListener('beforeunload', function (e) {
-      if (hasChanges) {
-        e.preventDefault();
-        e.returnValue =
-          'Vous avez des modifications non sauvegardées. Voulez-vous vraiment quitter ?';
-      }
-    });
-
-    // Auto-save draft toutes les 5 minutes
-    setInterval(function () {
-      if (hasChanges && '{{ project.status }}' === 'brouillon') {
-        const formData = new FormData(form);
-        formData.append('auto_save', '1');
-
-        fetch(form.action, {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-          },
-        })
-          .then((response) => {
-            if (response.ok) {
-              console.log('Auto-save réussi');
-              // Optionnel: montrer notification discrète
-            }
-          })
-          .catch((error) => {
-            console.log('Auto-save échoué:', error);
-          });
-      }
-    }, 300000); // 5 minutes
-  });
+});
 </script>
 {% endblock %}

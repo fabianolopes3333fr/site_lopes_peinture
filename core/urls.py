@@ -36,11 +36,11 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # ==================== APPS ====================
     # Accounts (autenticação)
-    path("accounts/", include("accounts.urls")),
+    path("", include("accounts.urls")),
     # Profiles (perfis de usuário)
     path("", include("profiles.urls")),
     # Config (configurações do site)
-    path("config/", include("config.urls")),
+    path("", include("config.urls")),
     # Projects (projetos/serviços)
     path("", include("projects.urls")),
     # Pages (páginas principais)
@@ -48,7 +48,7 @@ urlpatterns = [
     # ==================== REDIRECTS ÚTEIS ====================
     # Redirect para área do usuário logado
     path("dashboard/", redirect_to_accounts),
-    path("my-account/", redirect_to_accounts),
+    path("accounts/", redirect_to_accounts),
     path("mon-compte/", redirect_to_accounts),
     path("test-tailwind/", views.test_tailwind, name="test_tailwind"),
 ]

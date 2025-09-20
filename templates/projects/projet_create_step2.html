@@ -1,0 +1,118 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Nouveau projet - Étape 2 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Barre de progression -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded-full font-medium">✓</div>
+                    <span class="ml-2 text-sm font-medium text-green-600">Informations générales</span>
+                </div>
+                <div class="w-12 h-0.5 bg-green-600"></div>
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full font-medium">2</div>
+                    <span class="ml-2 text-sm font-medium text-blue-600">Détails techniques</span>
+                </div>
+                <div class="w-12 h-0.5 bg-gray-300"></div>
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-500 rounded-full font-medium">3</div>
+                    <span class="ml-2 text-sm text-gray-500">Contact et budget</span>
+                </div>
+            </div>
+        </div>
+        <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-blue-600 h-2 rounded-full" style="width: 66.66%"></div>
+        </div>
+    </div>
+
+    <div class="card p-8">
+        <div class="text-center mb-8">
+            <div class="text-4xl mb-4">🔧</div>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Détails techniques</h1>
+            <p class="text-gray-600">Spécifiez les détails techniques et la planification de votre projet</p>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.etat_support.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        État du support *
+                    </label>
+                    {{ form.etat_support }}
+                    {% if form.etat_support.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.etat_support.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.type_finition.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Type de finition *
+                    </label>
+                    {{ form.type_finition }}
+                    {% if form.type_finition.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.type_finition.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.materiaux_specifiques.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Matériaux spécifiques
+                </label>
+                {{ form.materiaux_specifiques }}
+                {% if form.materiaux_specifiques.errors %}
+                    <div class="mt-1 text-sm text-red-600">{{ form.materiaux_specifiques.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.date_debut_souhaitee.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Date de début souhaitée
+                    </label>
+                    {{ form.date_debut_souhaitee }}
+                    {% if form.date_debut_souhaitee.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.date_debut_souhaitee.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.date_fin_souhaitee.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Date de fin souhaitée
+                    </label>
+                    {{ form.date_fin_souhaitee }}
+                    {% if form.date_fin_souhaitee.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.date_fin_souhaitee.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.contraintes_horaires.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Contraintes horaires
+                </label>
+                {{ form.contraintes_horaires }}
+                {% if form.contraintes_horaires.errors %}
+                    <div class="mt-1 text-sm text-red-600">{{ form.contraintes_horaires.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="flex justify-between pt-6">
+                <a href="{% url 'projects:projet_create_step1' %}" class="btn-secondary">
+                    ← Précédent
+                </a>
+                <button type="submit" class="btn-primary">
+                    Suivant →
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

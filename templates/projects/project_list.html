@@ -95,7 +95,7 @@
         </button>
         
         <a
-          href="{% url 'projects:create' %}"
+          href="{% url 'projects:projet_create_step1' %}"
           class="btn btn-primary w-full sm:w-auto order-3"
         >
           <i class="fas fa-plus"></i>
@@ -105,25 +105,99 @@
       </div>
     </div>
     
-    <!-- Statistiques rapides -->
+    <!-- Statistiques rapides com animações -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-      <div class="card bg-brand-50 border-brand-200 p-3 sm:p-4 text-center">
-        <div class="text-xl sm:text-2xl font-bold text-brand-600">{{ total_projects|default:0 }}</div>
-        <div class="text-xs sm:text-sm text-brand-700 font-medium">Total</div>
+      
+      <!-- Total de projetos -->
+      <div class="card bg-brand-50 border-brand-200 p-3 sm:p-4 text-center hover:shadow-md transition-all duration-200 hover:scale-105">
+        <div class="flex items-center justify-center mb-2">
+          <div class="w-8 h-8 bg-brand-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-paint-brush text-brand-600 text-sm"></i>
+          </div>
+        </div>
+        <div class="text-xl sm:text-2xl font-bold text-brand-600 mb-1" id="total-counter">
+          {{ total_projects|default:0 }}
+        </div>
+        <div class="text-xs sm:text-sm text-brand-700 font-medium">
+          Total
+        </div>
+        {% if debug_stats %}
+        <div class="text-xs text-gray-500 mt-1">Debug: {{ debug_stats.total }}</div>
+        {% endif %}
       </div>
-      <div class="card bg-success-50 border-success-200 p-3 sm:p-4 text-center">
-        <div class="text-xl sm:text-2xl font-bold text-success-600">{{ active_projects|default:0 }}</div>
-        <div class="text-xs sm:text-sm text-success-700 font-medium">En cours</div>
+      
+      <!-- Projetos ativos -->
+      <div class="card bg-success-50 border-success-200 p-3 sm:p-4 text-center hover:shadow-md transition-all duration-200 hover:scale-105">
+        <div class="flex items-center justify-center mb-2">
+          <div class="w-8 h-8 bg-success-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-play text-success-600 text-sm"></i>
+          </div>
+        </div>
+        <div class="text-xl sm:text-2xl font-bold text-success-600 mb-1" id="active-counter">
+          {{ active_projects|default:0 }}
+        </div>
+        <div class="text-xs sm:text-sm text-success-700 font-medium">
+          En cours
+        </div>
+        {% if debug_stats %}
+        <div class="text-xs text-gray-500 mt-1">Debug: {{ debug_stats.active }}</div>
+        {% endif %}
       </div>
-      <div class="card bg-warning-50 border-warning-200 p-3 sm:p-4 text-center">
-        <div class="text-xl sm:text-2xl font-bold text-warning-600">{{ pending_projects|default:0 }}</div>
-        <div class="text-xs sm:text-sm text-warning-700 font-medium">En attente</div>
+      
+      <!-- Projetos pendentes -->
+      <div class="card bg-warning-50 border-warning-200 p-3 sm:p-4 text-center hover:shadow-md transition-all duration-200 hover:scale-105">
+        <div class="flex items-center justify-center mb-2">
+          <div class="w-8 h-8 bg-warning-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-clock text-warning-600 text-sm"></i>
+          </div>
+        </div>
+        <div class="text-xl sm:text-2xl font-bold text-warning-600 mb-1" id="pending-counter">
+          {{ pending_projects|default:0 }}
+        </div>
+        <div class="text-xs sm:text-sm text-warning-700 font-medium">
+          En attente
+        </div>
+        {% if debug_stats %}
+        <div class="text-xs text-gray-500 mt-1">Debug: {{ debug_stats.pending }}</div>
+        {% endif %}
       </div>
-      <div class="card bg-info-50 border-info-200 p-3 sm:p-4 text-center">
-        <div class="text-xl sm:text-2xl font-bold text-info-600">{{ completed_projects|default:0 }}</div>
-        <div class="text-xs sm:text-sm text-info-700 font-medium">Terminés</div>
+      
+      <!-- Projetos terminados -->
+      <div class="card bg-info-50 border-info-200 p-3 sm:p-4 text-center hover:shadow-md transition-all duration-200 hover:scale-105">
+        <div class="flex items-center justify-center mb-2">
+          <div class="w-8 h-8 bg-info-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-check-circle text-info-600 text-sm"></i>
+          </div>
+        </div>
+        <div class="text-xl sm:text-2xl font-bold text-info-600 mb-1" id="completed-counter">
+          {{ completed_projects|default:0 }}
+        </div>
+        <div class="text-xs sm:text-sm text-info-700 font-medium">
+          Terminés
+        </div>
+        {% if debug_stats %}
+        <div class="text-xs text-gray-500 mt-1">Debug: {{ debug_stats.completed }}</div>
+        {% endif %}
       </div>
     </div>
+
+    <!-- Estatísticas detalhadas (opcional, para debug) -->
+    {% if debug_stats and user.is_staff %}
+    <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+      <h4 class="font-semibold text-yellow-800 mb-2">
+        <i class="fas fa-bug mr-2"></i>
+        Debug - Estatísticas por Status:
+      </h4>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+        {% for status, count in projects_by_status.items %}
+        <div class="bg-white p-2 rounded border">
+          <div class="font-medium text-gray-700">{{ status }}</div>
+          <div class="text-lg font-bold text-blue-600">{{ count }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
 
     <!-- Filter Chips (Filtros Ativos) -->
     <div id="filter-chips" class="hidden"></div>
@@ -189,14 +263,14 @@
               <i class="fas fa-search"></i>
               Appliquer les filtres
             </button>
-            <a href="{% url 'projects:list' %}" class="btn btn-secondary w-full text-center">
+            <a href="{% url 'projects:projet_list' %}" class="btn btn-secondary w-full text-center">
               <i class="fas fa-refresh"></i>
               Réinitialiser
             </a>
           </div>
         </form>
 
-        <!-- Filtres rapides -->
+        <!-- Filtres rápidos -->
         <div class="mt-8 pt-6 border-t border-gray-200">
           <h4 class="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <i class="fas fa-lightning text-brand-600"></i>
@@ -245,7 +319,7 @@
                   <p class="text-sm text-gray-500 mt-1 flex items-center gap-2">
                     <i class="fas fa-filter text-brand-500"></i>
                     Résultats filtrés
-                    <a href="{% url 'projects:list' %}" class="text-brand-600 hover:text-brand-700 font-medium underline">
+                    <a href="{% url 'projects:projet_list' %}" class="text-brand-600 hover:text-brand-700 font-medium underline">
                       Voir tous
                     </a>
                   </p>
@@ -254,7 +328,7 @@
               </div>
             </div>
             
-            <!-- Contrôles de vue et tri -->
+            <!-- Contrôles de vue e tri -->
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
               
               <!-- Tri -->
@@ -319,219 +393,385 @@
       </div>
 
       <!-- Grid/Lista de Projetos -->
-      {% if projects %}
-      <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for project in projects %}
-        <div class="card card-hover card-animate" data-project-id="{{ project.pk }}" style="animation-delay: {{ forloop.counter0|floatformat:1 }}00ms">
+{% if projects %}
+<div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+  {% for project in projects %}
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 animate-fade-in-up" 
+       data-project-id="{{ project.pk }}" 
+       style="animation-delay: {{ forloop.counter0|floatformat:1 }}00ms">
+    
+    <!-- Header do Card -->
+    <div class="p-4 border-b border-gray-100">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div class="flex-1 min-w-0">
+          <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
+            <a
+              href="{% url 'projects:projet_detail' pk=project.pk %}"
+              class="hover:text-blue-600 transition-colors duration-200"
+              title="{{ project.title }}"
+            >
+              {{ project.title }}
+            </a>
+          </h3>
+          <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            <i class="fas fa-hashtag mr-1"></i>
+            {{ project.reference }}
+          </div>
+        </div>
+        
+        <!-- Status Badge -->
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0
+          {% if project.status == 'brouillon' %}bg-gray-100 text-gray-800
+          {% elif project.status == 'soumis' %}bg-blue-100 text-blue-800
+          {% elif project.status == 'en_examen' %}bg-yellow-100 text-yellow-800
+          {% elif project.status == 'devis_demande' %}bg-orange-100 text-orange-800
+          {% elif project.status == 'devis_envoye' %}bg-purple-100 text-purple-800
+          {% elif project.status == 'devis_accepte' %}bg-green-100 text-green-800
+          {% elif project.status == 'en_cours' %}bg-blue-100 text-blue-800
+          {% elif project.status == 'termine' %}bg-emerald-100 text-emerald-800
+          {% else %}bg-gray-100 text-gray-800{% endif %}">
+          <i class="fas fa-circle text-xs mr-1"></i>
+          {{ project.get_status_display }}
+        </span>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
+          {% if project.priority == 'urgente' %}text-red-800 border-red-300 bg-red-50
+          {% elif project.priority == 'elevee' %}text-orange-800 border-orange-300 bg-orange-50
+          {% elif project.priority == 'normale' %}text-blue-800 border-blue-300 bg-blue-50
+          {% else %}text-gray-800 border-gray-300 bg-gray-50{% endif %}">
+          <i class="fas fa-flag mr-1"></i>
+          {{ project.get_priority_display }}
+        </span>
+
+        <div class="text-xs text-gray-500 flex items-center gap-1">
+          <i class="fas fa-calendar-alt"></i>
+          {{ project.created_at|date:"d/m/Y" }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Conteúdo do Card -->
+    <div class="p-4 space-y-4">
+      
+      <!-- Informações principais -->
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <i class="fas fa-paint-brush text-blue-500 text-sm"></i>
+            <span class="font-medium text-blue-900 text-xs">Type</span>
+          </div>
+          <div class="text-blue-800 font-semibold text-xs truncate">
+            {{ project.project_type }}
+          </div>
+        </div>
+
+        <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <i class="fas fa-ruler-combined text-green-500 text-sm"></i>
+            <span class="font-medium text-green-900 text-xs">Surface</span>
+          </div>
+          <div class="text-green-800 font-semibold text-xs">
+            {{ project.surface_totale|default:"--" }} m²
+          </div>
+        </div>
+      </div>
+
+      <!-- Localização -->
+      {% if project.ville %}
+      <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+        <div class="flex items-center gap-2 text-sm">
+          <i class="fas fa-map-marker-alt text-red-500"></i>
+          <span class="font-medium text-gray-700 truncate">
+            {{ project.ville }}{% if project.code_postal %}, {{ project.code_postal }}{% endif %}
+          </span>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Descrição -->
+      {% if project.description %}
+      <div class="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3">
+        <p class="line-clamp-2">{{ project.description|truncatechars:100 }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Budget estimé -->
+      {% if project.budget_minimum or project.budget_maximum %}
+      <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-orange-200 rounded-lg p-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-euro-sign text-orange-600"></i>
+            <span class="text-sm font-medium text-orange-900">Budget</span>
+          </div>
+          <span class="font-bold text-sm text-orange-800">
+            {% if project.budget_minimum and project.budget_maximum %}
+              {{ project.budget_minimum|floatformat:0 }}€ - {{ project.budget_maximum|floatformat:0 }}€
+            {% elif project.budget_minimum %}
+              À partir de {{ project.budget_minimum|floatformat:0 }}€
+            {% elif project.budget_maximum %}
+              Jusqu'à {{ project.budget_maximum|floatformat:0 }}€
+            {% endif %}
+          </span>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Progress bar (apenas para projetos em curso) -->
+      {% if project.status == 'en_cours' %}
+      <div class="space-y-2">
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-700 font-medium flex items-center gap-2">
+            <i class="fas fa-tasks text-blue-500"></i>
+            Progression
+          </span>
+          <span class="text-blue-600 font-bold">{{ project.progress_percentage|default:0 }}%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500" 
+            style="width: {{ project.progress_percentage|default:0 }}%"
+          ></div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Dates importantes -->
+      {% if project.date_debut_souhaitee or project.date_fin_souhaitee %}
+      <div class="flex items-center gap-4 text-xs text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-2">
+        {% if project.date_debut_souhaitee %}
+        <div class="flex items-center gap-1">
+          <i class="fas fa-play text-green-500"></i>
+          <span>Début: {{ project.date_debut_souhaitee|date:"d/m/Y" }}</span>
+        </div>
+        {% endif %}
+        {% if project.date_fin_souhaitee %}
+        <div class="flex items-center gap-1">
+          <i class="fas fa-flag-checkered text-red-500"></i>
+          <span>Fin: {{ project.date_fin_souhaitee|date:"d/m/Y" }}</span>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Footer do Card -->
+    <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 rounded-b-lg">
+      <div class="flex items-center justify-between">
+        <!-- Info adicional -->
+        <div class="text-xs text-gray-500 flex items-center gap-3">
+          {% if project.nombre_pieces %}
+          <span class="flex items-center gap-1">
+            <i class="fas fa-door-open"></i>
+            {{ project.nombre_pieces }} pièce{{ project.nombre_pieces|pluralize }}
+          </span>
+          {% endif %}
+          {% if project.updated_at != project.created_at %}
+          <span class="flex items-center gap-1 hidden sm:flex">
+            <i class="fas fa-edit"></i>
+            Modifié {{ project.updated_at|date:"d/m" }}
+          </span>
+          {% endif %}
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex items-center gap-1">
+          <button
+            onclick="toggleFavorite('{{ project.pk }}')"
+            class="p-2 text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 rounded-full transition-colors duration-200"
+            title="Marquer comme favori"
+          >
+            <i class="fas fa-star text-sm"></i>
+          </button>
           
-          <!-- Header do Card -->
-          <div class="card-header">
-            <div class="flex items-start justify-between gap-4 mb-3">
-              <div class="flex-1 min-w-0">
-                <h3 class="font-display font-bold text-gray-900 mb-2 line-clamp-2">
-                  <a
-                    href="{% url 'projects:detail' pk=project.pk %}"
-                    class="hover:text-brand-600 transition-colors duration-200"
-                    title="{{ project.title }}"
-                  >
-                    {{ project.title }}
-                  </a>
-                </h3>
-                <div class="badge badge-secondary font-mono">
-                  <i class="fas fa-hashtag"></i>
-                  {{ project.reference }}
-                </div>
-              </div>
-              
-              <!-- Status Badge -->
-              <span class="badge flex-shrink-0
-                {% if project.status == 'brouillon' %}badge-secondary
-                {% elif project.status == 'soumis' %}badge-primary
-                {% elif project.status == 'en_examen' %}badge-warning
-                {% elif project.status == 'devis_demande' %}badge-warning
-                {% elif project.status == 'devis_envoye' %}badge-info
-                {% elif project.status == 'devis_accepte' %}badge-success
-                {% elif project.status == 'en_cours' %}badge-primary
-                {% elif project.status == 'termine' %}badge-success
-                {% else %}badge-secondary{% endif %}">
-                <i class="fas fa-circle text-xs"></i>
-                {{ project.get_status_display }}
-              </span>
-            </div>
+          <a
+            href="{% url 'projects:projet_detail' pk=project.pk %}"
+            class="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors duration-200"
+            title="Voir détails"
+          >
+            <i class="fas fa-eye text-sm"></i>
+          </a>
+          
+          {% if project.user == request.user or request.user.is_staff %}
+          <a
+            href="{% url 'projects:projet_update' pk=project.pk %}"
+            class="p-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-full transition-colors duration-200"
+            title="Modifier"
+          >
+            <i class="fas fa-edit text-sm"></i>
+          </a>
+          {% endif %}
 
-            <div class="flex items-center justify-between">
-              <span class="badge badge-outline
-                {% if project.priority == 'urgente' %}text-danger-800 border-danger-300
-                {% elif project.priority == 'haute' %}text-warning-800 border-warning-300
-                {% elif project.priority == 'normale' %}text-brand-800 border-brand-300
-                {% else %}text-gray-800 border-gray-300{% endif %}">
-                <i class="fas fa-flag"></i>
-                {{ project.get_priority_display }}
-              </span>
+          {% if project.status == 'soumis' and project.can_request_quote %}
+          <button
+            onclick="requestQuote('{{ project.pk }}')"
+            class="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-full transition-colors duration-200"
+            title="Demander un devis"
+          >
+            <i class="fas fa-file-invoice-dollar text-sm"></i>
+          </button>
+          {% endif %}
 
-              <div class="text-xs text-gray-500 flex items-center gap-1">
-                <i class="icon icon-sm fas fa-calendar-alt"></i>
-                {{ project.created_at|date:"d/m/Y" }}
-              </div>
-            </div>
-          </div>
-
-          <!-- Conteúdo do Card -->
-          <div class="card-body space-y-4">
+          <!-- Menu dropdown para ações extras -->
+          <div class="relative">
+            <button
+              onclick="toggleProjectMenu(this)"
+              class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              title="Plus d'actions"
+            >
+              <i class="fas fa-ellipsis-v text-sm"></i>
+            </button>
             
-            <!-- Informações principais -->
-            <div class="grid grid-cols-2 gap-4 text-sm">
-              <div class="card bg-brand-50 border-brand-200 p-3">
-                <div class="flex items-center gap-2 mb-1">
-                  <i class="icon icon-sm fas fa-paint-brush text-brand-500"></i>
-                  <span class="font-medium text-brand-900">Type</span>
-                </div>
-                <div class="text-brand-800 font-semibold text-xs">
-                  {{ project.get_type_projet_display }}
-                </div>
-              </div>
-
-              <div class="card bg-success-50 border-success-200 p-3">
-                <div class="flex items-center gap-2 mb-1">
-                  <i class="icon icon-sm fas fa-ruler-combined text-success-500"></i>
-                  <span class="font-medium text-success-900">Surface</span>
-                </div>
-                <div class="text-success-800 font-semibold">
-                  {{ project.surface_totale|default:"--" }} m²
-                </div>
-              </div>
-            </div>
-
-            <!-- Localização -->
-            {% if project.ville %}
-            <div class="card bg-gray-50 border-gray-200 p-3">
-              <div class="flex items-center gap-2 text-sm">
-                <i class="icon icon-sm fas fa-map-marker-alt text-danger-500"></i>
-                <span class="font-medium text-gray-700">
-                  {{ project.ville }}{% if project.code_postal %}, {{ project.code_postal }}{% endif %}
-                </span>
-              </div>
-            </div>
-            {% endif %}
-
-            <!-- Descrição -->
-            {% if project.description %}
-            <div class="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-              <p class="line-clamp-2">{{ project.description|truncatechars:100 }}</p>
-            </div>
-            {% endif %}
-
-            <!-- Budget estimé -->
-            {% if project.budget_estime %}
-            <div class="card bg-gradient-warning border-warning-200 p-3">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <i class="icon icon-sm fas fa-euro-sign text-warning-600"></i>
-                  <span class="text-sm font-medium text-warning-900">Budget estimé</span>
-                </div>
-                <span class="font-bold text-lg text-warning-800">
-                  {{ project.budget_estime|floatformat:0 }}€
-                </span>
-              </div>
-            </div>
-            {% endif %}
-
-            <!-- Progress bar -->
-            {% if project.status == 'en_cours' and project.progress %}
-            <div class="space-y-2">
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-700 font-medium flex items-center gap-2">
-                  <i class="icon icon-sm fas fa-tasks text-brand-500"></i>
-                  Progression
-                </span>
-                <span class="text-brand-600 font-bold">{{ project.progress|default:0 }}%</span>
-              </div>
-              <div class="progress">
-                <div 
-                  class="progress-bar bg-gradient-brand" 
-                  style="width: {{ project.progress|default:0 }}%"
-                ></div>
-              </div>
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- Footer do Card -->
-          <div class="card-footer">
-            <div class="flex items-center justify-between">
-              <!-- Info adicional -->
-              <div class="text-xs text-gray-500 flex items-center gap-3">
-                {% if project.nombre_pieces %}
-                <span class="flex items-center gap-1">
-                  <i class="icon icon-sm fas fa-door-open"></i>
-                  {{ project.nombre_pieces }} pièce{{ project.nombre_pieces|pluralize }}
-                </span>
-                {% endif %}
-                {% if project.updated_at != project.created_at %}
-                <span class="flex items-center gap-1">
-                  <i class="icon icon-sm fas fa-edit"></i>
-                  Modifié {{ project.updated_at|date:"d/m" }}
-                </span>
-                {% endif %}
-              </div>
-              
-              <!-- Actions -->
-              <div class="flex items-center gap-2">
-                <button
-                  onclick="toggleFavorite('{{ project.pk }}')"
-                  class="btn btn-icon btn-ghost favorite-icon text-gray-400"
-                  title="Marquer comme favori"
-                >
-                  <i class="fas fa-star"></i>
-                </button>
-                
-                <a
-                  href="{% url 'projects:detail' pk=project.pk %}"
-                  class="btn btn-icon btn-ghost text-brand-600 hover:bg-brand-100"
-                  title="Voir détails"
-                >
-                  <i class="fas fa-eye"></i>
-                </a>
-                
-                {% if project.user == request.user or request.user.is_staff %}
-                <a
-                  href="{% url 'projects:update' pk=project.pk %}"
-                  class="btn btn-icon btn-ghost text-warning-600 hover:bg-warning-100"
-                  title="Modifier"
-                >
-                  <i class="fas fa-edit"></i>
-                </a>
-                {% endif %}
-
-                {% if project.status == 'soumis' %}
-                <button
-                  onclick="requestQuote('{{ project.pk }}')"
-                  class="btn btn-icon btn-ghost text-success-600 hover:bg-success-100"
-                  title="Demander un devis"
-                >
-                  <i class="fas fa-file-invoice-dollar"></i>
-                </button>
-                {% endif %}
-
+            <!-- Dropdown menu -->
+            <div class="hidden absolute right-0 bottom-full mb-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+              <div class="py-1">
                 <button
                   onclick="shareProject('{{ project.pk }}', '{{ project.title|escapejs }}')"
-                  class="btn btn-icon btn-ghost text-info-600 hover:bg-info-100"
-                  title="Partager"
+                  class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                 >
-                  <i class="fas fa-share-alt"></i>
+                  <i class="fas fa-share-alt text-blue-500"></i>
+                  Partager
                 </button>
+                
+                <button
+                  onclick="duplicateProject('{{ project.pk }}')"
+                  class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <i class="fas fa-copy text-green-500"></i>
+                  Dupliquer
+                </button>
+                
+                <button
+                  onclick="exportProject('{{ project.pk }}')"
+                  class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <i class="fas fa-download text-purple-500"></i>
+                  Exporter PDF
+                </button>
+                
+                {% if project.status == 'brouillon' and project.user == request.user %}
+                <div class="border-t border-gray-100"></div>
+                <button
+                  onclick="deleteProject('{{ project.pk }}')"
+                  class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                >
+                  <i class="fas fa-trash text-red-500"></i>
+                  Supprimer
+                </button>
+                {% endif %}
               </div>
             </div>
           </div>
         </div>
-        {% endfor %}
       </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
 
-      <!-- Pagination (mantém o mesmo código) -->
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+  <div class="text-sm text-gray-700">
+    Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} sur {{ paginator.count }} résultats
+  </div>
+  
+  <nav class="flex items-center gap-2">
+    {% if page_obj.has_previous %}
+    <a
+      href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1"
+      class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+    >
+      <i class="fas fa-angle-double-left"></i>
+    </a>
+    <a
+      href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
+      class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+    >
+      <i class="fas fa-angle-left"></i>
+    </a>
+    {% endif %}
 
-      {% else %}
-      <!-- Estado Vazio (mantém o mesmo código) -->
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+      <span class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md">
+        {{ num }}
+      </span>
+      {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+      <a
+        href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}"
+        class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+      >
+        {{ num }}
+      </a>
       {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+    <a
+      href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
+      class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+    >
+      <i class="fas fa-angle-right"></i>
+    </a>
+    <a
+      href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ paginator.num_pages }}"
+      class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+    >
+      <i class="fas fa-angle-double-right"></i>
+    </a>
+    {% endif %}
+  </nav>
+</div>
+{% endif %}
+
+{% else %}
+<!-- Estado Vazio -->
+<div class="text-center py-12">
+  <div class="max-w-md mx-auto">
+    <div class="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-6">
+      <i class="fas fa-paint-brush text-3xl text-gray-400"></i>
+    </div>
+    
+    <h3 class="text-lg font-medium text-gray-900 mb-2">
+      {% if request.GET %}
+        Aucun projet trouvé
+      {% else %}
+        Aucun projet pour le moment
+      {% endif %}
+    </h3>
+    
+    <p class="text-gray-500 mb-6">
+      {% if request.GET %}
+        Essayez de modifier vos critères de recherche ou de supprimer certains filtres.
+      {% else %}
+        Commencez par créer votre premier projet de peinture.
+      {% endif %}
+    </p>
+    
+    <div class="space-y-3">
+      {% if request.GET %}
+      <a
+        href="{% url 'projects:projet_list' %}"
+        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+      >
+        <i class="fas fa-times mr-2"></i>
+        Supprimer les filtres
+      </a>
+      {% endif %}
+      
+      <a
+        href="{% url 'projects:projet_create_step1' %}"
+        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+      >
+        <i class="fas fa-plus mr-2"></i>
+        Créer mon premier projet
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
     </div>
   </div>
 </div>
@@ -590,4 +830,134 @@
 
 {% block extra_js %}
 <script src="{% static 'projects/js/project_list.js' %}"></script>
+<!-- JavaScript para funcionalidades interativas -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Fechar dropdowns ao clicar fora
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.relative')) {
+      document.querySelectorAll('.relative .absolute').forEach(menu => {
+        menu.classList.add('hidden');
+      });
+    }
+  });
+});
+
+// Função para toggle do menu de ações
+function toggleProjectMenu(button) {
+  const menu = button.nextElementSibling;
+  const isHidden = menu.classList.contains('hidden');
+  
+  // Fechar todos os outros menus
+  document.querySelectorAll('.relative .absolute').forEach(otherMenu => {
+    otherMenu.classList.add('hidden');
+  });
+  
+  // Toggle do menu atual
+  if (isHidden) {
+    menu.classList.remove('hidden');
+  } else {
+    menu.classList.add('hidden');
+  }
+}
+
+// Função para favoritar projeto
+function toggleFavorite(projectId) {
+  // Implementar lógica de favoritos
+  console.log('Toggle favorite for project:', projectId);
+}
+
+// Função para solicitar devis
+function requestQuote(projectId) {
+  if (confirm('Demander un devis pour ce projet ?')) {
+    // Implementar lógica de solicitação de devis
+    console.log('Request quote for project:', projectId);
+  }
+}
+
+// Função para compartilhar projeto
+function shareProject(projectId, projectTitle) {
+  if (navigator.share) {
+    navigator.share({
+      title: projectTitle,
+      text: 'Découvrez mon projet de peinture',
+      url: window.location.origin + '/projets/' + projectId + '/'
+    });
+  } else {
+    // Fallback para navegadores sem suporte a Web Share API
+    const url = window.location.origin + '/projets/' + projectId + '/';
+    navigator.clipboard.writeText(url).then(() => {
+      showNotification('Lien copié dans le presse-papiers!', 'success');
+    });
+  }
+}
+
+// Função para duplicar projeto
+function duplicateProject(projectId) {
+  if (confirm('Dupliquer ce projeto ?')) {
+    // Implementar lógica de duplicação
+    console.log('Duplicate project:', projectId);
+  }
+}
+
+// Função para exportar projeto
+function exportProject(projectId) {
+  // Implementar lógica de exportação PDF
+  console.log('Export project:', projectId);
+}
+
+// Função para deletar projeto
+function deleteProject(projectId) {
+  if (confirm('Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.')) {
+    // Implementar lógica de exclusão
+    console.log('Delete project:', projectId);
+  }
+}
+
+// Função para mostrar notificações
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification show bg-${type === 'success' ? 'green' : 'blue'}-500 text-white`;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// Adicionar após o DOMContentLoaded existente:
+
+// Animação dos contadores
+function animateCounters() {
+  const counters = [
+    { element: document.getElementById('total-counter'), target: {{ total_projects|default:0 }} },
+    { element: document.getElementById('active-counter'), target: {{ active_projects|default:0 }} },
+    { element: document.getElementById('pending-counter'), target: {{ pending_projects|default:0 }} },
+    { element: document.getElementById('completed-counter'), target: {{ completed_projects|default:0 }} }
+  ];
+
+  counters.forEach(({ element, target }) => {
+    if (!element) return;
+    
+    let current = 0;
+    const increment = target / 30; // 30 frames para animação
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= target) {
+        element.textContent = target;
+        clearInterval(timer);
+      } else {
+        element.textContent = Math.floor(current);
+      }
+    }, 50); // 50ms entre frames
+  });
+}
+
+// Executar animação quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+  // Animar contadores após um pequeno delay
+  setTimeout(animateCounters, 300);
+});
+</script>
 {% endblock %}

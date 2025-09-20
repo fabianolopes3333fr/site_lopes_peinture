@@ -6,82 +6,7 @@
 {% block extra_css %}
 {% tailwind_css %}
 <style>
-  /* Animações suaves */
-.transition-all {
-  transition: all 0.3s ease;
-}
-
-/* Indicador de progresso animado */
-#progress-bar {
-  transition: width 0.5s ease-in-out;
-}
-
-/* Efeitos hover nos botões */
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn:active {
-  transform: translateY(0);
-}
-
-/* Estilo para campos com erro */
-.border-red-500 {
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-}
-
-/* Estilo para o modal */
-#help-modal {
-  backdrop-filter: blur(4px);
-}
-
-/* Responsividade melhorada */
-@media (max-width: 640px) {
-  .btn {
-    @apply w-full justify-center;
-  }
-  
-  .flex.justify-between {
-    @apply flex-col gap-3;
-  }
-  
-  .flex.justify-between .btn:first-child {
-    @apply order-2;
-  }
-  
-  .flex.justify-between .btn:last-child {
-    @apply order-1;
-  }
-}
-
-/* Estilo para as linhas de progresso */
-#line-1, #line-2 {
-  transition: background-color 0.3s ease;
-}
-
-/* Estilo para preview de imagem */
-#image-preview {
-  max-height: 200px;
-  overflow: hidden;
-}
-
-/* Estilo para container de pièces */
-.piece-row {
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* Estilos CSS específicos */
 .form-label {
   @apply block text-sm font-semibold text-gray-900 mb-2;
 }
@@ -122,6 +47,10 @@
   @apply bg-white rounded-xl shadow-sm border border-gray-200;
 }
 
+.flex-center {
+  @apply flex items-center justify-center;
+}
+
 .animate-fade-in {
   animation: fadeIn 0.5s ease-in-out;
 }
@@ -129,10 +58,6 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.hidden {
-  display: none !important;
 }
 </style>
 {% endblock %}
@@ -143,1049 +68,1495 @@
     
     <!-- Auto-save indicator -->
     <div id="auto-save-indicator" class="fixed top-4 right-4 bg-green-50 border border-green-200 text-green-800 px-4 py-2 rounded-lg text-sm opacity-0 transition-all duration-300 z-50 shadow-lg">
-      <div class="flex items-center gap-2">
-        <i class="fas fa-check-circle text-green-600"></i>
-        <span class="font-medium">Sauvegarde automatique</span>
-      </div>
+    <div class="flex items-center gap-2">
+    <i class="fas fa-check-circle text-green-600"></i>
+    <span class="font-medium">Sauvegarde automatique</span>
+    </div>
     </div>
 
     <!-- Header Section -->
     <div class="mb-8">
-      <div class="card p-6">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          
-          <!-- Title and Description -->
-          <div class="flex-1">
-            <div class="flex items-center gap-4 mb-3">
-              <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <i class="fas fa-plus-circle text-xl text-white"></i>
-              </div>
-              <div>
-                <h1 class="text-2xl lg:text-3xl font-bold text-gray-900">
-                  Créer un Nouveau Projet
-                </h1>
-                <p class="text-gray-600 mt-1">
-                  Décrivez votre projet pour recevoir un devis personnalisé
-                </p>
-              </div>
-            </div>
-            
-            <!-- Info badges -->
-            <div class="flex flex-wrap items-center gap-4 text-sm">
-              <div class="flex items-center gap-2 text-blue-600">
-                <i class="fas fa-clock w-4 h-4"></i>
-                <span>5-10 minutes</span>
-              </div>
-              <div class="flex items-center gap-2 text-green-600">
-                <i class="fas fa-save w-4 h-4"></i>
-                <span>Sauvegarde auto</span>
-              </div>
-              <div class="flex items-center gap-2 text-purple-600">
-                <i class="fas fa-shield-alt w-4 h-4"></i>
-                <span>Sécurisé</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
-            <a href="{% url 'projects:list' %}" class="btn btn-secondary">
-              <i class="fas fa-arrow-left w-4 h-4 mr-2"></i>
-              Retour à la liste
-            </a>
-            
-            <button type="button" onclick="showHelp()" class="btn bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100">
-              <i class="fas fa-question-circle w-4 h-4 mr-2"></i>
-              Aide
-            </button>
-          </div>
-        </div>
-      </div>
+    <div class="card p-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+    
+    <!-- Title and Description -->
+    <div class="flex-1">
+    <div class="flex items-center gap-4 mb-3">
+    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex-center shadow-lg">
+    <i class="fas fa-plus-circle text-xl text-white"></i>
+    </div>
+    <div>
+    <h1 class="text-2xl lg:text-3xl font-bold text-gray-900">
+    Créer un Nouveau Projet
+    </h1>
+    <p class="text-gray-600 mt-1">
+    Décrivez votre projet pour recevoir un devis personnalisé
+    </p>
+    </div>
+    </div>
+    
+    <!-- Info badges -->
+    <div class="flex flex-wrap items-center gap-4 text-sm">
+    <div class="flex items-center gap-2 text-blue-600">
+    <i class="fas fa-clock w-4 h-4"></i>
+    <span>5-10 minutes</span>
+    </div>
+    <div class="flex items-center gap-2 text-green-600">
+    <i class="fas fa-save w-4 h-4"></i>
+    <span>Sauvegarde auto</span>
+    </div>
+    <div class="flex items-center gap-2 text-purple-600">
+    <i class="fas fa-shield-alt w-4 h-4"></i>
+    <span>Sécurisé</span>
+    </div>
+    </div>
     </div>
 
+    <!-- Action Buttons -->
+    <div class="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
+    <a href="{% url 'projects:list' %}" 
+    class="btn btn-secondary">
+    <i class="fas fa-arrow-left w-4 h-4 mr-2"></i>
+    Retour à la liste
+    </a>
+    
+    <button type="button" 
+    onclick="showHelp()"
+    class="btn bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100">
+    <i class="fas fa-question-circle w-4 h-4 mr-2"></i>
+    Aide
+    </button>
+    </div>
+    </div>
+    </div>
+    </div>
+    
     <!-- Progress Indicator -->
     <div class="card p-6 mb-8">
-      <div class="flex items-center justify-between">
-        
-        <!-- Step 1 -->
-        <div class="flex items-center" id="step-1">
-          <div class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white text-sm font-bold" id="circle-1">
-            1
-          </div>
-          <div class="ml-4 hidden sm:block">
-            <div class="text-sm font-semibold text-blue-600">Informations générales</div>
-            <div class="text-xs text-gray-500">Titre, type, description</div>
-          </div>
-        </div>
+    <div class="flex items-center justify-between">
+    
+    <!-- Step 1 -->
+    <div class="flex items-center step-indicator" data-step="1">
+    <div class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white text-sm font-bold step-circle">
+    1
+    </div>
+    <div class="ml-4 hidden sm:block">
+    <div class="text-sm font-semibold text-blue-600">Informations générales</div>
+    <div class="text-xs text-gray-500">Titre, type, description</div>
+    </div>
+    </div>
 
-        <!-- Line 1 -->
-        <div class="flex-1 h-1 mx-4 bg-gray-200 rounded-full" id="line-1"></div>
+    <!-- Line 1 -->
+    <div class="flex-1 h-1 mx-4 bg-gray-200 rounded-full">
+    <div class="h-full bg-blue-600 rounded-full transition-all duration-500" style="width: 0%"></div>
+    </div>
 
-        <!-- Step 2 -->
-        <div class="flex items-center" id="step-2">
-          <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-300 text-gray-600 text-sm font-bold" id="circle-2">
-            2
-          </div>
-          <div class="ml-4 hidden sm:block">
-            <div class="text-sm font-semibold text-gray-600">Détails techniques</div>
-            <div class="text-xs text-gray-500">Surfaces, pièces, finitions</div>
-          </div>
-        </div>
+    <!-- Step 2 -->
+    <div class="flex items-center step-indicator" data-step="2">
+    <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-300 text-gray-600 text-sm font-bold step-circle">
+    2
+    </div>
+    <div class="ml-4 hidden sm:block">
+    <div class="text-sm font-semibold text-gray-600">Détails techniques</div>
+    <div class="text-xs text-gray-500">Surfaces, pièces, finitions</div>
+    </div>
+    </div>
 
-        <!-- Line 2 -->
-        <div class="flex-1 h-1 mx-4 bg-gray-200 rounded-full" id="line-2"></div>
+    <!-- Line 2 -->
+    <div class="flex-1 h-1 mx-4 bg-gray-200 rounded-full">
+    <div class="h-full bg-blue-600 rounded-full transition-all duration-500" style="width: 0%"></div>
+    </div>
 
-        <!-- Step 3 -->
-        <div class="flex items-center" id="step-3">
-          <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-300 text-gray-600 text-sm font-bold" id="circle-3">
-            3
-          </div>
-          <div class="ml-4 hidden sm:block">
-            <div class="text-sm font-semibold text-gray-600">Finalisation</div>
-            <div class="text-xs text-gray-500">Adresse, planning, budget</div>
-          </div>
-        </div>
-      </div>
+    <!-- Step 3 -->
+    <div class="flex items-center step-indicator" data-step="3">
+    <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-300 text-gray-600 text-sm font-bold step-circle">
+    3
+    </div>
+    <div class="ml-4 hidden sm:block">
+    <div class="text-sm font-semibold text-gray-600">Finalisation</div>
+    <div class="text-xs text-gray-500">Adresse, planning, budget</div>
+    </div>
+    </div>
+    </div>
 
-      <!-- Progress bar -->
-      <div class="mt-6">
-        <div class="w-full bg-gray-200 rounded-full h-2">
-          <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500 ease-out" 
-               id="progress-bar" style="width: 33%"></div>
-        </div>
-        <div class="text-sm text-gray-600 mt-2" id="progress-text">
-          Étape 1 sur 3 (33%)
-        </div>
-      </div>
+    <!-- Progress bar -->
+    <div class="mt-6">
+    <div class="w-full bg-gray-200 rounded-full h-2">
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500 ease-out progress-bar" 
+    style="width: 33%"></div>
+    </div>
+    <div class="text-sm text-gray-600 mt-2 progress-text">
+    Étape 1 sur 3 (33%)
+    </div>
+    </div>
     </div>
 
     <!-- Validation Summary -->
     <div id="validation-summary" class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 hidden">
-      <div class="flex items-center mb-3">
-        <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
-        <h3 class="text-sm font-semibold text-red-800">Veuillez corriger les erreurs suivantes :</h3>
-      </div>
-      <ul id="validation-errors" class="text-sm text-red-700 space-y-1"></ul>
+    <div class="flex items-center mb-3">
+    <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+    <h3 class="text-sm font-semibold text-red-800">Veuillez corriger les erreurs suivantes :</h3>
+    </div>
+    <ul id="validation-errors" class="text-sm text-red-700 space-y-1"></ul>
     </div>
 
     <!-- Form Container -->
-    <form method="post" id="project-form" novalidate>
-      {% csrf_token %}
+    <form method="post" id="project-wizard-form" enctype="multipart/form-data" 
+    action="{% url 'projects:create' %}">
+    {% csrf_token %}
+    
 
-      <!-- ================================ -->
-      <!-- SECTION 1: INFORMATIONS GÉNÉRALES -->
-      <!-- ================================ -->
-      <div class="card p-6 mb-8" id="section-1">
-        
-        <!-- Section Header -->
-        <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200">
-          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-            <i class="fas fa-info-circle text-xl text-blue-600"></i>
-          </div>
-          <div>
-            <h2 class="text-xl font-bold text-gray-900">Informations Générales</h2>
-            <p class="text-gray-600 text-sm mt-1">Décrivez votre projet en quelques mots</p>
-          </div>
-        </div>
+    <!-- ==== -->
+    <!-- SECTION 1: INFORMATIONS GÉNÉRALES -->
+    <!-- ==== -->
+    <div class="card p-6 mb-8 wizard-step active" id="step1">
 
-        <!-- Form Fields -->
-        <div class="space-y-6">
-          
-          <!-- Titre -->
-          <div class="form-group">
-            <label for="{{ form.title.id_for_label }}" class="form-label">
-              <span class="flex items-center gap-2">
-                <i class="fas fa-tag text-gray-400"></i>
-                Titre du projet
-                <span class="text-red-500">*</span>
-              </span>
-            </label>
-            <div class="relative">
-              <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-edit text-gray-400"></i>
-              <input type="text" 
-                     name="{{ form.title.html_name }}" 
-                     value="{{ form.title.value|default:'' }}"
-                     id="{{ form.title.id_for_label }}"
-                     class="form-input pl-10"
-                     placeholder="Ex: Peinture salon et cuisine"
-                     required>
-            </div>
-            {% if form.title.errors %}
-            <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-              <i class="fas fa-exclamation-triangle"></i>
-              <span>{{ form.title.errors.0 }}</span>
-            </div>
-            {% endif %}
-          </div>
+    <!-- Section Header -->
+    <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200">
+    <div class="w-12 h-12 bg-blue-100 rounded-xl flex-center">
+    <i class="fas fa-info-circle text-xl text-blue-600"></i>
+    </div>
+    <div>
+    <h2 class="text-xl font-bold text-gray-900">Informations Générales</h2>
+    <p class="text-gray-600 text-sm mt-1">Décrivez votre projet en quelques mots</p>
+    </div>
+    </div>
 
-          <!-- Type de projet et Priorité -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="form-group">
-              <label for="{{ form.type_projet.id_for_label }}" class="form-label">
-                <span class="flex items-center gap-2">
-                  <i class="fas fa-home text-gray-400"></i>
-                  Type de projet
-                  <span class="text-red-500">*</span>
-                </span>
-              </label>
-              <select name="{{ form.type_projet.html_name }}" 
-                      id="{{ form.type_projet.id_for_label }}"
-                      class="form-input form-select"
-                      required>
-                <option value="">Sélectionnez un type</option>
-                {% for value, label in form.type_projet.field.choices %}
-                  <option value="{{ value }}" {% if form.type_projet.value == value %}selected{% endif %}>
-                    {{ label }}
-                  </option>
-                {% endfor %}
-              </select>
-              {% if form.type_projet.errors %}
-              <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>{{ form.type_projet.errors.0 }}</span>
-              </div>
-              {% endif %}
-            </div>
+    <!-- Form Fields -->
+    <div class="space-y-6">
+    
+    <!-- Titre -->
+    <div class="form-group">
+    <label for="step1-title" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-tag text-gray-400"></i>
+    Nom du projet
+    <span class="text-red-500">*</span>
+    <button type="button" class="group relative">
+    <i class="fas fa-question-circle text-gray-400 hover:text-blue-500 transition-colors"></i>
+    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+    Donnez un titre clair et descriptif
+    </div>
+    </button>
+    </span>
+    </label>
+    <div class="relative">
+    <input type="text" 
+    id="step1-title"
+    name="title"
+    class="form-input pl-10"
+    placeholder="Ex: Peinture salon et cuisine"
+    required>
+    </div>
+    {% if form.title.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.title.errors.0 }}</span>
+    </div>
+    {% endif %}
+    <div class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+    <p class="text-xs text-blue-700">
+    <i class="fas fa-lightbulb text-amber-500 mr-1"></i>
+    <strong>Conseil:</strong> Soyez spécifique pour faciliter l'estimation (ex: "Peinture chambre parentale 15m²")
+    </p>
+    </div>
+    </div>
 
-            <div class="form-group">
-              <label for="{{ form.priority.id_for_label }}" class="form-label">
-                <span class="flex items-center gap-2">
-                  <i class="fas fa-flag text-gray-400"></i>
-                  Priorité du projet
-                </span>
-              </label>
-              <select name="{{ form.priority.html_name }}" 
-                      id="{{ form.priority.id_for_label }}"
-                      class="form-input form-select">
-                <option value="">Sélectionnez une priorité</option>
-                {% for value, label in form.priority.field.choices %}
-                  <option value="{{ value }}" {% if form.priority.value == value %}selected{% endif %}>
-                    {{ label }}
-                  </option>
-                {% endfor %}
-              </select>
-              {% if form.priority.errors %}
-              <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>{{ form.priority.errors.0 }}</span>
-              </div>
-              {% endif %}
-            </div>
-          </div>
+    <!-- Type de projet et Priorité -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="form-group">
+    <label for="step1-project-type" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-home text-gray-400"></i>
+    Type de projet
+    <span class="text-red-500">*</span>
+    </span>
+    </label>
+    <select 
+    id="step1-project-type"
+    name="type_projet"
+    class="form-input form-select"
+    required>
+    <option value="">Sélectionnez un type</option>
+    {% for value, label in form.type_projet.field.choices %}
+    <option value="{{ value }}" {% if form.type_projet.value == value %}selected{% endif %}>
+    {{ label }}
+    </option>
+    {% endfor %}
+    </select>
+    {% if form.type_projet.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.type_projet.errors.0 }}</span>
+    </div>
+    {% endif %}
+    <p class="text-xs text-gray-500 mt-1">Sélectionnez le type principal de travaux</p>
+    </div>
 
-          <!-- Description -->
-          <div class="form-group">
-            <label for="{{ form.description.id_for_label }}" class="form-label">
-              <span class="flex items-center gap-2">
-                <i class="fas fa-align-left text-gray-400"></i>
-                Description détaillée
-                <span class="text-red-500">*</span>
-              </span>
-            </label>
-            <textarea name="{{ form.description.html_name }}" 
-                      id="{{ form.description.id_for_label }}"
-                      rows="4"
-                      class="form-input form-textarea"
-                      placeholder="Décrivez votre projet en détail..."
-                      required>{{ form.description.value|default:'' }}</textarea>
-            {% if form.description.errors %}
-            <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-              <i class="fas fa-exclamation-triangle"></i>
-              <span>{{ form.description.errors.0 }}</span>
-            </div>
-            {% endif %}
-          </div>
+    <div class="form-group">
+    <label for="step1-project-priority" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-flag text-gray-400"></i>
+    Priorité du projet
+    </span>
+    </label>
+    <select 
+    id="step1-project-priority"
+    name="priority"
+    class="form-input form-select">
+    <option value="">Sélectionnez une priorité</option>
+    {% for value, label in form.priority.field.choices %}
+    <option value="{{ value }}" {% if form.priority.value == value %}selected{% endif %}>
+    {{ label }}
+    </option>
+    {% endfor %}
+    </select>
+    {% if form.priority.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.priority.errors.0 }}</span>
+    </div>
+    {% endif %}
+    <p class="text-xs text-gray-500 mt-1">Aidez-nous à prioriser votre demande</p>
+    </div>
+    </div>
 
-          <!-- Types de pièces -->
-          <div class="form-group">
-            <label class="form-label">Types de pièces concernées</label>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-              
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" 
-                       name="pieces_salon" 
-                       id="id_pieces_salon" 
-                       class="form-checkbox"
-                       {% if form.pieces_salon.value %}checked{% endif %}>
-                <span class="text-sm">Salon</span>
-              </label>
-              
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" 
-                       name="pieces_cuisine" 
-                       id="id_pieces_cuisine" 
-                       class="form-checkbox"
-                       {% if form.pieces_cuisine.value %}checked{% endif %}>
-                <span class="text-sm">Cuisine</span>
-              </label>
+    <!-- Description -->
+    <div class="form-group">
+    <label for="step1-description" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-align-left text-gray-400"></i>
+    Description détaillée
+    <span class="text-red-500">*</span>
+    <button type="button" class="group relative">
+    <i class="fas fa-question-circle text-gray-400 hover:text-blue-500 transition-colors"></i>
+    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+    Plus c'est détaillé, plus notre devis sera précis
+    </div>
+    </button>
+    </span>
+    </label>
+    <textarea name="description"
+    id="step1-description"
+    rows="4"
+    class="form-input form-textarea"
+    placeholder="Décrivez votre projet en détail..."
+    required>{{ form.description.value|default:'' }}</textarea>
+    {% if form.description.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.description.errors.0 }}</span>
+    </div>
+    {% endif %}
+    
+    <!-- Description Tips -->
+    <div class="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+    <p class="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+    <i class="fas fa-lightbulb text-amber-500"></i>
+    Que mentionner dans votre description :
+    </p>
+    <ul class="space-y-1 text-sm text-blue-800 list-disc list-inside ml-4">
+    <li>L'état actuel des surfaces (neuf, ancien, abîmé)</li>
+    <li>Le type de peinture souhaité (mate, satinée, brillante)</li>
+    <li>Les couleurs envisagées</li>
+    <li>Toute contrainte particulière (animaux, enfants, délais)</li>
+    </ul>
+    </div>
+    </div>
 
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" 
-                       name="pieces_chambre" 
-                       id="id_pieces_chambre" 
-                       class="form-checkbox"
-                       {% if form.pieces_chambre.value %}checked{% endif %}>
-                <span class="text-sm">Chambre</span>
-              </label>
+    <!-- Types de pièces -->
+    <div class="form-group">
+    <label class="form-label">Types de pièces concernées</label>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+    {% if form.pieces_salon %}
+    <label class="flex items-center gap-2 cursor-pointer">
+    <input type="checkbox" 
+    name="{{ form.pieces_salon.html_name }}" 
+    id="step1-pieces-salon" 
+    class="form-checkbox"
+    {% if form.pieces_salon.value %}checked{% endif %}>
+    <span class="text-sm">{{ form.pieces_salon.label }}</span>
+    </label>
+    {% endif %}
+    
+    {% if form.pieces_cuisine %}
+    <label class="flex items-center gap-2 cursor-pointer">
+    <input type="checkbox" 
+    name="{{ form.pieces_cuisine.html_name }}" 
+    id="step1-pieces-cuisine" 
+    class="form-checkbox"
+    {% if form.pieces_cuisine.value %}checked{% endif %}>
+    <span class="text-sm">{{ form.pieces_cuisine.label }}</span>
+    </label>
+    {% endif %}
 
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" 
-                       name="pieces_salle_de_bain" 
-                       id="id_pieces_salle_de_bain" 
-                       class="form-checkbox"
-                       {% if form.pieces_salle_de_bain.value %}checked{% endif %}>
-                <span class="text-sm">Salle de bain</span>
-              </label>
+    {% if form.pieces_chambre %}
+    <label class="flex items-center gap-2 cursor-pointer">
+    <input type="checkbox" 
+    name="{{ form.pieces_chambre.html_name }}" 
+    id="step1-pieces-chambre" 
+    class="form-checkbox"
+    {% if form.pieces_chambre.value %}checked{% endif %}>
+    <span class="text-sm">{{ form.pieces_chambre.label }}</span>
+    </label>
+    {% endif %}
 
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" 
-                       name="pieces_bureau" 
-                       id="id_pieces_bureau" 
-                       class="form-checkbox"
-                       {% if form.pieces_bureau.value %}checked{% endif %}>
-                <span class="text-sm">Bureau</span>
-              </label>
+    {% if form.pieces_salle_de_bain %}
+    <label class="flex items-center gap-2 cursor-pointer">
+    <input type="checkbox" 
+    name="{{ form.pieces_salle_de_bain.html_name }}" 
+    id="step1-pieces-salle-de-bain" 
+    class="form-checkbox"
+    {% if form.pieces_salle_de_bain.value %}checked{% endif %}>
+    <span class="text-sm">{{ form.pieces_salle_de_bain.label }}</span>
+    </label>
+    {% endif %}
 
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" 
-                       name="pieces_couloir" 
-                       id="id_pieces_couloir" 
-                       class="form-checkbox"
-                       {% if form.pieces_couloir.value %}checked{% endif %}>
-                <span class="text-sm">Couloir</span>
-              </label>
-            </div>
-          </div>
+    {% if form.pieces_bureau %}
+    <label class="flex items-center gap-2 cursor-pointer">
+    <input type="checkbox" 
+    name="{{ form.pieces_bureau.html_name }}" 
+    id="step1-pieces-bureau" 
+    class="form-checkbox"
+    {% if form.pieces_bureau.value %}checked{% endif %}>
+    <span class="text-sm">{{ form.pieces_bureau.label }}</span>
+    </label>
+    {% endif %}
 
-          <!-- Section Navigation -->
-          <div class="mt-8 pt-6 border-t border-gray-200">
-            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div class="text-sm text-gray-600 order-2 sm:order-1">
-                <span class="font-semibold">Étape 1 sur 3</span> - Informations de base
-              </div>
-              <button type="button" 
-                      data-next-section="2"
-                      id="next-btn-1"
-                      class="btn btn-primary order-1 sm:order-2">
-                <span>Suivant - Détails techniques</span>
-                <i class="fas fa-arrow-right ml-2"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    {% if form.pieces_couloir %}
+    <label class="flex items-center gap-2 cursor-pointer">
+    <input type="checkbox" 
+    name="{{ form.pieces_couloir.html_name }}" 
+    id="step1-pieces-couloir" 
+    class="form-checkbox"
+    {% if form.pieces_couloir.value %}checked{% endif %}>
+    <span class="text-sm">{{ form.pieces_couloir.label }}</span>
+    </label>
+    {% endif %}
+    </div>
+    </div>
 
-      <!-- ================================ -->
-      <!-- SECTION 2: DÉTAILS TECHNIQUES -->
-      <!-- ================================ -->
-      <div class="card p-6 mb-8 hidden" id="section-2">
-        
-        <!-- Section Header -->
-        <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200">
-          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-            <i class="fas fa-cogs text-xl text-blue-600"></i>
-          </div>
-          <div>
-            <h2 class="text-xl font-bold text-gray-900">Détails Techniques</h2>
-            <p class="text-gray-600 text-sm mt-1">Précisez les caractéristiques techniques</p>
-          </div>
-        </div>
+    <!-- Section Navigation -->
+    <div class="mt-8 pt-6 border-t border-gray-200">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+    <div class="text-sm text-gray-600 order-2 sm:order-1">
+    <span class="font-semibold">Étape 1 sur 3</span> - Informations de base
+    </div>
+    <button type="button" 
+    onclick="showStep(2)"
+    id="step1-next"
+    class="btn btn-primary order-1 sm:order-2">
+    <span>Suivant - Détails techniques</span>
+    <i class="fas fa-arrow-right ml-2"></i>
+    </button>
+    </div>
+    </div>
+    </div>
+    </div>
 
-        <div class="space-y-8">
-          
-          <!-- Surfaces et Dimensions -->
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-ruler-combined text-blue-600"></i>
-              Surfaces et Dimensions
-            </h3>
+    <!-- ==== -->
+    <!-- SECTION 2: DÉTAILS TECHNIQUES -->
+    <!-- ==== -->
+    <div class="card p-6 mb-8 hidden wizard-step" id="step2">
+    
+    <!-- Section Header -->
+    <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200">
+    <div class="w-12 h-12 bg-blue-100 rounded-xl flex-center">
+    <i class="fas fa-cogs text-xl text-blue-600"></i>
+    </div>
+    <div>
+    <h2 class="text-xl font-bold text-gray-900">Détails Techniques</h2>
+    <p class="text-gray-600 text-sm mt-1">Précisez les caractéristiques techniques</p>
+    </div>
+    </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <!-- Surface totale -->
-              <div class="form-group">
-                <label for="{{ form.surface_totale.id_for_label }}" class="form-label">
-                  <span class="flex items-center gap-1">
-                    <i class="fas fa-expand-arrows-alt text-gray-400 text-xs"></i>
-                    Surface totale (m²)
-                    <span class="text-red-500">*</span>
-                  </span>
-                </label>
-                <div class="relative">
-                  <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-square text-gray-400"></i>
-                  <input type="number" 
-                         name="{{ form.surface_totale.html_name }}" 
-                         value="{{ form.surface_totale.value|default:'' }}" 
-                         id="{{ form.surface_totale.id_for_label }}"
-                         class="form-input pl-10"
-                         placeholder="0.00"
-                         step="0.01"
-                         min="0"
-                         required>
-                </div>
-                {% if form.surface_totale.errors %}
-                <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>{{ form.surface_totale.errors.0 }}</span>
-                </div>
-                {% endif %}
-              </div>
+    <div class="space-y-8">  
+    <!-- Surfaces et Dimensions -->
+    <div class="mt-8">
 
-              <!-- Surface murs -->
-              <div class="form-group">
-                <label for="{{ form.surface_murs.id_for_label }}" class="form-label">
-                  <span class="flex items-center gap-1">
-                    <i class="fas fa-grip-lines-vertical text-gray-400 text-xs"></i>
-                    Surface murs (m²)
-                  </span>
-                </label>
-                <div class="relative">
-                  <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-border-style text-gray-400"></i>
-                  <input type="number" 
-                         name="{{ form.surface_murs.html_name }}" 
-                         value="{{ form.surface_murs.value|default:'' }}" 
-                         id="{{ form.surface_murs.id_for_label }}"
-                         class="form-input pl-10"
-                         placeholder="0.00"
-                         step="0.01"
-                         min="0">
-                </div>
-                {% if form.surface_murs.errors %}
-                <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>{{ form.surface_murs.errors.0 }}</span>
-                </div>
-                {% endif %}
-              </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="form-group">
+    <label for="step2-surface-area" class="form-label">
+    <span class="flex items-center gap-1">
+    <i class="fas fa-expand-arrows-alt text-gray-400 text-xs"></i>
+    Surface Totale (m²)
+    <span class="text-red-500">*</span>
+    </span>
+    </label>
+    <div class="relative">
+    <input type="number" 
+    name="surface_totale"
+    value="{{ form.surface_totale.value|default:'' }}"    
+    id="step2-surface-area"
+    class="form-input pl-10"
+    placeholder="0.00"
+    step="0.01"
+    min="0"
+    required>
+    </div>
+    {% if form.surface_totale.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.surface_totale.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
+    </div> 
 
-              <!-- Surface plafond -->
-              <div class="form-group">
-                <label for="{{ form.surface_plafond.id_for_label }}" class="form-label">
-                  <span class="flex items-center gap-1">
-                    <i class="fas fa-grip-lines text-gray-400 text-xs"></i>
-                    Surface plafond (m²)
-                  </span>
-                </label>
-                <div class="relative">
-                  <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-minus text-gray-400"></i>
-                  <input type="number" 
-                         name="{{ form.surface_plafond.html_name }}"
-                         value="{{ form.surface_plafond.value|default:'' }}"
-                         id="{{ form.surface_plafond.id_for_label }}"
-                         class="form-input pl-10"
-                         placeholder="0.00"
-                         step="0.01"
-                         min="0">
-                </div>
-                {% if form.surface_plafond.errors %}
-                <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>{{ form.surface_plafond.errors.0 }}</span>
-                </div>
-                {% endif %}
-              </div>
+    <!-- Calculateur de surface -->
+    <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+    <h4 class="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+    <i class="fas fa-calculator text-blue-600"></i>
+    Calculateur de surface automatique
+    </h4>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
-              <!-- Hauteur sous plafond -->
-              <div class="form-group">
-                <label for="{{ form.hauteur_sous_plafond.id_for_label }}" class="form-label">
-                  <span class="flex items-center gap-1">
-                    <i class="fas fa-arrows-alt-v text-gray-400 text-xs"></i>
-                    Hauteur (m)
-                  </span>
-                </label>
-                <div class="relative">
-                  <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-ruler-vertical text-gray-400"></i>
-                  <input type="number" 
-                         name="{{ form.hauteur_sous_plafond.html_name }}" 
-                         value="{{ form.hauteur_sous_plafond.value|default:'' }}"
-                         id="{{ form.hauteur_sous_plafond.id_for_label }}"
-                         class="form-input pl-10"
-                         placeholder="2.50"
-                         step="0.01"
-                         min="0">
-                </div>
-                {% if form.hauteur_sous_plafond.errors %}
-                <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>{{ form.hauteur_sous_plafond.errors.0 }}</span>
-                </div>
-                {% endif %}
-              </div>
-            </div>
+    <div class="form-group">
+    <label class="block text-sm font-medium text-gray-700 mb-1">Longueur (m)</label>
+    <input type="number" id="calc-length" name="length" step="0.1" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="5.5">
+    {% if form.length.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.length.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
+    <div class="form-group">
+    <label class="block text-sm font-medium text-gray-700 mb-1">Largeur (m)</label>
+    <input type="number" id="calc-width" name="width" step="0.1" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="4.2">
+    {% if form.width.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.width.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
+    <div class="form-group">
+    <label class="block text-sm font-medium text-gray-700 mb-1">Hauteur (m)</label>
+    <input type="number" id="calc-height" name="height" step="0.1" min="2" value="2.5" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+    {% if form.height.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.height.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
+    
+    <button type="button" id="calc-surface" class="w-full btn bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+    <i class="fas fa-calculator mr-2"></i>Calculer Surface
+    </button>
+    </div>
+    <div id="calc-result" class="text-center text-blue-600 font-semibold"></div>
 
-            <!-- Calculateur de surface -->
-            <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 class="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                <i class="fas fa-calculator text-blue-600"></i>
-                Calculateur de surface automatique
-              </h4>
-              
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                <input type="number"
-                       id="calc-longueur" 
-                       placeholder="Longueur (m)" 
-                       class="form-input" 
-                       step="0.1">
-                <input type="number" 
-                       id="calc-largeur" 
-                       placeholder="Largeur (m)" 
-                       class="form-input" 
-                       step="0.1">
-                <input type="number" 
-                       id="calc-hauteur" 
-                       placeholder="Hauteur (m)" 
-                       class="form-input" 
-                       step="0.1" 
-                       value="2.5">
-                <button type="button" 
-                        onclick="calculateSurface()" 
-                        class="btn btn-primary">
-                  <i class="fas fa-equals mr-1"></i>
-                  Calculer
-                </button>
-              </div>
-              
-              <div class="p-3 bg-white border border-blue-300 rounded-lg">
-                <div class="grid grid-cols-3 gap-4 text-sm">
-                  <div class="text-center">
-                    <span class="text-gray-600 block">Surface sol:</span>
-                    <div class="text-lg font-bold text-blue-600" id="result-sol">0 m²</div>
-                  </div>
-                  <div class="text-center">
-                    <span class="text-gray-600 block">Surface murs:</span>
-                    <div class="text-lg font-bold text-blue-600" id="result-murs">0 m²</div>
-                  </div>
-                  <div class="text-center">
-                    <span class="text-gray-600 block">Surface plafond:</span>
-                    <div class="text-lg font-bold text-blue-600" id="result-plafond">0 m²</div>
-                  </div>
-                </div>
-                <button type="button" 
-                        onclick="applySurfaceCalculation()" 
-                        class="btn btn-success mt-3 hidden" 
-                        id="apply-calculation">
-                  <i class="fas fa-check mr-1"></i>
-                  Appliquer ces valeurs
-                </button>
-              </div>
-            </div>
-          </div>
+    <!-- Estimation de coût -->
+    <div id="cost-estimate-section" class="mt-6 p-4 bg-green-50 rounded-lg">
+    <h3 class="text-lg font-semibold text-green-700 mb-3">
+    <i class="fas fa-euro-sign mr-2"></i>
+    Estimation de Coût
+    </h3>
+    <div id="cost-estimate" class="text-sm text-gray-600">
+    Renseignez la surface pour voir l'estimation
+    </div>
+    </div>
+    </div>    
+    </div>
 
-          <!-- Détails du Projet -->
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-list-ul text-blue-600"></i>
-              Détails du Projet
-            </h3>
+    <!-- Détails du Projet -->
+    <div class="mt-8">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+    <i class="fas fa-list-ul text-blue-600"></i>
+    Détails du Projet
+    </h3>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="form-group">
-                <label for="{{ form.nombre_pieces.id_for_label }}" class="form-label">
-                  <span class="flex items-center gap-2">
-                    <i class="fas fa-door-open text-gray-400"></i>
-                    Nombre de pièces
-                  </span>
-                </label>
-                <input type="number" 
-                       name="{{ form.nombre_pieces.html_name }}"
-                       value="{{ form.nombre_pieces.value|default:'1' }}"
-                       id="{{ form.nombre_pieces.id_for_label }}"
-                       class="form-input"
-                       placeholder="Ex: 3"
-                       min="1">
-                {% if form.nombre_pieces.errors %}
-                <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>{{ form.nombre_pieces.errors.0 }}</span>
-                </div>
-                {% endif %}
-              </div>
+    <!-- Informations Générales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="form-group">
+    <label for="step2-nombre-pieces" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-door-open text-gray-400"></i>
+    Nombre de pièces
+    </span>
+    </label>
+    <input type="number" 
+    name="nombre_pieces"
+    id="step2-nombre-pieces"
+    class="form-input"
+    placeholder="Ex: 3"
+    min="1">
+    {% if form.nombre_pieces.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.nombre_pieces.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
 
-              <div class="form-group">
-                <label for="{{ form.etat_support.id_for_label }}" class="form-label">
-                  <span class="flex items-center gap-2">
-                    <i class="fas fa-search text-gray-400"></i>
-                    État des surfaces
-                  </span>
-                </label>
-                <select name="{{ form.etat_support.html_name }}" 
-                        id="{{ form.etat_support.id_for_label }}"
-                        class="form-input form-select">
-                  <option value="">Sélectionnez l'état</option>
-                  {% for value, label in form.etat_support.field.choices %}
-                    <option value="{{ value }}" {% if form.etat_support.value == value %}selected{% endif %}>
-                      {{ label }}
-                    </option>
-                  {% endfor %}
-                </select>
-                {% if form.etat_support.errors %}
-                <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>{{ form.etat_support.errors.0 }}</span>
-                </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
+    <!-- État des surfaces -->
+    <div class="form-group">
+    <label for="step2-etat-surfaces" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-search text-gray-400"></i>
+    État des surfaces
+    </span>
+    </label>
+    <select name="etat_support" 
+    id="step2-etat-surfaces"
+    class="form-input form-select">
+    <option value="">Sélectionnez l'état</option>
+    {% for value, label in form.etat_support.field.choices %}
+    <option value="{{ value }}" {% if form.etat_support.value == value %}selected{% endif %}>
+    {{ label }}
+    </option>
+    {% endfor %}
+    </select>
+    {% if form.etat_support.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.etat_support.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
 
-        <!-- Section Navigation -->
-        <div class="mt-8 pt-6 border-t border-gray-200">
-          <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <button type="button" 
-                    onclick="prevSection(1)" 
-                    class="btn btn-secondary order-2 sm:order-1">
-              <i class="fas fa-arrow-left mr-2"></i>
-              <span>Précédent</span>
-            </button>
-            
-            <div class="text-sm text-gray-600 order-3 sm:order-2">
-              <span class="font-semibold">Étape 2 sur 3</span> - Détails techniques
-            </div>
-            
-            <button type="button" 
-                    onclick="nextSection(3)" 
-                    id="next-btn-2"
-                    class="btn btn-primary order-1 sm:order-3">
-              <span>Suivant - Finalisation</span>
-              <i class="fas fa-arrow-right ml-2"></i>
-            </button>
-          </div>
-        </div>
-      </div>
+    <!-- Type de finitions -->
+    <div class="form-group">
+    <label for="step2-paint-type" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-paint-roller text-gray-400"></i>
+    Type de finitions
+    </span>
+    </label>
+    <select name="type_finition" 
+    id="step2-paint-type"
+    class="form-input form-select">
+    <option value="">Sélectionnez les finitions</option>
+    {% for value, label in form.type_finition.field.choices %}
+    <option value="{{ value }}" {% if form.type_finition.value == value %}selected{% endif %}>
+    {{ label }}
+    </option>
+    {% endfor %}
+    </select>
+    {% if form.type_finition.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.type_finition.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
+    </div>
+    </div>
 
-      <!-- ================================ -->
-      <!-- SECTION 3: FINALISATION -->
-      <!-- ================================ -->
-      <div class="card p-6 mb-8 hidden" id="section-3">
-        
-        <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200">
-          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-            <i class="fas fa-check-circle text-xl text-blue-600"></i>
-          </div>
-          <div>
-            <h2 class="text-xl font-bold text-gray-900">Finalisation du Projet</h2>
-            <p class="text-gray-600 text-sm mt-1">Adresse, planning et budget pour finaliser votre demande</p>
-          </div>
-        </div>
+    <!-- Couleurs Souhaitées -->
+    <div class="mt-8">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+    <i class="fas fa-palette text-blue-600"></i>
+    Couleurs Souhaitées
+    </h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Couleur Murs -->
+    <div class="form-group">
+    <label for="step2-couleur-murs" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-paint-brush text-gray-400"></i>
+    {{ form.couleur_murs.label }}
+    </span>
+    </label>
+    <div class="relative">
+    <input type="text" 
+    name="couleur_murs"
+    value="{{ form.couleur_murs.value|default:'' }}"
+    id="step2-couleur-murs" 
+    class="form-input" 
+    placeholder="Ex: Blanc cassé, RAL 9010" />
+    </div>
+    {% if form.couleur_murs.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.couleur_murs.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
 
-        <div class="space-y-8">
-          
-          <!-- Localisation -->
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-map-marker-alt text-blue-600"></i>
-              Localisation des Travaux
-            </h3>
+    <!-- Couleur Plafond -->
+    <div class="form-group">
+    <label for="step2-couleur-plafond" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-paint-roller text-gray-400"></i>
+    {{ form.couleur_plafond.label }}
+    </span>
+    </label>
+    <div class="relative">
+    <input type="text" 
+    name="couleur_plafond"
+    value="{{ form.couleur_plafond.value|default:'' }}"
+    id="step2-couleur-plafond" 
+    class="form-input" 
+    placeholder="Ex: Blanc" />
+    </div>
+    {% if form.couleur_plafond.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.couleur_plafond.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
 
-            <div class="space-y-6">
-              <div class="form-group">
-                <label for="{{ form.adresse_travaux.id_for_label }}" class="form-label">
-                  <span class="flex items-center gap-2">
-                    <i class="fas fa-home text-gray-400"></i>
-                    Adresse complète des travaux
-                    <span class="text-red-500">*</span>
-                  </span>
-                </label>
-                <div class="relative">
-                  <i class="absolute left-3 top-3 fas fa-map-marker-alt text-gray-400"></i>
-                  <input type="text" 
-                         name="{{ form.adresse_travaux.html_name }}" 
-                         value="{{ form.adresse_travaux.value|default:'' }}"
-                         id="{{ form.adresse_travaux.id_for_label }}"
-                         class="form-input pl-10"
-                         placeholder="Numéro, rue, appartement..."
-                         required>
-                </div>
-                {% if form.adresse_travaux.errors %}
-                <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>{{ form.adresse_travaux.errors.0 }}</span>
-                </div>
-                {% endif %}
-              </div>
+    <!-- Couleur Boiseries -->
+    <div class="form-group">
+    <label for="step2-couleur-boiseries" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-paint-brush text-gray-400"></i>
+    {{ form.couleur_boiseries.label }}
+    </span>
+    </label>
+    <div class="relative">
+    <input type="text" 
+    name="couleur_boiseries"
+    value="{{ form.couleur_boiseries.value|default:'' }}"
+    id="step2-couleur-boiseries" 
+    class="form-input" 
+    placeholder="Ex: Blanc cassé, RAL 9010" />
+    </div>
+    {% if form.couleur_boiseries.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.couleur_boiseries.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
+    </div>
+    </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="form-group">
-                  <label for="{{ form.ville.id_for_label }}" class="form-label">
-                    <span class="flex items-center gap-2">
-                      <i class="fas fa-city text-gray-400"></i>
-                      Ville
-                      <span class="text-red-500">*</span>
-                    </span>
-                  </label>
-                  <div class="relative">
-                    <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-building text-gray-400"></i>
-                    <input type="text" 
-                           name="{{ form.ville.html_name }}" 
-                           value="{{ form.ville.value|default:'' }}"
-                           id="{{ form.ville.id_for_label }}"
-                           class="form-input pl-10"
-                           placeholder="Ex: Paris"
-                           required>
-                  </div>
-                  {% if form.ville.errors %}
-                  <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>{{ form.ville.errors.0 }}</span>
-                  </div>
-                  {% endif %}
-                </div>
+    <!-- Préparation et Matériaux -->
+    <div class="mt-8">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+    <i class="fas fa-tools text-blue-600"></i>
+    Préparation et Matériaux
+    </h3>
 
-                <div class="form-group">
-                  <label for="{{ form.code_postal.id_for_label }}" class="form-label">
-                    <span class="flex items-center gap-2">
-                      <i class="fas fa-mail-bulk text-gray-400"></i>
-                      Code postal
-                      <span class="text-red-500">*</span>
-                    </span>
-                  </label>
-                  <div class="relative">
-                    <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-hashtag text-gray-400"></i>
-                    <input type="text" 
-                           name="{{ form.code_postal.html_name }}"
-                           value="{{ form.code_postal.value|default:'' }}"
-                           id="{{ form.code_postal.id_for_label }}"
-                           class="form-input pl-10"
-                           placeholder="Ex: 75001"
-                           maxlength="5"
-                           pattern="[0-9]{5}"
-                           required>
-                  </div>
-                  {% if form.code_postal.errors %}
-                  <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>{{ form.code_postal.errors.0 }}</span>
-                  </div>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-          </div>
+    <div class="space-y-6">
+    <!-- Préparation nécessaire -->
+    <div class="form-group">
+    <label for="step2-preparation-necessaire" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-hard-hat text-gray-400"></i>
+    {{ form.preparation_necessaire.label }}
+    </span>
+    </label>
+    <div class="relative w-full">
+    <textarea name="preparation_necessaire" 
+    id="step2-preparation-necessaire"
+    class="form-input form-textarea"
+    rows="2"
+    placeholder="Préparation spécifique nécessaire...">{{ form.preparation_necessaire.value|default:'' }}</textarea>
+    </div>
+    {% if form.preparation_necessaire.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.preparation_necessaire.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
 
-          <!-- Planning -->
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-calendar-alt text-blue-600"></i>
-              Planning et Délais
-            </h3>
+    <!-- Matériaux spécifiques -->
+    <div class="form-group">
+    <label for="step2-materiaux-specifiques" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-boxes text-gray-400"></i>
+    {{ form.materiaux_specifiques.label }}
+    </span>
+    </label>
+    <div class="relative w-full">
+    <textarea name="materiaux_specifiques" 
+    id="step2-materiaux-specifiques"
+    class="form-input form-textarea"
+    rows="2"
+    placeholder="Matériaux spécifiques souhaités...">{{ form.materiaux_specifiques.value|default:'' }}</textarea>
+    </div>
+    {% if form.materiaux_specifiques.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.materiaux_specifiques.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="form-group">
-                <label for="{{ form.date_debut_souhaitee.id_for_label }}" class="form-label">
-                  <span class="flex items-center gap-2">
-                    <i class="fas fa-calendar-day text-gray-400"></i>
-                    Date de début souhaitée
-                  </span>
-                </label>
-                <div class="relative">
-                  <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-calendar text-gray-400"></i>
-                  <input type="date" 
-                         name="{{ form.date_debut_souhaitee.html_name }}"
-                         value="{{ form.date_debut_souhaitee.value|default:'' }}"
-                         id="{{ form.date_debut_souhaitee.id_for_label }}"
-                         class="form-input pl-10">
-                </div>
-                {% if form.date_debut_souhaitee.errors %}
-                <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>{{ form.date_debut_souhaitee.errors.0 }}</span>
-                </div>
-                {% endif %}
-              </div>
+    <!-- Contraintes horaires -->
+    <div class="form-group">
+    <label for="step2-contraintes-horaires" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-clock text-gray-400"></i>
+    {{ form.contraintes_horaires.label }}
+    </span>
+    </label>
+    <div class="relative w-full">
+    <textarea name="contraintes_horaires" 
+    id="step2-contraintes-horaires"
+    class="form-input form-textarea"
+    rows="2"
+    placeholder="Contraintes d'horaires particulières...">{{ form.contraintes_horaires.value|default:'' }}</textarea>
+    </div>
+    {% if form.contraintes_horaires.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.contraintes_horaires.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
 
-              <div class="form-group">
-                <label for="{{ form.date_fin_souhaitee.id_for_label }}" class="form-label">
-                  <span class="flex items-center gap-2">
-                    <i class="fas fa-calendar-check text-gray-400"></i>
-                    Date de fin souhaitée
-                  </span>
-                </label>
-                <div class="relative">
-                  <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-flag-checkered text-gray-400"></i>
-                  <input type="date" 
-                         name="{{ form.date_fin_souhaitee.html_name }}"
-                         value="{{ form.date_fin_souhaitee.value|default:'' }}"
-                         id="{{ form.date_fin_souhaitee.id_for_label }}"
-                         class="form-input pl-10">
-                </div>
-                {% if form.date_fin_souhaitee.errors %}
-                <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>{{ form.date_fin_souhaitee.errors.0 }}</span>
-                </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
+    <!-- Accès difficile (checkbox) -->
+    <div class="form-group">
+    <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+    <label class="flex items-center gap-3 cursor-pointer">
+    <input type="checkbox" 
+    name="acces_difficile" 
+    id="step2-acces-difficile"
+    class="form-checkbox"
+    {% if form.acces_difficile.value %}checked{% endif %}>
+    <span class="text-sm text-gray-700">
+    <i class="fas fa-exclamation-triangle text-orange-500 mr-2"></i>
+    <strong>Accès difficile ou contraintes particulières</strong>
+    <div class="text-xs text-gray-600 mt-1">
+    Cochez si l'accès au chantier présente des difficultés (étages sans ascenseur, stationnement difficile, etc.)
+    </div>
+    </span>
+    </label>
+    {% if form.acces_difficile.errors %}
+    <div class="mt-2 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.acces_difficile.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
 
-          <!-- Budget -->
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-euro-sign text-blue-600"></i>
-              Budget et Financement
-            </h3>
+    <!-- Section Navigation -->
+    <div class="mt-8 pt-6 border-t border-gray-200">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+    <button type="button" 
+    onclick="showStep(1)"
+    id="step2-prev"
+    class="btn btn-secondary order-2 sm:order-1">
+    <i class="fas fa-arrow-left mr-2"></i>
+    <span>Précédent</span>
+    </button>
+    
+    <div class="text-sm text-gray-600 order-3 sm:order-2">
+    <span class="font-semibold">Étape 2 sur 3</span> - Détails techniques
+    </div>
+    
+    <button type="button" 
+    onclick="showStep(3)"
+    id="step2-next"
+    class="btn btn-primary order-1 sm:order-3">
+    <span>Suivant - Finalisation</span>
+    <i class="fas fa-arrow-right ml-2"></i>
+    </button>
+    </div>
+    </div>
+    </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="form-group">
-                <label for="{{ form.budget_minimum.id_for_label }}" class="form-label">
-                  <span class="flex items-center gap-2">
-                    <i class="fas fa-hand-holding-usd text-gray-400"></i>
-                    Budget minimum (€)
-                  </span>
-                </label>
-                <div class="relative">
-                  <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-euro-sign text-gray-400"></i>
-                  <input type="number" 
-                         name="{{ form.budget_minimum.html_name }}"
-                         value="{{ form.budget_minimum.value|default:'' }}"
-                         id="{{ form.budget_minimum.id_for_label }}"
-                         class="form-input pl-10"
-                         placeholder="Ex: 1000"
-                         min="0"
-                         step="1">
-                </div>
-                {% if form.budget_minimum.errors %}
-                <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>{{ form.budget_minimum.errors.0 }}</span>
-                </div>
-                {% endif %}
-              </div>
+    <!-- ==== -->
+    <!-- SECTION 3: FINALISATION -->
+    <!-- ==== -->
+    <div class="card p-6 mb-8 hidden wizard-step" id="step3">
 
-              <div class="form-group">
-                <label for="{{ form.budget_maximum.id_for_label }}" class="form-label">
-                  <span class="flex items-center gap-2">
-                    <i class="fas fa-coins text-gray-400"></i>
-                    Budget maximum (€)
-                  </span>
-                </label>
-                <div class="relative">
-                  <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-euro-sign text-gray-400"></i>
-                  <input type="number" 
-                         name="{{ form.budget_maximum.html_name }}"
-                         value="{{ form.budget_maximum.value|default:'' }}"
-                         id="{{ form.budget_maximum.id_for_label }}"
-                         class="form-input pl-10"
-                         placeholder="Ex: 5000"
-                         min="0"
-                         step="1">
-                </div>
-                {% if form.budget_maximum.errors %}
-                <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>{{ form.budget_maximum.errors.0 }}</span>
-                </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
+    <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200">
+    <div class="w-12 h-12 bg-blue-100 rounded-xl flex-center">
+    <i class="fas fa-check-circle text-xl text-blue-600"></i>
+    </div>
+    <div>
+    <h2 class="text-xl font-bold text-gray-900">Finalisation du Projet</h2>
+    <p class="text-gray-600 text-sm mt-1">Adresse, planning et budget pour finaliser votre demande</p>
+    </div>
+    </div>
 
-          <!-- Récapitulatif -->
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-clipboard-check text-blue-600"></i>
-              Récapitulatif de votre Projet
-            </h3>
+    <div class="space-y-8">
+    
+    <!-- Localisation -->
+    <div>
+    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+    <i class="fas fa-map-marker-alt text-blue-600"></i>
+    Localisation des Travaux
+    </h3>
 
-            <div class="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
-              <div id="project-summary" class="space-y-4">
-                <div class="text-center py-8">
-                  <i class="fas fa-spinner fa-spin text-2xl text-blue-600 mb-3"></i>
-                  <p class="text-blue-700">Génération du récapitulatif en cours...</p>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div class="space-y-6">
+    <div class="form-group">
+    <label for="step3-adresse-travaux" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-home text-gray-400"></i>
+    Adresse complète des travaux
+    <span class="text-red-500">*</span>
+    </span>
+    </label>
+    <div class="relative">
+    <i class="absolute left-3 top-3 fas fa-map-marker-alt text-gray-400"></i>
+    <textarea name="adresse_travaux" 
+    id="step3-adresse-travaux"
+    rows="2"
+    class="form-input form-textarea pl-10"
+    placeholder="Numéro, rue, appartement..."
+    required>{{ form.adresse_travaux.value|default:'' }}</textarea>
+    </div>
+    {% if form.adresse_travaux.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.adresse_travaux.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
 
-          <!-- Conditions -->
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <i class="fas fa-file-contract text-blue-600"></i>
-              Conditions et Consentements
-            </h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="form-group">
+    <label for="step3-ville" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-city text-gray-400"></i>
+    Ville
+    <span class="text-red-500">*</span>
+    </span>
+    </label>
+    <div class="relative">
+    <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-building text-gray-400"></i>
+    <input type="text" 
+    name="ville" 
+    value="{{ form.ville.value|default:'' }}"
+    id="step3-ville"
+    class="form-input pl-10"
+    placeholder="Ex: Paris"
+    required>
+    </div>
+    {% if form.ville.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.ville.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
 
-            <div class="space-y-4">
-              <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <label class="flex items-start gap-3 cursor-pointer">
-                  <input type="checkbox" 
-                         name="accept_conditions" 
-                         id="accept_conditions"
-                         value="1"
-                         class="form-checkbox"
-                         required>
-                  <span class="text-sm text-gray-700">
-                    <strong>J'accepte les conditions générales</strong> de LOPES PEINTURE et confirme que les informations fournies sont exactes.
-                    <a href="#" class="text-blue-600 hover:underline ml-1">Lire les CGV</a>
-                  </span>
-                </label>
-              </div>
+    <div class="form-group">
+    <label for="step3-code-postal" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-mail-bulk text-gray-400"></i>
+    Code postal
+    <span class="text-red-500">*</span>
+    </span>
+    </label>
+    <div class="relative">
+    <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-hashtag text-gray-400"></i>
+    <input type="text" 
+    name="code_postal"
+    value="{{ form.code_postal.value|default:'' }}"
+    id="step3-code-postal"
+    class="form-input pl-10"
+    placeholder="Ex: 75001"
+    maxlength="5"
+    pattern="[0-9]{5}"
+    required>
+    </div>
+    {% if form.code_postal.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.code_postal.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
+    </div>
+    </div>
+    </div>
 
-              <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <label class="flex items-start gap-3 cursor-pointer">
-                  <input type="checkbox" 
-                         name="accept_contact" 
-                         id="accept_contact"
-                         value="1"
-                         class="form-checkbox"
-                         required>
-                  <span class="text-sm text-gray-700">
-                    <strong>J'autorise LOPES PEINTURE</strong> à me contacter concernant ce projet par téléphone, email ou SMS.
-                  </span>
-                </label>
-              </div>
+    <!-- Planning -->
+    <div>
+    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+    <i class="fas fa-calendar-alt text-blue-600"></i>
+    Planning et Délais
+    </h3>
 
-              <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <label class="flex items-start gap-3 cursor-pointer">
-                  <input type="checkbox"
-                         name="accept_newsletter" 
-                         id="accept_newsletter"
-                         value="1"
-                         class="form-checkbox">
-                  <span class="text-sm text-gray-700">
-                    <strong>(Optionnel)</strong> J'accepte de recevoir des offres commerciales et newsletters de LOPES PEINTURE.
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="form-group">
+    <label for="step3-date-debut-souhaitee" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-calendar-day text-gray-400"></i>
+    Date de début souhaitée
+    </span>
+    </label>
+    <div class="relative">
+    <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-calendar text-gray-400"></i>
+    <input type="date" 
+    name="date_debut_souhaitee"
+    value="{{ form.date_debut_souhaitee.value|default:'' }}"
+    id="step3-date-debut-souhaitee"
+    class="form-input pl-10">
+    </div>
+    {% if form.date_debut_souhaitee.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.date_debut_souhaitee.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
 
-        <!-- Final Navigation -->
-        <div class="mt-8 pt-6 border-t border-gray-200">
-          <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-            
-            <button type="button" 
-                    onclick="prevSection(2)" 
-                    class="btn btn-secondary order-2 sm:order-1">
-              <i class="fas fa-arrow-left mr-2"></i>
-              <span>Précédent</span>
-            </button>
-            
-            <div class="text-sm text-gray-600 order-3 sm:order-2">
-              <span class="font-semibold">Étape 3 sur 3</span> - Finalisation
-            </div>
-            
-            <button type="submit" 
-                    class="btn btn-primary shadow-lg order-1 sm:order-3">
-              <i class="fas fa-paper-plane mr-2"></i>
-              <span>Envoyer ma Demande</span>
-            </button>
-          </div>
+    <div class="form-group">
+    <label for="step3-date-fin-souhaitee" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-calendar-check text-gray-400"></i>
+    Date de fin souhaitée
+    </span>
+    </label>
+    <div class="relative">
+    <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-flag-checkered text-gray-400"></i>
+    <input type="date" 
+    name="date_fin_souhaitee"
+    value="{{ form.date_fin_souhaitee.value|default:'' }}"
+    id="step3-date-fin-souhaitee"
+    class="form-input pl-10">
+    </div>
+    {% if form.date_fin_souhaitee.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.date_fin_souhaitee.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
+    </div>
+    </div>
 
-          <!-- Benefits reminder -->
-          <div class="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
-              <div class="flex items-center gap-2 text-green-700">
-                <i class="fas fa-check-circle text-green-600"></i>
-                <span class="font-medium">Devis gratuit</span>
-              </div>
-              <div class="flex items-center gap-2 text-green-700">
-                <i class="fas fa-clock text-green-600"></i>
-                <span class="font-medium">Réponse sous 24h</span>
-              </div>
-              <div class="flex items-center gap-2 text-green-700">
-                <i class="fas fa-handshake text-green-600"></i>
-                <span class="font-medium">Sans engagement</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- Budget -->
+    <div>
+    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+    <i class="fas fa-euro-sign text-blue-600"></i>
+    Budget et Financement
+    </h3>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="form-group">
+    <label for="step3-budget-minimum" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-hand-holding-usd text-gray-400"></i>
+    Budget minimum (€)
+    </span>
+    </label>
+    <div class="relative">
+    <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-euro-sign text-gray-400"></i>
+    <input type="number" 
+    name="budget_minimum"
+    value="{{ form.budget_minimum.value|default:'' }}"
+    id="step3-budget-minimum"
+    class="form-input pl-10"
+    placeholder="Ex: 1000"
+    min="0"
+    step="1">
+    </div>
+    {% if form.budget_minimum.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.budget_minimum.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
+
+    <div class="form-group">
+    <label for="step3-budget-maximum" class="form-label">
+    <span class="flex items-center gap-2">
+    <i class="fas fa-coins text-gray-400"></i>
+    Budget maximum (€)
+    </span>
+    </label>
+    <div class="relative">
+    <i class="absolute left-3 top-1/2 transform -translate-y-1/2 fas fa-euro-sign text-gray-400"></i>
+    <input type="number" 
+    name="budget_maximum"
+    value="{{ form.budget_maximum.value|default:'' }}"
+    id="step3-budget-maximum"
+    class="form-input pl-10"
+    placeholder="Ex: 5000"
+    min="0"
+    step="1">
+    </div>
+    {% if form.budget_maximum.errors %}
+    <div class="mt-1 flex items-center gap-2 text-red-600 text-sm">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ form.budget_maximum.errors.0 }}</span>
+    </div>
+    {% endif %}
+    </div>
+    </div>
+    </div>
+
+    <!-- Récapitulatif -->
+    <div>
+    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+    <i class="fas fa-clipboard-check text-blue-600"></i>
+    Récapitulatif de votre Projet
+    </h3>
+
+    <div class="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+    <div id="project-summary" class="space-y-4">
+    <div class="text-center py-8">
+    <i class="fas fa-spinner fa-spin text-2xl text-blue-600 mb-3"></i>
+    <p class="text-blue-700">Génération du récapitulatif en cours...</p>
+    </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Conditions -->
+    <div>
+    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+    <i class="fas fa-file-contract text-blue-600"></i>
+    Conditions et Consentements
+    </h3>
+
+    <div class="space-y-4">
+    <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+    <label class="flex items-start gap-3 cursor-pointer">
+    <input type="checkbox" 
+    name="accept_conditions" 
+    id="step3-accept-conditions"
+    value="1"
+    class="form-checkbox"
+    required>
+    <span class="text-sm text-gray-700">
+    <strong>J'accepte les conditions générales de service</strong> et 
+    autorise LOPES PEINTURE à me contacter concernant ce projet.
+    </span>
+    </label>
+    </div>
+    
+    <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+    <label class="flex items-start gap-3 cursor-pointer">
+    <input type="checkbox" 
+    name="newsletter" 
+    id="step3-newsletter"
+    value="1"
+    class="form-checkbox">
+    <span class="text-sm text-gray-700">
+    <strong>Newsletter (optionnel)</strong> - Je souhaite recevoir des conseils et 
+    offres spéciales de LOPES PEINTURE.
+    </span>
+    </label>
+    </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Section Navigation -->
+    <div class="mt-8 pt-6 border-t border-gray-200">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+    <button type="button" 
+    onclick="showStep(2)"
+    id="step3-prev"
+    class="btn btn-secondary order-2 sm:order-1">
+    <i class="fas fa-arrow-left mr-2"></i>
+    <span>Précédent</span>
+    </button>
+    
+    <div class="text-sm text-gray-600 order-3 sm:order-2">
+    <span class="font-semibold">Étape 3 sur 3</span> - Finalisation
+    </div>
+    
+    <button type="submit" 
+    id="submit-project"
+    class="btn btn-success order-1 sm:order-3">
+    <i class="fas fa-paper-plane mr-2"></i>
+    <span>Envoyer ma Demande</span>
+    <script>
+        document.getElementById('submit-project').addEventListener('click', function() {
+            console.log('🚀 Form submission initiated');
+        });
+    </script>
+    </button>
+    </div>
+    </div>
+    </div>
 
     </form>
-  </div>
+    </div>
 </div>
 
-<!-- ================================ -->
-<!-- MODAL DE AJUDA -->
-<!-- ================================ -->
-<div id="help-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-  <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white">
+<script>
+// Variables globales
+let currentStep = 1;
+let formData = {};
+
+// DOM Ready
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 Initializing project wizard');
+    initializeWizard();
+    setupEventListeners();
+    setupAutoSave();
+    setupCalculator();
+});
+
+// Initialisation du wizard
+function initializeWizard() {
+    showStep(1);
+    updateProgressBar(1);
+    console.log('✅ Wizard initialized');
+}
+
+// Configuration des événements
+function setupEventListeners() {
+  console.log('⚙️ Setting up event listeners');
+    // Navigation buttons
+    const form = document.getElementById('project-wizard-form');
+    if (form) {
+        form.addEventListener('submit', handleSubmit);
+    }
+    console.log('✅ Form submit listener added');
+    // Auto-save on field changes
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('input, select, textarea')) {
+            autoSave();
+        }
+    });
+    console.log('✅ Auto-save listener added');
+}
+
+// Gestion de la soumission du formulaire
+function handleSubmit(e) {
+    // Simple validation - only check if user is on final step (step 3)
+    if (currentStep !== 3) {
+        e.preventDefault();
+        alert('Veuillez aller à la dernière étape pour soumettre le formulaire.');
+        showStep(3);
+        return false;
+    }
+  
+    // Check only critical required fields
+    const title = document.getElementById('step1-title')?.value?.trim();
+    const description = document.getElementById('step1-description')?.value?.trim();
+    const projectType = document.getElementById('step1-project-type')?.value?.trim();
+    const acceptConditions = document.getElementById('step3-accept-conditions')?.checked;
+  
+    if (!title || !description || !projectType || !acceptConditions) {
+        e.preventDefault();
+        alert('Veuillez remplir au minimum: Nom du projet, Description, Type de projet et accepter les conditions.');
+        return false;
+    }
+  
+    // Show loading indicator
+    showAutoSaveIndicator('Envoi en cours...');
+  
+    // Allow form submission - DO NOT PREVENT DEFAULT
+    return true;
+}
+
+// Affichage des étapes
+function showStep(step) {
+    // Cacher toutes les étapes
+    document.querySelectorAll('.wizard-step').forEach(el => {
+        el.classList.add('hidden');
+        el.classList.remove('active');
+    });
+    console.log(`➡️ Navigating to step ${step}`);
+    // Afficher l'étape courante
+    const currentStepEl = document.getElementById(`step${step}`);
+    if (currentStepEl) {
+        currentStepEl.classList.remove('hidden');
+        currentStepEl.classList.add('active');
+    }
     
-    <!-- Header do modal -->
-    <div class="flex items-center justify-between pb-4 border-b border-gray-200">
-      <h3 class="text-xl font-semibold text-gray-900">
-        <i class="fas fa-question-circle text-blue-600 mr-2"></i>
-        Guide de création de projet
-      </h3>
-      <button type="button" 
-              data-close-help
-              class="text-gray-400 hover:text-gray-600 transition-colors">
-        <i class="fas fa-times text-xl"></i>
-      </button>
-    </div>
+    // Mettre à jour les variables
+    currentStep = step;
+    updateProgressBar(step);
+    updateStepIndicators(step);
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Generate summary for step 3
+    if (step === 3) {
+        generateProjectSummary();
+    }
+    console.log('✅ Step content updated');
+}
 
-    <!-- Conteúdo do modal -->
-    <div class="py-6">
-      
-      <!-- Étape 1 -->
-      <div class="mb-6">
-        <h4 class="text-lg font-semibold text-blue-600 mb-3 flex items-center">
-          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
-          Informations générales
-        </h4>
-        <div class="ml-11 space-y-2 text-gray-700">
-          <p><strong>Titre :</strong> Donnez un nom descriptif à votre projet (ex: "Rénovation salon et cuisine")</p>
-          <p><strong>Type :</strong> Sélectionnez le type de travaux principal</p>
-          <p><strong>Description :</strong> Décrivez en détail vos besoins et attentes (minimum 20 caractères)</p>
+// Mise à jour de la barre de progression
+function updateProgressBar(step) {
+    const progressBar = document.querySelector('.progress-bar');
+    const progressText = document.querySelector('.progress-text');
+    console.log('🔄 Updating progress bar for step:', step);
+    if (progressBar && progressText) {
+        const percentage = (step / 3) * 100;
+        progressBar.style.width = percentage + '%';
+        progressText.textContent = `Étape ${step} sur 3 (${Math.round(percentage)}%)`;
+    }
+    console.log('✅ Progress bar updated');
+}
+
+// Mise à jour des indicateurs d'étape
+function updateStepIndicators(step) {
+    document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+        const stepNum = index + 1;
+        const circle = indicator.querySelector('.step-circle');
+        console.log(`🔄 Updating step indicator for step ${stepNum}`);
+        if (stepNum <= step) {
+            circle.classList.remove('bg-gray-300', 'text-gray-600');
+            circle.classList.add('bg-blue-600', 'text-white');
+        } else {
+            circle.classList.remove('bg-blue-600', 'text-white');
+            circle.classList.add('bg-gray-300', 'text-gray-600');
+        }
+    });
+    console.log('✅ Step indicators updated');
+}
+
+// Validation de l'étape courante
+function validateCurrentStep() {
+    const currentStepEl = document.getElementById(`step${currentStep}`);
+    if (!currentStepEl) return true;
+    console.log('🔄 Validating current step:', currentStep);
+    const requiredFields = currentStepEl.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            isValid = false;
+            field.classList.add('border-red-500');
+        } else {
+            field.classList.remove('border-red-500');
+        }
+    });
+    
+    return isValid;
+    console.log('✅ Current step validation result:', isValid);
+}
+
+// Affichage des erreurs de validation
+function showValidationErrors() {
+    const summary = document.getElementById('validation-summary');
+    const errorsList = document.getElementById('validation-errors');
+    
+    if (!summary || !errorsList) return;
+    
+    const errors = [];
+    const currentStepEl = document.getElementById(`step${currentStep}`);
+    const requiredFields = currentStepEl.querySelectorAll('[required]');
+    
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            const label = currentStepEl.querySelector(`label[for="${field.id}"]`);
+            const fieldName = label ? label.textContent.replace('*', '').trim() : field.name;
+            errors.push(`Le champ "${fieldName}" est obligatoire`);
+        }
+    });
+    
+    if (errors.length > 0) {
+        errorsList.innerHTML = errors.map(error => `<li>• ${error}</li>`).join('');
+        summary.classList.remove('hidden');
+    } else {
+        summary.classList.add('hidden');
+    }
+    showAutoSaveIndicator('Sauvegardé localement');//mudei aqui
+}
+
+// Auto-sauvegarde
+function setupAutoSave() {
+    setInterval(autoSave, 30000); // Save every 30 seconds
+}
+
+function autoSave() {
+    collectFormData();
+    localStorage.setItem('project_form_data', JSON.stringify(formData));
+    showAutoSaveIndicator('Sauvegardé automatiquement');
+}
+
+// Collecte des données du formulaire
+function collectFormData() {
+    const form = document.getElementById('project-wizard-form');
+    if (!form) return;
+    console.log('🚀 Initializing form data collection');
+    formData = {};
+    const formElements = form.querySelectorAll('input, select, textarea');
+    
+    formElements.forEach(element => {
+        if (element.name && element.name !== 'csrfmiddlewaretoken') {
+            if (element.type === 'checkbox') {
+                formData[element.name] = element.checked;
+            } else {
+                formData[element.name] = element.value;
+            }
+        }
+    });
+    
+    // Update hidden fields for form submission
+    updateHiddenFields();
+    console.log('Form data collected:', formData);
+}
+
+// Mise à jour des champs cachés
+function updateHiddenFields() {
+    const hiddenFields = {
+        'final-title': document.getElementById('step1-title')?.value || '',
+        'final-description': document.getElementById('step1-description')?.value || '',
+        'final-project-type': document.getElementById('step1-project-type')?.value || '',
+        'final-surface-area': document.getElementById('step2-surface-area')?.value || '',
+        'final-start-date': document.getElementById('step3-date-debut-souhaitee')?.value || '',
+        'final-end-date': document.getElementById('step3-date-fin-souhaitee')?.value || ''
+    };
+    
+    Object.entries(hiddenFields).forEach(([id, value]) => {
+        const field = document.getElementById(id);
+        if (field) field.value = value;
+    });
+}
+
+// Indicateur de sauvegarde
+function showAutoSaveIndicator(message) {
+    const indicator = document.getElementById('auto-save-indicator');
+    if (!indicator) return;
+    
+    const span = indicator.querySelector('span');
+    if (span) span.textContent = message;
+    
+    indicator.style.opacity = '1';
+    setTimeout(() => {
+        indicator.style.opacity = '0';
+    }, 3000);
+}
+
+// Calculateur de surface
+function setupCalculator() {
+    const calcButton = document.getElementById('calc-surface');
+    if (!calcButton) return;
+    
+    calcButton.addEventListener('click', function() {
+        const length = parseFloat(document.getElementById('calc-length')?.value) || 0;
+        const width = parseFloat(document.getElementById('calc-width')?.value) || 0;
+        const height = parseFloat(document.getElementById('calc-height')?.value) || 2.5;
+        
+        if (length && width) {
+            const surface = calculateSurface(length, width, height);
+            updateSurfaceField(surface);
+            showCostEstimate(surface);
+        }
+    });
+}
+
+function calculateSurface(length, width, height) {
+    // Calculate walls surface: 2 * (length + width) * height
+    const wallsSurface = 2 * (length + width) * height;
+    // Calculate ceiling surface: length * width
+    const ceilingSurface = length * width;
+    // Total surface
+    return wallsSurface + ceilingSurface;
+}
+
+function updateSurfaceField(surface) {
+    const surfaceField = document.getElementById('step2-surface-area');
+    const resultDiv = document.getElementById('calc-result');
+    
+    if (surfaceField) {
+        surfaceField.value = surface.toFixed(2);
+    }
+    
+    if (resultDiv) {
+        resultDiv.textContent = `Surface calculée: ${surface.toFixed(2)} m²`;
+    }
+}
+
+function showCostEstimate(surface) {
+    const estimateDiv = document.getElementById('cost-estimate');
+    if (!estimateDiv) return;
+    
+    // Estimation simple: 25-45€/m² selon le type
+    const minCost = surface * 25;
+    const maxCost = surface * 45;
+    
+    estimateDiv.innerHTML = `
+        <div class="space-y-2">
+            <div class="flex justify-between">
+                <span>Peinture standard:</span>
+                <span class="font-bold">${minCost.toFixed(0)}€ - ${maxCost.toFixed(0)}€</span>
+            </div>
+            <div class="text-xs text-gray-600">
+                Estimation basée sur ${surface.toFixed(2)}m² (25-45€/m²)
+            </div>
         </div>
-      </div>
+    `;
+}
 
-      <!-- Étape 2 -->
-      <div class="mb-6">
-        <h4 class="text-lg font-semibold text-blue-600 mb-3 flex items-center">
-          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
-          Détails techniques
-        </h4>
-        <div class="ml-11 space-y-2 text-gray-700">
-          <p><strong>Surfaces :</strong> Indiquez les surfaces à peindre en m²</p>
-          <p><strong>Pièces :</strong> Listez les pièces concernées avec leurs spécificités</p>
-          <p><strong>Finitions :</strong> Précisez le type de peinture et finitions souhaitées</p>
-          <p><strong>Calcul automatique :</strong> La surface totale se calcule automatiquement</p>
-        </div>
-      </div>
+// Génération du récapitulatif
+function generateProjectSummary() {
+    const summaryDiv = document.getElementById('project-summary');
+    if (!summaryDiv) return;
+    
+    collectFormData();
+    
+    setTimeout(() => {
+        const title = formData.title || 'Projet sans titre';
+        const type = getSelectText('step1-project-type') || 'Non spécifié';
+        const surface = formData.surface_totale || 'Non spécifiée';
+        const ville = formData.ville || 'Non spécifiée';
+        
+        summaryDiv.innerHTML = `
+            <div class="space-y-4">
+                <div class="text-center mb-4">
+                    <h4 class="text-lg font-bold text-blue-800">${title}</h4>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Type:</span>
+                            <span class="font-semibold">${type}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Surface:</span>
+                            <span class="font-semibold">${surface} m²</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Ville:</span>
+                            <span class="font-semibold">${ville}</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Début souhaité:</span>
+                            <span class="font-semibold">${formData.date_debut_souhaitee || 'Flexible'}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Budget min:</span>
+                            <span class="font-semibold">${formData.budget_minimum ? formData.budget_minimum + '€' : 'Non défini'}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Budget max:</span>
+                            <span class="font-semibold">${formData.budget_maximum ? formData.budget_maximum + '€' : 'Non défini'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
 
-      <!-- Étape 3 -->
-      <div class="mb-6">
-        <h4 class="text-lg font-semibold text-blue-600 mb-3 flex items-center">
-          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
-          Finalisation
-        </h4>
-        <div class="ml-11 space-y-2 text-gray-700">
-          <p><strong>Adresse :</strong> Indiquez l'adresse complète du chantier</p>
-          <p><strong>Planning :</strong> Précisez vos disponibilités et délais souhaités</p>
-          <p><strong>Budget :</strong> Indiquez votre budget approximatif (optionnel)</p>
-        </div>
-      </div>
+// Utilitaire pour obtenir le texte d'un select
+function getSelectText(id) {
+    const select = document.getElementById(id);
+    if (!select || !select.value) return '';
+    
+    const option = select.querySelector(`option[value="${select.value}"]`);
+    return option ? option.textContent : '';
+}
 
-      <!-- Conseils -->
-      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h5 class="font-semibold text-yellow-800 mb-2 flex items-center">
-          <i class="fas fa-lightbulb mr-2"></i>
-          Conseils utiles
-        </h5>
-        <ul class="text-yellow-700 text-sm space-y-1">
-          <li>• Vos données sont sauvegardées automatiquement</li>
-          <li>• Plus vous donnez de détails, plus le devis sera précis</li>
-          <li>• Vous pouvez revenir en arrière à tout moment</li>
-          <li>• Les champs marqués d'un * sont obligatoires</li>
-        </ul>
-      </div>
-    </div>
+// Fonction d'aide
+function showHelp() {
+    alert('Aide: Remplissez les informations étape par étape. Les champs marqués d\'un * sont obligatoires. Vos données sont sauvegardées automatiquement.');
+}
 
-    <!-- Footer do modal -->
-    <div class="flex justify-end pt-4 border-t border-gray-200">
-      <button type="button" 
-              data-close-help
-              class="btn btn-primary">
-        <i class="fas fa-check mr-2"></i>
-        J'ai compris
-      </button>
-    </div>
-  </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'projects/js/project_create.js' %}"></script>
+// Restore saved data on load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedData = localStorage.getItem('project_form_data');
+    if (savedData) {
+        try {
+            formData = JSON.parse(savedData);
+            // Restore form fields if needed
+        } catch (e) {
+            console.log('No valid saved data found');
+        }
+    }
+});
+</script>
 {% endblock %}

@@ -1,0 +1,166 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Nouveau projet - Étape 3 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Barre de progression -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded-full font-medium">✓</div>
+                    <span class="ml-2 text-sm font-medium text-green-600">Informations générales</span>
+                </div>
+                <div class="w-12 h-0.5 bg-green-600"></div>
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded-full font-medium">✓</div>
+                    <span class="ml-2 text-sm font-medium text-green-600">Détails techniques</span>
+                </div>
+                <div class="w-12 h-0.5 bg-green-600"></div>
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full font-medium">3</div>
+                    <span class="ml-2 text-sm font-medium text-blue-600">Contact et budget</span>
+                </div>
+            </div>
+        </div>
+        <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-blue-600 h-2 rounded-full" style="width: 100%"></div>
+        </div>
+    </div>
+
+    <div class="card p-8">
+        <div class="text-center mb-8">
+            <div class="text-4xl mb-4">📞</div>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Contact et budget</h1>
+            <p class="text-gray-600">Finalisez votre projet avec les informations de contact et budgétaires</p>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Adresse des travaux -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">Adresse des travaux</h3>
+                
+                <div>
+                    <label for="{{ form.adresse_travaux.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Adresse *
+                    </label>
+                    {{ form.adresse_travaux }}
+                    {% if form.adresse_travaux.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.adresse_travaux.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.complement_adresse.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Complément d'adresse
+                    </label>
+                    {{ form.complement_adresse }}
+                    {% if form.complement_adresse.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.complement_adresse.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.code_postal.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            Code postal *
+                        </label>
+                        {{ form.code_postal }}
+                        {% if form.code_postal.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.code_postal.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.ville.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            Ville *
+                        </label>
+                        {{ form.ville }}
+                        {% if form.ville.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.ville.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">Contact</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.contact_nom.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            Nom du contact *
+                        </label>
+                        {{ form.contact_nom }}
+                        {% if form.contact_nom.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.contact_nom.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.contact_telephone.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            Téléphone
+                        </label>
+                        {{ form.contact_telephone }}
+                        {% if form.contact_telephone.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.contact_telephone.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">Budget estimé</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.budget_minimum.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            Budget minimum (€)
+                        </label>
+                        {{ form.budget_minimum }}
+                        {% if form.budget_minimum.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.budget_minimum.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.budget_maximum.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            Budget maximum (€)
+                        </label>
+                        {{ form.budget_maximum }}
+                        {% if form.budget_maximum.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.budget_maximum.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+                <label for="{{ form.notes_client.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Notes et commentaires
+                </label>
+                {{ form.notes_client }}
+                {% if form.notes_client.errors %}
+                    <div class="mt-1 text-sm text-red-600">{{ form.notes_client.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="flex justify-between pt-6">
+                <a href="{% url 'projects:projet_create_step2' %}" class="btn-secondary">
+                    ← Précédent
+                </a>
+                <button type="submit" class="btn-success">
+                    ✅ Créer le projet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

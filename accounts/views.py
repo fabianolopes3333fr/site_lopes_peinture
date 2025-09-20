@@ -19,7 +19,7 @@ from django.contrib.auth import (
 )
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-
+from projects.models import Project, Product, DevisLine
 from .models import User
 from .forms import (
     UserRegistrationForm,
@@ -183,7 +183,7 @@ def dashboard(request):
 
     user = request.user
 
-    # Dados do contexto
+    # Inicializar contexto base para todos os tipos de usuário
     context = {
         "user": user,
         "groups": user.groups.all(),
@@ -195,6 +195,18 @@ def dashboard(request):
             else False
         ),
     }
+
+    # Adicionar dados específicos para clientes
+    if user.account_type == "CLIENT":
+        user_projets = Project.objects.filter(created_by=user)
+        context.update(
+            {
+                "total_projets": user_projets.count(),
+                "projets_en_cours": user_projets.filter(status="en_cours").count(),
+                "projets_recents": user_projets.order_by("-created_at")[:5],
+                "can_create_devis": True,  # Client pode demander des devis após criar um projeto
+            }
+        )
 
     # Verificar se perfil existe
     if not hasattr(user, "profile"):

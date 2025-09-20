@@ -93,8 +93,8 @@ ROOT_URLCONF = "core.urls"
 # ==================== AUTENTICAÇÃO ====================
 # Auth settings
 AUTH_USER_MODEL = "accounts.User"
-LOGIN_URL = "/accounts/login/"
-LOGIN_REDIRECT_URL = "/accounts/dashboard/"
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/"
 
 # Configurações de sessão
@@ -486,7 +486,7 @@ else:
         "http://127.0.0.1:8000",
     ]
 
-    # Logging simplificado para desenvolvimento
+    # Logging aprimorado para desenvolvimento
     LOGGING = {
         "version": 1,
         "disable_existing_loggers": False,
@@ -500,6 +500,11 @@ else:
                 "style": "{",
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
+            "detailed": {
+                "format": "[{asctime}] {levelname} {name} {module}:{lineno} {message}",
+                "style": "{",
+                "datefmt": "%Y-%m-%d %H:%M:%S",
+            },
         },
         "handlers": {
             "console": {
@@ -507,23 +512,93 @@ else:
                 "class": "logging.StreamHandler",
                 "formatter": "simple",
             },
+            "console_debug": {
+                "level": "DEBUG",
+                "class": "logging.StreamHandler",
+                "formatter": "detailed",
+            },
             "file_debug": {
                 "level": "DEBUG",
                 "class": "logging.FileHandler",
                 "filename": str(LOGS_DIR / "debug.log"),
                 "formatter": "verbose",
             },
+            "file_error": {
+                "level": "ERROR",
+                "class": "logging.FileHandler",
+                "filename": str(LOGS_DIR / "error.log"),
+                "formatter": "verbose",
+            },
+            "file_sql": {
+                "level": "DEBUG",
+                "class": "logging.FileHandler",
+                "filename": str(LOGS_DIR / "sql.log"),
+                "formatter": "simple",
+            },
         },
         "loggers": {
+            # Django core
             "django": {
                 "handlers": ["console", "file_debug"],
                 "level": "INFO",
                 "propagate": True,
             },
+            # Erros de request (404, 500, etc)
+            "django.request": {
+                "handlers": ["console_debug", "file_error"],
+                "level": "ERROR",
+                "propagate": False,
+            },
+            # SQL queries (útil para debug de performance)
+            "django.db.backends": {
+                "handlers": ["file_sql"],
+                "level": "DEBUG",
+                "propagate": False,
+            },
+            # Segurança
+            "django.security": {
+                "handlers": ["console_debug", "file_error"],
+                "level": "WARNING",
+                "propagate": False,
+            },
+            # Suas apps
             "accounts": {
-                "handlers": ["console", "file_debug"],
+                "handlers": ["console_debug", "file_debug", "file_error"],
                 "level": "DEBUG",
                 "propagate": True,
+            },
+            "projects": {
+                "handlers": ["console_debug", "file_debug", "file_error"],
+                "level": "DEBUG",
+                "propagate": True,
+            },
+            "profiles": {
+                "handlers": ["console_debug", "file_debug", "file_error"],
+                "level": "DEBUG",
+                "propagate": True,
+            },
+            "pages": {
+                "handlers": ["console_debug", "file_debug", "file_error"],
+                "level": "DEBUG",
+                "propagate": True,
+            },
+            # Templates
+            "django.template": {
+                "handlers": ["console_debug", "file_debug"],
+                "level": "WARNING",
+                "propagate": False,
+            },
+            # Forms
+            "django.forms": {
+                "handlers": ["console_debug", "file_debug"],
+                "level": "DEBUG",
+                "propagate": False,
+            },
+            # Auth
+            "django.contrib.auth": {
+                "handlers": ["console_debug", "file_debug"],
+                "level": "DEBUG",
+                "propagate": False,
             },
         },
     }

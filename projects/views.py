@@ -1,48 +1,78 @@
+from django.forms import ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.contrib.auth import get_user_model
-from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import Q, Count, Sum, Avg
+from django.utils import timezone
+from .models import Project, Devis, DevisLine, Product, DevisHistory, Status
+from .forms import (
+    ProjectStep1Form,
+    ProjectStep2Form,
+    ProjectStep3Form,
+    ProjectForm,
+    ProduitForm,
+    DevisLigneForm,
+)
+import json
+from decimal import Decimal
+from datetime import datetime, date, timedelta
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib import colors
+from reportlab.lib.colors import Color
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from django.template.loader import render_to_string
+from xhtml2pdf import pisa
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth import get_user_model
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse, HttpResponse, Http404
 from django.urls import reverse_lazy, reverse
-from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.views.generic import (
-    ListView,
-    DetailView,
-    CreateView,
-    UpdateView,
-    DeleteView,
-    TemplateView,
-)
+
 from django.views.decorators.http import require_http_methods
-from django.utils import timezone
-from django.http import HttpResponse
+
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
 from django.conf import settings
 import logging
-from decimal import Decimal
-import json
-
-from .models import Project, Devis, DevisLine, Product, DevisHistory
-from .forms import (
-    ProjectForm,
-    ProjectStatusForm,
-    DevisForm,
-    DevisLineForm,
-    ProductForm,
-    DevisStatusForm,
-    DevisLineFormSet,
-    ProjectFilterForm,
-    DevisFilterForm,
-)
+from accounts.models import AccountType
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+
+def is_client(user):
+    """Verifica se o usuário é um cliente."""
+    return (
+        user.is_authenticated
+        and hasattr(user, "account_type")
+        and user.account_type == AccountType.CLIENT
+    )
+
+
+def is_collaborator(user):
+    """Verifica se o usuário é um colaborador."""
+    return (
+        user.is_authenticated
+        and hasattr(user, "account_type")
+        and user.account_type == AccountType.COLLABORATOR
+    )
+
+
+def is_admin(user):
+    """Verifica se o usuário é um administrador."""
+    return (
+        user.is_authenticated
+        and hasattr(user, "account_type")
+        and user.account_type == AccountType.ADMINISTRATOR
+    )
 
 
 def is_staff(user):
@@ -50,14 +80,80 @@ def is_staff(user):
     return user.is_authenticated and user.is_staff
 
 
-def can_edit_project(user, project):
-    """Verifica se o usuário pode editar o projeto."""
-    return user == project.user or user.is_staff
+def can_access_products_devis(user):
+    """Verifica se o usuário pode acessar produtos e devis."""
+    return (
+        user.is_authenticated
+        and hasattr(user, "account_type")
+        and user.account_type in [AccountType.COLLABORATOR, AccountType.ADMINISTRATOR]
+    )
 
 
-# ================================
+# def can_edit_project(user, project):
+#     """Verifica se o usuário pode editar o projeto."""
+#     return user == project.user or user.is_staff
+
+
+# Fonctions utilitaires pour la gestion des Decimal dans les sessions
+def serialize_form_data(data):
+    """Convertit les objets Decimal et date en format JSON serializable"""
+    serialized = {}
+    for key, value in data.items():
+        if isinstance(value, Decimal):
+            serialized[key] = str(value)
+        elif isinstance(value, (date, datetime)):
+            serialized[key] = (
+                value.isoformat() if hasattr(value, "isoformat") else str(value)
+            )
+        else:
+            serialized[key] = value
+    return serialized
+
+
+def deserialize_form_data(data, form_class):
+    """Convertit les données de session vers le format attendu par le formulaire"""
+    if not data:
+        return {}
+
+    deserialized = {}
+    # Obtenir les champs du modèle pour identifier les types
+    model_fields = {
+        field.name: field for field in form_class.Meta.model._meta.get_fields()
+    }
+
+    for key, value in data.items():
+        if key in model_fields:
+            field = model_fields[key]
+            # Conversion pour DecimalField
+            if hasattr(field, "decimal_places") and value:
+                try:
+                    deserialized[key] = Decimal(str(value))
+                except (ValueError, TypeError):
+                    deserialized[key] = value
+            # Conversion pour DateField
+            elif hasattr(field, "null") and isinstance(value, str) and value:
+                try:
+                    if "date" in field.__class__.__name__.lower():
+                        deserialized[key] = (
+                            datetime.fromisoformat(value).date()
+                            if "T" in value
+                            else datetime.strptime(value, "%Y-%m-%d").date()
+                        )
+                    else:
+                        deserialized[key] = value
+                except (ValueError, TypeError):
+                    deserialized[key] = value
+            else:
+                deserialized[key] = value
+        else:
+            deserialized[key] = value
+
+    return deserialized
+
+
+# ====
 # VIEWS DE DASHBOARD
-# ================================
+# ====
 
 
 @login_required
@@ -68,24 +164,24 @@ def dashboard_projects(request):
     user = request.user
 
     # Estatísticas básicas
-    projects = Project.objects.filter(user=user)
+    projects = Project.objects.filter(created_by=user)
     total_projects = projects.count()
     active_projects = projects.exclude(
-        status__in=[Project.Status.COMPLETED, Project.Status.CANCELLED]
+        status__in=[Status.COMPLETED, Status.CANCELLED]
     ).count()
-    completed_projects = projects.filter(status=Project.Status.COMPLETED).count()
+    completed_projects = projects.filter(status=Status.COMPLETED).count()
 
     # Projetos recentes
     recent_projects = projects.order_by("-created_at")[:5]
 
     # Devis pendentes
     pending_devis = Devis.objects.filter(
-        project__user=user, status__in=[Devis.Status.SENT, Devis.Status.VIEWED]
+        project__created_by=user, status__in=[Devis.Status.SENT, Devis.Status.VIEWED]
     ).order_by("-date_created")[:5]
 
     # Estatísticas por status
     status_stats = {}
-    for status, label in Project.Status.choices:
+    for status, label in Status.choices:
         count = projects.filter(status=status).count()
         if count > 0:
             status_stats[label] = count
@@ -102,577 +198,820 @@ def dashboard_projects(request):
     return render(request, "projects/dashboard.html", context)
 
 
-@user_passes_test(is_staff)
-def admin_dashboard(request):
-    """
-    Dashboard administrativo.
-    """
-    # Estatísticas gerais
-    total_projects = Project.objects.count()
-    total_users = User.objects.filter(is_staff=False).count()
-    total_devis = Devis.objects.count()
-    total_products = Product.objects.filter(is_active=True).count()
+# @user_passes_test(is_staff)
+# def admin_dashboard(request):
+#     """
+#     Dashboard administrativo.
+#     """
+#     # Estatísticas gerais
+#     total_projects = Project.objects.count()
+#     total_users = User.objects.filter(is_staff=False).count()
+#     total_devis = Devis.objects.count()
+#     total_products = Product.objects.filter(is_active=True).count()
 
-    # Projetos por status
-    projects_by_status = {}
-    for status, label in Project.Status.choices:
-        count = Project.objects.filter(status=status).count()
-        if count > 0:
-            projects_by_status[label] = count
+#     # Projetos por status
+#     projects_by_status = {}
+#     for status, label in Project.Status.choices:
+#         count = Project.objects.filter(status=status).count()
+#         if count > 0:
+#             projects_by_status[label] = count
 
-    # Devis por status
-    devis_by_status = {}
-    for status, label in Devis.Status.choices:
-        count = Devis.objects.filter(status=status).count()
-        if count > 0:
-            devis_by_status[label] = count
+#     # Devis por status
+#     devis_by_status = {}
+#     for status, label in Devis.Status.choices:
+#         count = Devis.objects.filter(status=status).count()
+#         if count > 0:
+#             devis_by_status[label] = count
 
-    # Projetos recentes
-    recent_projects = Project.objects.select_related("user").order_by("-created_at")[
-        :10
-    ]
+#     # Projetos recentes
+#     recent_projects = Project.objects.select_related("user").order_by("-created_at")[
+#         :10
+#     ]
 
-    # Devis pendentes de resposta
-    pending_devis = (
-        Devis.objects.select_related("project", "project__user")
-        .filter(status__in=[Devis.Status.SENT, Devis.Status.VIEWED])
-        .order_by("-date_created")[:10]
-    )
+#     # Devis pendentes de resposta
+#     pending_devis = (
+#         Devis.objects.select_related("project", "project__user")
+#         .filter(status__in=[Devis.Status.SENT, Devis.Status.VIEWED])
+#         .order_by("-date_created")[:10]
+#     )
 
-    context = {
-        "total_projects": total_projects,
-        "total_users": total_users,
-        "total_devis": total_devis,
-        "total_products": total_products,
-        "projects_by_status": projects_by_status,
-        "devis_by_status": devis_by_status,
-        "recent_projects": recent_projects,
-        "pending_devis": pending_devis,
-    }
+#     context = {
+#         "total_projects": total_projects,
+#         "total_users": total_users,
+#         "total_devis": total_devis,
+#         "total_products": total_products,
+#         "projects_by_status": projects_by_status,
+#         "devis_by_status": devis_by_status,
+#         "recent_projects": recent_projects,
+#         "pending_devis": pending_devis,
+#     }
 
-    return render(request, "projects/admin_dashboard.html", context)
+#     return render(request, "projects/admin_dashboard.html", context)
 
 
-# ================================
+# ====
 # VIEWS DE PROJETOS
-# ================================
+# ====
 
 
-class ProjectListView(LoginRequiredMixin, ListView):
+# PROJETS VIEWS
+# Atualizar a função projet_list:
+@login_required
+def projet_list(request):
     """
-    Listagem de projetos do usuário com filtros.
+    Lista de projetos do usuário com filtros e paginação.
     """
+    # Base queryset
+    if request.user.is_staff:
+        projects = Project.objects.all()
+    else:
+        projects = Project.objects.filter(created_by=request.user)
 
-    model = Project
-    template_name = "projects/project_list.html"
-    context_object_name = "projects"
-    paginate_by = 12
-
-    def get_queryset(self):
-        """Filtrar projetos do usuário com filtros aplicados."""
-        queryset = Project.objects.filter(user=self.request.user)
-
-        # Aplicar filtros
-        form = ProjectFilterForm(self.request.GET)
-        if form.is_valid():
-            search = form.cleaned_data.get("search")
-            status = form.cleaned_data.get("status")
-            type_projet = form.cleaned_data.get("type_projet")
-            priority = form.cleaned_data.get("priority")
-            date_from = form.cleaned_data.get("date_from")
-            date_to = form.cleaned_data.get("date_to")
-
-            if search:
-                queryset = queryset.filter(
-                    Q(title__icontains=search)
-                    | Q(description__icontains=search)
-                    | Q(reference__icontains=search)
-                    | Q(ville__icontains=search)
-                )
-
-            if status:
-                queryset = queryset.filter(status=status)
-
-            if type_projet:
-                queryset = queryset.filter(type_projet=type_projet)
-
-            if priority:
-                queryset = queryset.filter(priority=priority)
-
-            if date_from:
-                queryset = queryset.filter(created_at__date__gte=date_from)
-
-            if date_to:
-                queryset = queryset.filter(created_at__date__lte=date_to)
-
-        return queryset.order_by("-created_at")
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["filter_form"] = ProjectFilterForm(self.request.GET)
-
-        # Estatísticas para o sidebar
-        user_projects = Project.objects.filter(user=self.request.user)
-        context["total_projects"] = user_projects.count()
-        context["active_projects"] = user_projects.exclude(
-            status__in=[Project.Status.COMPLETED, Project.Status.CANCELLED]
-        ).count()
-
-        return context
-
-
-class ProjectDetailView(LoginRequiredMixin, DetailView):
-    """
-    Visualização detalhada do projeto.
-    """
-
-    model = Project
-    template_name = "projects/project_detail.html"
-    context_object_name = "project"
-
-    def get_queryset(self):
-        """Usuário só pode ver seus próprios projetos ou staff vê todos."""
-        if self.request.user.is_staff:
-            return Project.objects.all()
-        return Project.objects.filter(user=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        project = self.object
-
-        # Devis relacionados
-        context["devis_list"] = project.devis.all().order_by("-date_created")
-
-        # Permissões
-        context["can_edit"] = can_edit_project(self.request.user, project)
-        context["can_request_quote"] = project.can_request_quote
-        context["is_staff"] = self.request.user.is_staff
-
-        # Status form para admin
-        if self.request.user.is_staff:
-            context["status_form"] = ProjectStatusForm(instance=project)
-
-        return context
-
-
-class ProjectCreateView(LoginRequiredMixin, CreateView):
-    """
-    Criação de novo projeto.
-    """
-
-    model = Project
-    form_class = ProjectForm
-    template_name = "projects/project_create.html"
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs["user"] = self.request.user
-        return kwargs
-
-    def form_valid(self, form):
-        logger.info(f"Criando novo projeto para {self.request.user.email}")
-
-        form.instance.user = self.request.user
-        response = super().form_valid(form)
-
-        messages.success(
-            self.request,
-            f"✅ Projet '{self.object.title}' créé avec succès! Référence: {self.object.reference}",
+    # Aplicar filtros
+    search = request.GET.get("search", "").strip()
+    if search:
+        projects = projects.filter(
+            Q(title__icontains=search)
+            | Q(description__icontains=search)
+            | Q(ville__icontains=search)
+            | Q(reference__icontains=search)
         )
 
-        logger.info(f"Projeto criado: {self.object.reference}")
-        return response
+    status = request.GET.get("status", "").strip()
+    if status:
+        projects = projects.filter(status=status)
 
-    def get_success_url(self):
-        return reverse("projects:detail", kwargs={"pk": self.object.pk})
+    project_type = request.GET.get("project_type", "").strip()
+    if project_type:
+        projects = projects.filter(project_type=project_type)
 
+    priority = request.GET.get("priority", "").strip()
+    if priority:
+        projects = projects.filter(priority=priority)
 
-class ProjectUpdateView(LoginRequiredMixin, UpdateView):
-    """
-    Edição de projeto.
-    """
-
-    model = Project
-    form_class = ProjectForm
-    template_name = "projects/project_edit.html"
-
-    def get_queryset(self):
-        """Usuário só pode editar seus próprios projetos."""
-        if self.request.user.is_staff:
-            return Project.objects.all()
-        return Project.objects.filter(user=self.request.user)
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs["user"] = self.request.user
-        return kwargs
-
-    def dispatch(self, request, *args, **kwargs):
-        """Verificar se o projeto pode ser editado."""
-        project = self.get_object()
-        if not project.can_be_edited and not request.user.is_staff:
-            messages.error(request, "Ce projet ne peut plus être modifié.")
-            return redirect("projects:detail", pk=project.pk)
-        return super().dispatch(request, *args, **kwargs)
-
-    def form_valid(self, form):
-        messages.success(self.request, "✅ Projet mis à jour avec succès!")
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse("projects:detail", kwargs={"pk": self.object.pk})
-
-
-# ================================
-# DELETE VIEWS - PROJETOS E DEVIS
-# ================================
-
-
-class ProjectDeleteView(LoginRequiredMixin, DeleteView):
-    """
-    View para deletar projetos com confirmação de segurança
-    """
-
-    model = Project
-    template_name = "projects/project_delete.html"
-    context_object_name = "project"
-
-    def get_queryset(self):
-        """Filtrar projetos baseado nas permissões do usuário"""
-        if self.request.user.is_staff:
-            return Project.objects.all()
-        return Project.objects.filter(user=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        project = self.get_object()
-
-        # Verificar se pode ser deletado
-        context["can_be_deleted"] = project.can_be_deleted()
-
-        # Adicionar informações de dependências
-        context["dependencies"] = {
-            "photos_count": project.photos.count() if hasattr(project, "photos") else 0,
-            "comments_count": (
-                project.comments.count() if hasattr(project, "comments") else 0
-            ),
-            "devis_count": project.devis.count(),
-            "devis_sent_count": project.devis.exclude(status="brouillon").count(),
-        }
-
-        return context
-
-    def delete(self, request, *args, **kwargs):
-        """Override delete para adicionar validações e logging"""
-        project = self.get_object()
-
-        # Verificar se pode ser deletado
-        if not project.can_be_deleted():
-            messages.error(
-                request,
-                "Ce projet ne peut pas être supprimé en raison de son statut ou des éléments associés.",
-            )
-            return redirect("projects:detail", pk=project.pk)
-
-        # Verificar se usuário tem permissão
-        if not request.user.is_staff and project.user != request.user:
-            messages.error(
-                request, "Vous n'avez pas l'autorisation de supprimer ce projet."
-            )
-            return redirect("projects:detail", pk=project.pk)
-
-        # Log da ação
-        project_title = project.title
-        project_reference = project.reference
-
+    # Filtros de data
+    date_from = request.GET.get("date_from", "").strip()
+    if date_from:
         try:
-            # Deletar projeto
-            response = super().delete(request, *args, **kwargs)
+            date_from_parsed = datetime.strptime(date_from, "%Y-%m-%d").date()
+            projects = projects.filter(created_at__date__gte=date_from_parsed)
+        except ValueError:
+            pass
 
-            # Notificar equipe se não for staff
-            if not request.user.is_staff:
-                # send_project_deletion_notification(project_reference, request.user)
-                pass
+    date_to = request.GET.get("date_to", "").strip()
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, "%Y-%m-%d").date()
+            projects = projects.filter(created_at__date__lte=date_to_parsed)
+        except ValueError:
+            pass
 
-            messages.success(
-                request,
-                f"Projet '{project_title}' ({project_reference}) supprimé avec succès.",
-            )
+    # Ordenação
+    ordering = request.GET.get("ordering", "-created_at")
+    valid_orderings = [
+        "created_at",
+        "-created_at",
+        "title",
+        "-title",
+        "priority",
+        "-priority",
+        "surface_totale",
+        "-surface_totale",
+        "updated_at",
+        "-updated_at",
+    ]
+    if ordering in valid_orderings:
+        projects = projects.order_by(ordering)
+    else:
+        projects = projects.order_by("-created_at")
 
-            return response
+    # ===== CALCULAR ESTATÍSTICAS =====
+    user_projects = (
+        Project.objects.filter(created_by=request.user)
+        if not request.user.is_staff
+        else Project.objects.all()
+    )
 
-        except Exception as e:
-            messages.error(request, f"Erreur lors de la suppression: {str(e)}")
-            return redirect("projects:detail", pk=project.pk)
+    # Contagens por status
+    total_projects = user_projects.count()
 
-    def get_success_url(self):
-        """Rediriger vers dashboard après suppression"""
-        return reverse_lazy("projects:dashboard")
+    # Projetos ativos (em curso, aceitos, etc.)
+    active_statuses = ["en_cours", "devis_accepte"]
+    active_projects = user_projects.filter(status__in=active_statuses).count()
+
+    # Projetos pendentes (aguardando ação)
+    pending_statuses = ["soumis", "en_examen", "devis_demande", "devis_envoye"]
+    pending_projects = user_projects.filter(status__in=pending_statuses).count()
+
+    # Projetos terminados
+    completed_projects = user_projects.filter(status="termine").count()
+
+    # Projetos por status individual
+    projects_by_status = {
+        "brouillon": user_projects.filter(status="brouillon").count(),
+        "soumis": user_projects.filter(status="soumis").count(),
+        "en_examen": user_projects.filter(status="en_examen").count(),
+        "devis_demande": user_projects.filter(status="devis_demande").count(),
+        "devis_envoye": user_projects.filter(status="devis_envoye").count(),
+        "devis_accepte": user_projects.filter(status="devis_accepte").count(),
+        "en_cours": user_projects.filter(status="en_cours").count(),
+        "termine": user_projects.filter(status="termine").count(),
+    }
+
+    # Paginação
+    paginator = Paginator(projects, 12)  # 12 projetos por página
+    page_number = request.GET.get("page")
+    try:
+        page_obj = paginator.get_page(page_number)
+    except (PageNotAnInteger, EmptyPage):
+        page_obj = paginator.get_page(1)
+
+    # Data para filtro rápido (última semana)
+    last_week = timezone.now() - timedelta(days=7)
+
+    context = {
+        "projects": page_obj,
+        "page_obj": page_obj,
+        "paginator": paginator,
+        "is_paginated": page_obj.has_other_pages(),
+        # === ESTATÍSTICAS ===
+        "total_projects": total_projects,
+        "active_projects": active_projects,
+        "pending_projects": pending_projects,
+        "completed_projects": completed_projects,
+        "projects_by_status": projects_by_status,
+        # Dados para filtros
+        "search": search,
+        "status": status,
+        "project_type": project_type,
+        "priority": priority,
+        "date_from": date_from,
+        "date_to": date_to,
+        "ordering": ordering,
+        "last_week": last_week,
+        # Para debug
+        "debug_stats": (
+            {
+                "total": total_projects,
+                "active": active_projects,
+                "pending": pending_projects,
+                "completed": completed_projects,
+            }
+            if settings.DEBUG
+            else None
+        ),
+    }
+
+    return render(request, "projects/project_list.html", context)
 
 
 @login_required
-@require_POST
-@csrf_protect
-def project_request_quote(request, pk):
-    """
-    Solicitar orçamento para um projeto.
-    """
-    project = get_object_or_404(Project, pk=pk, user=request.user)
-
-    if not project.can_request_quote:
-        messages.error(request, "Impossible de demander un devis pour ce projet.")
-        return redirect("projects:detail", pk=pk)
-
-    # Atualizar status
-    project.status = Project.Status.QUOTE_REQUESTED
-    project.save(update_fields=["status"])
-
-    messages.success(
-        request,
-        "✅ Demande de devis envoyée! Nous vous contacterons dans les plus brefs délais.",
-    )
-
-    logger.info(
-        f"Devis solicitado para projeto {project.reference} por {request.user.email}"
-    )
-
-    return redirect("projects:detail", pk=pk)
-
-
-@user_passes_test(is_staff)
-@require_POST
-@csrf_protect
-def project_update_status(request, pk):
-    """
-    Atualizar status do projeto (apenas admin).
-    """
-    project = get_object_or_404(Project, pk=pk)
-    form = ProjectStatusForm(request.POST, instance=project)
-
-    if form.is_valid():
-        form.save()
-        messages.success(request, "✅ Statut du projet mis à jour!")
-        logger.info(
-            f"Status do projeto {project.reference} atualizado para {project.status}"
-        )
-    else:
-        for error in form.errors.values():
-            messages.error(request, f"❌ {error}")
-
-    return redirect("projects:detail", pk=pk)
-
-
-# ================================
-# VIEWS DE DEVIS
-# ================================
-
-
-class DevisListView(LoginRequiredMixin, ListView):
-    """
-    Listagem de devis do usuário.
-    """
-
-    model = Devis
-    template_name = "projects/devis_list.html"
-    context_object_name = "devis_list"
-    paginate_by = 12
-
-    def get_queryset(self):
-        """Filtrar devis do usuário."""
-        queryset = Devis.objects.filter(project__user=self.request.user)
-
-        # Aplicar filtros
-        form = DevisFilterForm(self.request.GET, user=self.request.user)
+def projet_create_step1(request):
+    """Création projet - Étape 1"""
+    if request.method == "POST":
+        form = ProjectStep1Form(request.POST)
         if form.is_valid():
-            search = form.cleaned_data.get("search")
-            status = form.cleaned_data.get("status")
-            project = form.cleaned_data.get("project")
+            # Sérialiser les données pour éviter les erreurs JSON avec les Decimal
+            serialized_data = serialize_form_data(form.cleaned_data)
+            request.session["projet_step1"] = serialized_data
+            return redirect("projects:projet_create_step2")
+    else:
+        # Récupérer et désérialiser les données de session si disponibles
+        session_data = request.session.get("projet_step1", {})
+        initial_data = deserialize_form_data(session_data, ProjectStep1Form)
+        form = ProjectStep1Form(initial=initial_data)
 
-            if search:
-                queryset = queryset.filter(
-                    Q(title__icontains=search)
-                    | Q(reference__icontains=search)
-                    | Q(project__title__icontains=search)
+    return render(
+        request, "projects/projet_create_step1.html", {"form": form, "step": 1}
+    )
+
+
+@login_required
+def projet_create_step2(request):
+    """Création projet - Étape 2"""
+    if "projet_step1" not in request.session:
+        messages.error(request, "Veuillez commencer par la première étape.")
+        return redirect("projects:projet_create_step1")
+
+    if request.method == "POST":
+        form = ProjectStep2Form(request.POST)
+        if form.is_valid():
+            # Sérialiser les données pour éviter les erreurs JSON
+            serialized_data = serialize_form_data(form.cleaned_data)
+            request.session["projet_step2"] = serialized_data
+            return redirect("projects:projet_create_step3")
+    else:
+        # Récupérer et désérialiser les données de session si disponibles
+        session_data = request.session.get("projet_step2", {})
+        initial_data = deserialize_form_data(session_data, ProjectStep2Form)
+        form = ProjectStep2Form(initial=initial_data)
+
+    return render(
+        request, "projects/projet_create_step2.html", {"form": form, "step": 2}
+    )
+
+
+@login_required
+def projet_create_step3(request):
+    """Création projet - Étape 3 et finalisation"""
+    if "projet_step1" not in request.session or "projet_step2" not in request.session:
+        messages.error(request, "Veuillez compléter toutes les étapes précédentes.")
+        return redirect("projects:projet_create_step1")
+
+    if request.method == "POST":
+        form = ProjectStep3Form(request.POST)
+        if form.is_valid():
+            # Récupérer et désérialiser toutes les données des étapes précédentes
+            step1_data = deserialize_form_data(
+                request.session["projet_step1"], ProjectStep1Form
+            )
+            step2_data = deserialize_form_data(
+                request.session["projet_step2"], ProjectStep2Form
+            )
+            step3_data = serialize_form_data(form.cleaned_data)
+            step3_data = deserialize_form_data(step3_data, ProjectStep3Form)
+
+            # Combiner toutes les données
+            projet_data = {}
+            projet_data.update(step1_data)
+            projet_data.update(step2_data)
+            projet_data.update(step3_data)
+
+            # Ajouter l'utilisateur connecté
+            projet_data["created_by"] = request.user
+
+            # Conversion des dates si nécessaire
+            for field_name in ["date_debut_souhaitee", "date_fin_souhaitee"]:
+                if field_name in projet_data and isinstance(
+                    projet_data[field_name], str
+                ):
+                    try:
+                        if projet_data[field_name]:
+                            projet_data[field_name] = datetime.strptime(
+                                projet_data[field_name], "%Y-%m-%d"
+                            ).date()
+                        else:
+                            projet_data[field_name] = None
+                    except (ValueError, TypeError):
+                        projet_data[field_name] = None
+
+            projet = Project.objects.create(**projet_data)
+
+            # Nettoyer la session
+            for key in ["projet_step1", "projet_step2", "projet_step3"]:
+                if key in request.session:
+                    del request.session[key]
+
+            messages.success(request, f'Projet "{projet.title}" créé avec succès !')
+            return redirect("projects:projet_detail", pk=projet.pk)
+    else:
+        # Récupérer et désérialiser les données de session si disponibles
+        session_data = request.session.get("projet_step3", {})
+        initial_data = deserialize_form_data(session_data, ProjectStep3Form)
+        form = ProjectStep3Form(initial=initial_data)
+
+    return render(
+        request, "projects/projet_create_step3.html", {"form": form, "step": 3}
+    )
+
+
+@login_required
+def projet_detail(request, pk):
+    """Détail d'un projet"""
+    projet = get_object_or_404(Project, pk=pk)
+
+    # Tratar POST requests para ações
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "update_status" and request.user.is_staff:
+            new_status = request.POST.get("status")
+            notes_internes = request.POST.get("notes_internes", "")
+
+            if new_status and new_status != projet.status:
+                projet.status = new_status
+                if notes_internes:
+                    projet.notes_internes = notes_internes
+                projet.save()
+
+                messages.success(
+                    request, f"Statut mis à jour vers: {projet.get_status_display()}"
+                )
+                return redirect("projects:projet_detail", pk=projet.pk)
+
+        elif action == "request_devis":
+            # Lógica para solicitar devis
+            if projet.status in ["soumis", "en_examen"]:
+                projet.status = "devis_demande"
+                projet.save()
+                messages.success(request, "Devis demandé avec succès!")
+            else:
+                messages.error(
+                    request, "Impossible de demander un devis pour ce projet."
                 )
 
-            if status:
-                queryset = queryset.filter(status=status)
+            return redirect("projects:projet_detail", pk=projet.pk)
 
-            if project:
-                queryset = queryset.filter(project=project)
+    # Vérifier les permissions d'accès
+    can_view = request.user.is_staff or projet.created_by == request.user
 
-        return queryset.select_related("project").order_by("-date_created")
+    if not can_view:
+        messages.error(request, "Vous n'avez pas accès à ce projet.")
+        return redirect("projects:projet_list")
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["filter_form"] = DevisFilterForm(
-            self.request.GET, user=self.request.user
-        )
+    devis_list = projet.devis.all()
 
-        # Estatísticas
-        user_devis = Devis.objects.filter(project__user=self.request.user)
-        context["total_devis"] = user_devis.count()
-        context["pending_devis"] = user_devis.filter(
-            status__in=[Devis.Status.SENT, Devis.Status.VIEWED]
-        ).count()
+    # Usar Status enum:
+    can_request_devis = projet.created_by == request.user and projet.status in [
+        Status.SUBMITTED,
+        Status.UNDER_REVIEW,
+    ]
 
-        return context
+    can_edit = request.user.is_staff or (
+        projet.created_by == request.user and projet.status == Status.DRAFT
+    )
+
+    is_staff = request.user.is_staff
+
+    context = {
+        "project": projet,
+        "projet": projet,
+        "devis_list": devis_list,
+        "can_request_devis": can_request_devis,
+        "can_edit": can_edit,
+        "is_staff": is_staff,
+    }
+    return render(request, "projects/project_detail.html", context)
 
 
-class DevisDetailView(LoginRequiredMixin, DetailView):
+# ATUALIZAR a função projet_update:
+@login_required
+def projet_update(request, pk):
     """
-    Visualização detalhada do devis.
+    Edição de projeto.
     """
+    try:
+        project = get_object_or_404(Project, pk=pk, created_by=request.user)
+    except ValidationError:
+        messages.error(request, "ID de projeto inválido.")
+        return redirect("projects:projet_list")
 
-    model = Devis
-    template_name = "projects/devis_detail.html"
-    context_object_name = "devis"
-
-    def get_queryset(self):
-        """Usuário só pode ver devis de seus projetos."""
-        if self.request.user.is_staff:
-            return Devis.objects.all()
-        return Devis.objects.filter(project__user=self.request.user)
-
-    def get_object(self, queryset=None):
-        """Marcar como visualizado quando cliente acessa."""
-        devis = super().get_object(queryset)
-
-        # Se não é staff e devis foi enviado, marcar como visualizado
-        if (
-            not self.request.user.is_staff
-            and devis.status == Devis.Status.SENT
-            and devis.project.user == self.request.user
-        ):
-
-            devis.status = Devis.Status.VIEWED
-            devis.date_viewed = timezone.now()
-            devis.save(update_fields=["status", "date_viewed"])
-
-            # Adicionar ao histórico
-            DevisHistory.objects.create(
-                devis=devis,
-                action=DevisHistory.ActionType.VIEWED,
-                user=self.request.user,
-                notes="Devis consulté par le client",
-            )
-
-        return devis
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        devis = self.object
-
-        # Linhas do devis
-        context["devis_lines"] = devis.lines.select_related("product").order_by(
-            "order", "id"
+    # Verificar se o usuário pode editar este projeto
+    if not request.user.is_staff and project.status not in ["brouillon"]:
+        messages.warning(
+            request, "Ce projet ne peut plus être modifié car il a été soumis."
         )
-
-        # Histórico (apenas para staff)
-        if self.request.user.is_staff:
-            context["history"] = devis.history.select_related("user").order_by(
-                "-timestamp"
-            )
-
-        # Permissões
-        context["can_accept"] = (
-            devis.can_be_accepted and devis.project.user == self.request.user
-        )
-        context["can_edit"] = (
-            self.request.user.is_staff and devis.status == Devis.Status.DRAFT
-        )
-        context["is_staff"] = self.request.user.is_staff
-
-        return context
-
-
-@user_passes_test(is_staff)
-def devis_create(request, project_pk):
-    """
-    Criar novo devis para um projeto (apenas admin).
-    """
-    project = get_object_or_404(Project, pk=project_pk)
+        return redirect("projects:projet_detail", pk=project.pk)
 
     if request.method == "POST":
-        form = DevisForm(request.POST, project=project, user=request.user)
-        formset = DevisLineFormSet(request.POST)
+        # Verificar se é auto-save
+        if request.POST.get("auto_save"):
+            # Auto-save silencioso para brouillons
+            if project.status == "brouillon":
+                form = ProjectForm(request.POST, instance=project, user=request.user)
+                if form.is_valid():
+                    form.save()
+                    return JsonResponse({"status": "success"})
+                return JsonResponse({"status": "error", "errors": form.errors})
 
-        if form.is_valid() and formset.is_valid():
-            devis = form.save()
-
-            # Salvar linhas
-            formset.instance = devis
-            formset.save()
-
-            # Recalcular totais
-            devis.calculate_totals()
-
-            # Atualizar status do projeto
-            project.status = Project.Status.QUOTE_SENT
-            project.save(update_fields=["status"])
-
-            # Adicionar ao histórico
-            DevisHistory.objects.create(
-                devis=devis,
-                action=DevisHistory.ActionType.CREATED,
-                user=request.user,
-                notes=f"Devis créé par {request.user.get_full_name()}",
-            )
-
-            messages.success(request, f"✅ Devis '{devis.reference}' créé avec succès!")
-            logger.info(
-                f"Devis criado: {devis.reference} para projeto {project.reference}"
-            )
-
-            return redirect("projects:devis_detail", pk=devis.pk)
+        # Verificar se é submissão do projeto
+        if "submit_project" in request.POST:
+            form = ProjectForm(request.POST, instance=project, user=request.user)
+            if form.is_valid():
+                updated_project = form.save(commit=False)
+                updated_project.status = "soumis"  # Mudar status para soumis
+                updated_project.save()
+                messages.success(
+                    request,
+                    f"Le projet '{updated_project.title}' a été soumis avec succès.",
+                )
+                return redirect("projects:projet_detail", pk=updated_project.pk)
+        else:
+            # Salvamento normal
+            form = ProjectForm(request.POST, instance=project, user=request.user)
+            if form.is_valid():
+                try:
+                    updated_project = form.save()
+                    messages.success(
+                        request,
+                        f"Le projet '{updated_project.title}' a été mis à jour avec succès.",
+                    )
+                    return redirect("projects:projet_detail", pk=updated_project.pk)
+                except Exception as e:
+                    logger.error(f"Erreur lors de la mise à jour du projet {pk}: {e}")
+                    messages.error(
+                        request,
+                        "Une erreur est survenue lors de la mise à jour. Veuillez réessayer.",
+                    )
+            else:
+                messages.error(
+                    request, "Veuillez corriger les erreurs dans le formulaire."
+                )
     else:
-        form = DevisForm(project=project, user=request.user)
-        formset = DevisLineFormSet()
+        form = ProjectForm(instance=project, user=request.user)
 
     context = {
         "form": form,
-        "formset": formset,
         "project": project,
+        "is_staff": request.user.is_staff,
+        "can_edit": request.user.is_staff or project.status == "brouillon",
+    }
+    return render(request, "projects/project_edit.html", context)
+
+
+# ====
+# DELETE VIEWS - PROJETOS E DEVIS
+# ====
+
+
+def projet_delete(request, pk):
+    """Suppression d'un projet"""
+    projet = get_object_or_404(Project, pk=pk)
+    if request.method == "POST":
+        projet.delete()
+        messages.success(request, "Projet supprimé avec succès !")
+        return redirect("projects:projet_list")
+
+    return render(request, "projects/projet_delete.html", {"projet": projet})
+
+
+def projet_create_devis(request, pk):
+    """Créer un devis pour un projet"""
+    projet = get_object_or_404(Project, pk=pk)
+
+    if request.method == "POST":
+        # Créer le devis de base
+        devis = Devis.objects.create(
+            project=projet,
+            titre=f"Devis pour {projet.title}",
+            description=f"Devis automatique généré pour le projet {projet.reference}",
+            terms_conditions="Devis valable 30 jours. Paiement à 30 jours fin de mois.",
+        )
+
+        messages.success(request, f"Devis {devis.reference} créé avec succès !")
+        return redirect("projects:devis_detail", pk=devis.pk)
+
+    return render(request, "projects/devis_create.html", {"projet": projet})
+
+
+# PRODUITS VIEWS
+@login_required
+@user_passes_test(can_access_products_devis, login_url="/accounts/login/")
+def produit_list(request):
+    """Liste des produits avec recherche"""
+    produits = Product.objects.all()
+
+    search = request.GET.get("search", "")
+    if search:
+        produits = produits.filter(
+            Q(name__icontains=search)
+            | Q(code__icontains=search)
+            | Q(description__icontains=search)
+        )
+
+    type_filter = request.GET.get("type", "")
+    if type_filter:
+        produits = produits.filter(type_produit=type_filter)
+
+    active_filter = request.GET.get("active", "")
+    if active_filter == "true":
+        produits = produits.filter(is_active=True)
+    elif active_filter == "false":
+        produits = produits.filter(is_active=False)
+
+    context = {
+        "produits": produits,
+        "search": search,
+        "type_filter": type_filter,
+        "active_filter": active_filter,
+    }
+    return render(request, "projects/produit_list.html", context)
+
+
+@login_required
+@user_passes_test(can_access_products_devis, login_url="/accounts/login/")
+def produit_create(request):
+    """Créer un nouveau produit."""
+
+    print("=" * 80)
+    print("🚨 PRODUIT_CREATE CHAMADA!")
+    print(f"📝 Method: {request.method}")
+    print(f"👤 User: {request.user}")
+    print(f"📧 User email: {request.user.email}")
+    print(f"🔐 User authenticated: {request.user.is_authenticated}")
+    print(f"📊 POST data: {dict(request.POST)}")
+    print(f"📊 GET data: {dict(request.GET)}")
+    print("=" * 80)
+
+    if request.method == "POST":
+        print("🔥 PROCESSANDO POST REQUEST")
+        print(f"📝 POST keys: {list(request.POST.keys())}")
+        print(f"📝 CSRF token present: {'csrfmiddlewaretoken' in request.POST}")
+
+        try:
+            print("🏗️ Criando formulário com dados POST...")
+            form = ProduitForm(request.POST)
+            print(f"✅ Formulário criado: {form}")
+
+            print("🔍 Verificando se formulário é válido...")
+            is_valid = form.is_valid()
+            print(f"📊 Form is_valid: {is_valid}")
+
+            if is_valid:
+                print("🎉 FORMULÁRIO VÁLIDO!")
+                print(f"📊 Cleaned data: {form.cleaned_data}")
+
+                try:
+                    print("💾 Tentando salvar produto...")
+                    produit = form.save()
+                    print(f"🎉 PRODUTO SALVO COM SUCESSO: {produit}")
+                    print(f"🆔 ID do produto: {produit.pk}")
+                    print(f"📝 Nome do produto: {produit.name}")
+
+                    print("📨 Adicionando mensagem de sucesso...")
+                    messages.success(
+                        request, f"Produit '{produit.name}' créé avec succès!"
+                    )
+
+                    print("🔄 Fazendo redirect...")
+                    redirect_url = reverse(
+                        "projects:produit_detail", kwargs={"pk": produit.pk}
+                    )
+                    print(f"🔗 Redirect URL: {redirect_url}")
+
+                    return redirect("projects:produit_detail", pk=produit.pk)
+
+                except Exception as save_error:
+                    print(f"💥 ERRO AO SALVAR: {save_error}")
+                    print(f"💥 Tipo do erro: {type(save_error)}")
+                    import traceback
+
+                    traceback.print_exc()
+                    messages.error(request, f"Erreur lors de la création: {save_error}")
+
+            else:
+                print("❌ FORMULÁRIO INVÁLIDO!")
+                print(f"💥 Erros do formulário: {form.errors}")
+                print(f"💥 Erros por campo:")
+                for field_name, field_errors in form.errors.items():
+                    print(f"   🔸 {field_name}: {field_errors}")
+
+                messages.error(request, "Veuillez corriger les erreurs du formulaire.")
+
+        except Exception as form_error:
+            print(f"💥 ERRO AO CRIAR FORMULÁRIO: {form_error}")
+            import traceback
+
+            traceback.print_exc()
+            form = ProduitForm()
+            messages.error(request, f"Erreur: {form_error}")
+
+    else:
+        print("📝 GET REQUEST - Criando formulário vazio")
+        try:
+            form = ProduitForm()
+            print(f"✅ Formulário vazio criado: {form}")
+        except Exception as e:
+            print(f"💥 ERRO ao criar formulário vazio: {e}")
+            form = None
+
+    print(f"🎬 Renderizando template com contexto...")
+    print(f"📊 Form fields: {list(form.fields.keys()) if form else 'FORM IS NONE'}")
+
+    context = {
+        "form": form,
+        "debug": True,
     }
 
-    return render(request, "projects/devis_create.html", context)
+    print(f"📄 Context: {context}")
+    print("🎬 Chamando render...")
+
+    try:
+        response = render(request, "projects/produit_create.html", context)
+        print(f"✅ Render executado com sucesso")
+        print(f"📊 Response status: {response.status_code}")
+        return response
+    except Exception as render_error:
+        print(f"💥 ERRO NO RENDER: {render_error}")
+        import traceback
+
+        traceback.print_exc()
+        raise
 
 
-@user_passes_test(is_staff)
-def devis_edit(request, pk):
-    """
-    Editar devis (apenas admin).
-    """
+@login_required
+@user_passes_test(can_access_products_devis, login_url="/accounts/login/")
+def produit_detail(request, pk):
+    """Détail d'un produit"""
+    produit = get_object_or_404(Product, pk=pk)
+    return render(request, "projects/produit_detail.html", {"produit": produit})
+
+
+@login_required
+@user_passes_test(can_access_products_devis, login_url="/accounts/login/")
+def produit_update(request, pk):
+    """Modification d'un produit"""
+    produit = get_object_or_404(Product, pk=pk)
+    if request.method == "POST":
+        form = ProduitForm(request.POST, instance=produit)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Produit modifié avec succès !")
+            return redirect("projects:produit_detail", pk=produit.pk)
+    else:
+        form = ProduitForm(instance=produit)
+
+    return render(
+        request, "projects/produit_update.html", {"form": form, "produit": produit}
+    )
+
+
+@login_required
+@user_passes_test(can_access_products_devis, login_url="/accounts/login/")
+def produit_delete(request, pk):
+    """Suppression d'un produit"""
+    produit = get_object_or_404(Product, pk=pk)
+    if request.method == "POST":
+        produit.delete()
+        messages.success(request, "Produit supprimé avec succès !")
+        return redirect("projects:produit_list")
+
+    return render(request, "projects/produit_delete.html", {"produit": produit})
+
+
+# ====
+# VIEWS DE DEVIS
+# ====
+
+
+@login_required
+@user_passes_test(can_access_products_devis, login_url="/accounts/login/")
+def devis_list(request):
+    """Liste des devis"""
+    devis_queryset = Devis.objects.select_related("project").all()
+
+    search = request.GET.get("search", "")
+    if search:
+        devis_queryset = devis_queryset.filter(
+            Q(reference__icontains=search)
+            | Q(titre__icontains=search)
+            | Q(project__title__icontains=search)
+        )
+
+    status_filter = request.GET.get("status", "")
+    if status_filter:
+        devis_queryset = devis_queryset.filter(status=status_filter)
+
+    context = {
+        "devis_list": devis_queryset,
+        "search": search,
+        "status_filter": status_filter,
+    }
+    return render(request, "projects/devis_list.html", context)
+
+
+@login_required
+@user_passes_test(can_access_products_devis, login_url="/accounts/login/")
+def devis_detail(request, pk):
+    """Détail d'un devis avec possibilité d'ajouter des lignes"""
+    devis = get_object_or_404(Devis, pk=pk)
+    lignes = devis.lignes.all()
+
+    if request.method == "POST":
+        # Traitement d'ajout de ligne
+        produit_id = request.POST.get("produit")
+        quantity = request.POST.get("quantity")
+        price_unit = request.POST.get("price_unit")
+        description = request.POST.get("description", "")
+
+        if produit_id and quantity and price_unit:
+            produit = get_object_or_404(Product, pk=produit_id)
+            DevisLine.objects.create(
+                devis=devis,
+                produit=produit,
+                description=description or produit.name,
+                quantity=float(quantity),
+                price_unit=float(price_unit),
+            )
+            messages.success(request, "Ligne ajoutée au devis !")
+            return redirect("projects:devis_detail", pk=devis.pk)
+
+    # Récupérer les produits actifs pour le formulaire
+    produits = Product.objects.filter(is_active=True).order_by("name")
+
+    context = {
+        "devis": devis,
+        "lignes": lignes,
+        "produits": produits,
+    }
+    return render(request, "projects/devis_detail.html", context)
+
+
+@login_required
+@user_passes_test(can_access_products_devis, login_url="/accounts/login/")
+def devis_delete(request, pk):
+    """Suppression d'un devis"""
+    devis = get_object_or_404(Devis, pk=pk)
+    if request.method == "POST":
+        projet_pk = devis.project.pk
+        devis.delete()
+        messages.success(request, "Devis supprimé avec succès !")
+        return redirect("projects:projet_detail", pk=projet_pk)
+
+    return render(request, "projects/devis_delete.html", {"devis": devis})
+
+
+def devis_pdf(request, pk):
+    """Génération PDF d'un devis à partir de template HTML"""
     devis = get_object_or_404(Devis, pk=pk)
 
-    if devis.status != Devis.Status.DRAFT:
-        messages.error(request, "Ce devis ne peut plus être modifié.")
-        return redirect("projects:devis_detail", pk=pk)
-
-    if request.method == "POST":
-        form = DevisForm(request.POST, instance=devis)
-        formset = DevisLineFormSet(request.POST, instance=devis)
-
-        if form.is_valid() and formset.is_valid():
-            form.save()
-            formset.save()
-
-            # Recalcular totais
-            devis.calculate_totals()
-
-            messages.success(request, "✅ Devis mis à jour avec succès!")
-            return redirect("projects:devis_detail", pk=pk)
-    else:
-        form = DevisForm(instance=devis)
-        formset = DevisLineFormSet(instance=devis)
-
+    # Contexte pour le template
     context = {
-        "form": form,
-        "formset": formset,
         "devis": devis,
+        "hoje": datetime.now().strftime("%d/%m/%Y"),
+        "empresa": {
+            "nome": devis.company_name,
+            "endereco": devis.company_address,
+            "codigo_postal": devis.company_postal_code,
+            "cidade": devis.company_city,
+            "telefone": devis.company_phone,
+            "email": devis.company_email,
+        },
+        "cliente": {
+            "nome": devis.project.contact_nom,
+            "endereco": devis.project.adresse_travaux,
+            "codigo_postal": devis.project.code_postal,
+            "cidade": devis.project.ville,
+            "telefone": devis.project.contact_telephone or "N/A",
+        },
     }
 
-    return render(request, "projects/devis_edit.html", context)
+    try:
+        # Renderizar template HTML
+        html_string = render_to_string("projects/devis_pdf.html", context)
+
+        # Criar resposta HTTP
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = (
+            f'inline; filename="devis_{devis.reference}.pdf"'
+        )
+
+        # Gerar PDF com xhtml2pdf
+        pisa_status = pisa.CreatePDF(html_string, dest=response)
+
+        # Verificar se houve erro
+        if pisa_status.err:
+            return HttpResponse("Erro na geração do PDF", status=500)
+
+        return response
+
+    except Exception as e:
+        import logging
+
+        logging.error(f"Erro geração PDF devis {pk}: {str(e)}")
+        return HttpResponse(
+            f"Erro na geração do PDF: {str(e)}", status=500, content_type="text/plain"
+        )
 
 
 @user_passes_test(is_staff)
@@ -698,7 +1037,7 @@ def devis_send(request, pk):
             return redirect("projects:devis_detail", pk=pk)
 
         # Valider que le devis est complet
-        if not devis.items.exists():
+        if not devis.lines.exists():
             messages.error(
                 request, "Le devis doit contenir au moins un item avant d'être envoyé."
             )
@@ -706,7 +1045,7 @@ def devis_send(request, pk):
 
         # Mettre à jour le status et la date d'envoi
         devis.status = "envoye"
-        devis.sent_at = timezone.now()
+        devis.date_sent = timezone.now()
         devis.save()
 
         # Envoyer email au client (à implémenter)
@@ -735,732 +1074,6 @@ def devis_send(request, pk):
         return redirect("projects:devis_detail", pk=pk)
 
 
-# ================================
+# ====
 # VIEWS DE PRODUTOS (ADMIN)
-# ================================
-
-
-@method_decorator(user_passes_test(is_staff), name="dispatch")
-class ProductListView(ListView):
-    """
-    Listagem de produtos (apenas admin).
-    """
-
-    model = Product
-    template_name = "projects/admin/product_list.html"
-    context_object_name = "products"
-    paginate_by = 20
-
-    def get_queryset(self):
-        queryset = Product.objects.all()
-
-        search = self.request.GET.get("search")
-        type_filter = self.request.GET.get("type")
-        active_filter = self.request.GET.get("active")
-
-        if search:
-            queryset = queryset.filter(
-                Q(name__icontains=search)
-                | Q(code__icontains=search)
-                | Q(description__icontains=search)
-            )
-
-        if type_filter:
-            queryset = queryset.filter(type_product=type_filter)
-
-        if active_filter == "true":
-            queryset = queryset.filter(is_active=True)
-        elif active_filter == "false":
-            queryset = queryset.filter(is_active=False)
-
-        return queryset.order_by("type_product", "name")
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["search"] = self.request.GET.get("search", "")
-        context["type_filter"] = self.request.GET.get("type", "")
-        context["active_filter"] = self.request.GET.get("active", "")
-        context["product_types"] = Product.ProductType.choices
-        return context
-
-
-@method_decorator(user_passes_test(is_staff), name="dispatch")
-class ProductCreateView(CreateView):
-    """
-    Criar produto (apenas admin).
-    """
-
-    model = Product
-    form_class = ProductForm
-    template_name = "projects/admin/product_create.html"
-    success_url = reverse_lazy("projects:admin_product_list")
-
-    def form_valid(self, form):
-        messages.success(
-            self.request, f"✅ Produit '{form.instance.name}' créé avec succès!"
-        )
-        return super().form_valid(form)
-
-
-@method_decorator(user_passes_test(is_staff), name="dispatch")
-class ProductUpdateView(UpdateView):
-    """
-    Editar produto (apenas admin).
-    """
-
-    model = Product
-    form_class = ProductForm
-    template_name = "projects/admin/product_edit.html"
-    success_url = reverse_lazy("projects:admin_product_list")
-
-    def form_valid(self, form):
-        messages.success(self.request, f"✅ Produit '{form.instance.name}' mis à jour!")
-        return super().form_valid(form)
-
-
-# ================================
-# AJAX VIEWS
-# ================================
-
-
-@login_required
-def ajax_product_price(request, pk):
-    """
-    Retornar preço do produto via AJAX.
-    """
-    try:
-        product = Product.objects.get(pk=pk, is_active=True)
-        return JsonResponse(
-            {
-                "success": True,
-                "price": float(product.price_unit),
-                "unit": product.get_unit_display(),
-            }
-        )
-    except Product.DoesNotExist:
-        return JsonResponse({"success": False, "error": "Produto não encontrado"})
-
-
-@user_passes_test(is_staff)
-def ajax_project_stats(request):
-    """
-    Estatísticas dos projetos via AJAX (admin).
-    """
-    stats = {}
-
-    for status, label in Project.Status.choices:
-        count = Project.objects.filter(status=status).count()
-        stats[status] = {"label": label, "count": count}
-
-    return JsonResponse({"success": True, "stats": stats})
-
-
-# ================================
-# VIEWS PARA DEVIS - FUNCIONALIDADES AVANÇADAS
-# ================================
-
-
-@login_required
-def devis_history(request, pk):
-    """
-    View para exibir o histórico completo de um devis
-    """
-    try:
-        if request.user.is_staff:
-            devis = get_object_or_404(Devis, pk=pk)
-        else:
-            devis = get_object_or_404(Devis, pk=pk, project__user=request.user)
-
-        # Buscar histórico do devis (assumindo que você tem um modelo de histórico)
-        # Se não tiver, pode usar django-simple-history ou criar um sistema próprio
-        history_items = []
-
-        # Histórico básico baseado em campos do modelo
-        history_data = [
-            {
-                "action": "Création",
-                "date": devis.created_at,
-                "user": "Système",
-                "details": f"Devis créé pour le projet {devis.project.title}",
-                "icon": "fas fa-plus",
-                "color": "blue",
-            }
-        ]
-
-        if devis.sent_at:
-            history_data.append(
-                {
-                    "action": "Envoi au client",
-                    "date": devis.sent_at,
-                    "user": "Équipe LOPES PEINTURE",
-                    "details": f"Devis envoyé au client ({devis.project.user.email})",
-                    "icon": "fas fa-paper-plane",
-                    "color": "green",
-                }
-            )
-
-        if devis.status == "accepte":
-            history_data.append(
-                {
-                    "action": "Acceptation",
-                    "date": devis.updated_at,
-                    "user": devis.project.user.get_full_name()
-                    or devis.project.user.username,
-                    "details": f"Devis accepté par le client",
-                    "icon": "fas fa-check-circle",
-                    "color": "green",
-                }
-            )
-        elif devis.status == "refuse":
-            history_data.append(
-                {
-                    "action": "Refus",
-                    "date": devis.updated_at,
-                    "user": devis.project.user.get_full_name()
-                    or devis.project.user.username,
-                    "details": f"Devis refusé par le client",
-                    "icon": "fas fa-times-circle",
-                    "color": "red",
-                }
-            )
-
-        # Ajouter modifications (versions)
-        if devis.version > 1:
-            history_data.append(
-                {
-                    "action": f"Version {devis.version}",
-                    "date": devis.updated_at,
-                    "user": "Équipe LOPES PEINTURE",
-                    "details": f"Nouvelle version du devis créée",
-                    "icon": "fas fa-code-branch",
-                    "color": "purple",
-                }
-            )
-
-        # Trier par date
-        history_data.sort(key=lambda x: x["date"], reverse=True)
-
-        context = {
-            "devis": devis,
-            "history_items": history_data,
-        }
-
-        return render(request, "projects/devis_history.html", context)
-
-    except Exception as e:
-        messages.error(request, f"Erreur lors du chargement de l'historique: {str(e)}")
-        return redirect("projects:devis_detail", pk=pk)
-
-
-@login_required
-def devis_compare(request, pk):
-    """
-    View para comparar versões de um devis
-    """
-    try:
-        if request.user.is_staff:
-            devis = get_object_or_404(Devis, pk=pk)
-        else:
-            devis = get_object_or_404(Devis, pk=pk, project__user=request.user)
-
-        # Buscar versões anteriores do mesmo projeto
-        # Assumindo que você tem um campo 'original_devis' ou similar para rastrear versões
-        all_versions = Devis.objects.filter(project=devis.project).order_by("version")
-
-        # Se não houver sistema de versioning, criar dados de comparação básicos
-        comparison_data = {
-            "current": {
-                "version": devis.version,
-                "title": devis.title,
-                "total": devis.total,
-                "items_count": devis.items.count() if hasattr(devis, "items") else 0,
-                "status": devis.get_status_display(),
-                "created": devis.created_at,
-                "description": devis.description,
-            }
-        }
-
-        previous_version = None
-        if all_versions.count() > 1:
-            # Pegar a versão anterior
-            previous_versions = all_versions.exclude(pk=devis.pk)
-            if previous_versions.exists():
-                previous_version = previous_versions.last()
-                comparison_data["previous"] = {
-                    "version": previous_version.version,
-                    "title": previous_version.title,
-                    "total": previous_version.total,
-                    "items_count": (
-                        previous_version.items.count()
-                        if hasattr(previous_version, "items")
-                        else 0
-                    ),
-                    "status": previous_version.get_status_display(),
-                    "created": previous_version.created_at,
-                    "description": previous_version.description,
-                }
-
-        # Calcular diferenças
-        differences = []
-        if previous_version:
-            if devis.title != previous_version.title:
-                differences.append(
-                    {
-                        "field": "Titre",
-                        "old_value": previous_version.title,
-                        "new_value": devis.title,
-                        "type": "modified",
-                    }
-                )
-
-            if devis.total != previous_version.total:
-                differences.append(
-                    {
-                        "field": "Montant total",
-                        "old_value": f"{previous_version.total}€",
-                        "new_value": f"{devis.total}€",
-                        "type": "modified",
-                    }
-                )
-
-            if devis.description != previous_version.description:
-                differences.append(
-                    {
-                        "field": "Description",
-                        "old_value": previous_version.description,
-                        "new_value": devis.description,
-                        "type": "modified",
-                    }
-                )
-
-        context = {
-            "devis": devis,
-            "previous_version": previous_version,
-            "all_versions": all_versions,
-            "comparison_data": comparison_data,
-            "differences": differences,
-        }
-
-        return render(request, "projects/devis_compare.html", context)
-
-    except Exception as e:
-        messages.error(request, f"Erreur lors de la comparaison: {str(e)}")
-        return redirect("projects:devis_detail", pk=pk)
-
-
-@login_required
-def devis_duplicate(request, pk):
-    """
-    View para duplicar um devis
-    """
-    try:
-        if request.user.is_staff:
-            original_devis = get_object_or_404(Devis, pk=pk)
-        else:
-            original_devis = get_object_or_404(Devis, pk=pk, project__user=request.user)
-
-        # Criar uma cópia do devis
-        new_devis = Devis.objects.create(
-            project=original_devis.project,
-            title=f"Copie de {original_devis.title}",
-            description=original_devis.description,
-            # Não copiar: reference (será gerada automaticamente), status (será brouillon)
-            tax_rate=original_devis.tax_rate,
-            discount_percentage=original_devis.discount_percentage,
-            terms_conditions=original_devis.terms_conditions,
-            notes=original_devis.notes,
-            date_expiry=None,  # Resetar data de expiração
-            version=1,  # Nova versão
-            status="brouillon",  # Sempre começar como brouillon
-        )
-
-        # Copiar items se existirem
-        if hasattr(original_devis, "items"):
-            for item in original_devis.items.all():
-                # Assumindo que você tem um modelo DevisItem
-                item.pk = None  # Remove o ID para criar novo
-                item.devis = new_devis
-                item.save()
-
-        messages.success(
-            request,
-            f"Devis dupliqué avec succès. Nouvelle référence: {new_devis.reference}",
-        )
-
-        return redirect("projects:devis_edit", pk=new_devis.pk)
-
-    except Exception as e:
-        messages.error(request, f"Erreur lors de la duplication: {str(e)}")
-        return redirect("projects:devis_detail", pk=pk)
-
-
-@login_required
-@require_http_methods(["POST"])
-def devis_accept(request, pk):
-    """
-    View para cliente aceitar um devis
-    """
-    try:
-        devis = get_object_or_404(Devis, pk=pk, project__user=request.user)
-
-        if devis.status != "envoye":
-            messages.error(
-                request, "Ce devis ne peut pas être accepté dans son état actuel."
-            )
-            return redirect("projects:devis_detail", pk=pk)
-
-        if devis.is_expired:
-            messages.error(request, "Ce devis a expiré et ne peut plus être accepté.")
-            return redirect("projects:devis_detail", pk=pk)
-
-        # Accepter le devis
-        devis.status = "accepte"
-        devis.accepted_at = timezone.now()
-        devis.save()
-
-        # Mettre à jour le projet
-        project = devis.project
-        project.status = "accepte"
-        project.save()
-
-        # Envoyer notification à l'équipe (à implémenter)
-        # send_devis_accepted_notification(devis)
-
-        messages.success(request, f"Devis {devis.reference} accepté avec succès!")
-
-        return redirect("projects:devis_detail", pk=pk)
-
-    except Exception as e:
-        messages.error(request, f"Erreur lors de l'acceptation: {str(e)}")
-        return redirect("projects:devis_detail", pk=pk)
-
-
-@login_required
-@require_http_methods(["POST"])
-def devis_refuse(request, pk):
-    """
-    View para cliente recusar um devis
-    """
-    try:
-        devis = get_object_or_404(Devis, pk=pk, project__user=request.user)
-
-        if devis.status != "envoye":
-            messages.error(
-                request, "Ce devis ne peut pas être refusé dans son état actuel."
-            )
-            return redirect("projects:devis_detail", pk=pk)
-
-        # Recusar o devis
-        devis.status = "refuse"
-        devis.refused_at = timezone.now()
-        devis.save()
-
-        # Mettre à jour le projet (opcional - pode querer manter como devis_envoye)
-        project = devis.project
-        project.status = "refuse"
-        project.save()
-
-        # Envoyer notification à l'équipe (à implémenter)
-        # send_devis_refused_notification(devis)
-
-        messages.info(request, f"Devis {devis.reference} refusé.")
-
-        return redirect("projects:devis_detail", pk=pk)
-
-    except Exception as e:
-        messages.error(request, f"Erreur lors du refus: {str(e)}")
-        return redirect("projects:devis_detail", pk=pk)
-
-
-@login_required
-@require_http_methods(["POST"])
-def devis_archive(request, pk):
-    """
-    View para arquivar um devis (alternativa à suppression)
-    """
-    try:
-        if not request.user.is_staff:
-            messages.error(
-                request, "Vous n'avez pas l'autorisation d'archiver des devis."
-            )
-            return redirect("projects:devis_detail", pk=pk)
-
-        devis = get_object_or_404(Devis, pk=pk)
-
-        # Adicionar campo 'archived' ao modelo ou usar soft delete
-        # devis.archived = True
-        # devis.archived_at = timezone.now()
-        # devis.archived_by = request.user
-        # devis.save()
-
-        # Se não tiver campo archived, pode usar status
-        devis.status = "archive"
-        devis.save()
-
-        messages.success(request, f"Devis {devis.reference} archivé avec succès.")
-
-        return redirect("projects:devis_list")
-
-    except Exception as e:
-        messages.error(request, f"Erreur lors de l'archivage: {str(e)}")
-        return redirect("projects:devis_detail", pk=pk)
-
-
-@login_required
-def devis_pdf(request, pk):
-    """
-    View para gerar PDF do devis
-    """
-    try:
-        if request.user.is_staff:
-            devis = get_object_or_404(Devis, pk=pk)
-        else:
-            devis = get_object_or_404(Devis, pk=pk, project__user=request.user)
-
-        # Gerar PDF usando reportlab ou weasyprint
-        from django.http import HttpResponse
-        from django.template.loader import render_to_string
-
-        # Renderizar template PDF
-        html_content = render_to_string(
-            "projects/devis_pdf.html",
-            {
-                "devis": devis,
-                "project": devis.project,
-            },
-        )
-
-        # Se usar weasyprint:
-        # import weasyprint
-        # pdf = weasyprint.HTML(string=html_content).write_pdf()
-
-        # Por enquanto, retornar HTML (implementar PDF depois)
-        response = HttpResponse(html_content, content_type="text/html")
-        response["Content-Disposition"] = (
-            f'inline; filename="devis_{devis.reference}.html"'
-        )
-
-        return response
-
-    except Exception as e:
-        messages.error(request, f"Erreur lors de la génération du PDF: {str(e)}")
-        return redirect("projects:devis_detail", pk=pk)
-
-
-# ================================
-# VIEW PARA RESPONDER DEVIS (CLIENTE)
-# ================================
-
-
-@login_required
-@require_POST
-@csrf_protect
-def devis_respond(request, pk):
-    """
-    View para cliente responder a um devis
-    """
-    try:
-        devis = get_object_or_404(Devis, pk=pk, project__user=request.user)
-
-        if devis.status != "envoye":
-            messages.error(
-                request, "Ce devis ne peut pas être modifié dans son état actuel."
-            )
-            return redirect("projects:devis_detail", pk=pk)
-
-        if devis.is_expired:
-            messages.error(request, "Ce devis a expiré.")
-            return redirect("projects:devis_detail", pk=pk)
-
-        if request.method == "POST":
-            action = request.POST.get("action")
-
-            if action == "accept":
-                return devis_accept(request, pk)
-            elif action == "refuse":
-                return devis_refuse(request, pk)
-            elif action == "request_modification":
-                # Implementar lógica para solicitar modificação
-                modification_comment = request.POST.get("modification_comment", "")
-
-                if modification_comment:
-                    # Salvar comentário e notificar equipe
-                    # DevisComment.objects.create(...)
-                    messages.success(
-                        request, "Votre demande de modification a été envoyée."
-                    )
-                else:
-                    messages.error(
-                        request, "Veuillez ajouter un commentaire pour la modification."
-                    )
-
-        context = {
-            "devis": devis,
-            "project": devis.project,
-            "can_respond": devis.status == "envoye" and not devis.is_expired,
-        }
-
-        return render(request, "projects/devis_respond.html", context)
-
-    except Exception as e:
-        messages.error(request, f"Erreur: {str(e)}")
-        return redirect("projects:devis_detail", pk=pk)
-
-
-class DevisDeleteView(LoginRequiredMixin, DeleteView):
-    """
-    View para deletar devis com validações rigorosas
-    """
-
-    model = Devis
-    template_name = "projects/devis_delete.html"
-    context_object_name = "devis"
-
-    def get_queryset(self):
-        """Filtrar devis baseado nas permissões do usuário"""
-        if self.request.user.is_staff:
-            return Devis.objects.all()
-        return Devis.objects.filter(project__user=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        devis = self.get_object()
-
-        # Verificar se pode ser deletado
-        context["can_be_deleted"] = devis.can_be_deleted()
-
-        # Informações sobre impacto da exclusão
-        context["impact_info"] = {
-            "is_sent": devis.status != "brouillon",
-            "is_accepted": devis.status == "accepte",
-            "is_expired": devis.is_expired() if hasattr(devis, "is_expired") else False,
-            "has_items": devis.items.count() if hasattr(devis, "items") else 0,
-            "client_email": devis.project.user.email,
-            "financial_amount": devis.total,
-        }
-
-        # Razões de bloqueio
-        context["blocking_reasons"] = []
-        if devis.status == "accepte":
-            context["blocking_reasons"].append("Devis accepté par le client")
-        if devis.status == "en_cours":
-            context["blocking_reasons"].append("Projet en cours d'exécution")
-
-        return context
-
-    def dispatch(self, request, *args, **kwargs):
-        """Verificar permissões antes de processar"""
-        devis = self.get_object()
-
-        # Apenas staff pode deletar devis enviados
-        if devis.status != "brouillon" and not request.user.is_staff:
-            messages.error(
-                request,
-                "Seuls les administrateurs peuvent supprimer des devis envoyés.",
-            )
-            return redirect("projects:devis_detail", pk=devis.pk)
-
-        return super().dispatch(request, *args, **kwargs)
-
-    def delete(self, request, *args, **kwargs):
-        """Override delete com validações e audit trail"""
-        devis = self.get_object()
-
-        # Verificar se pode ser deletado
-        if not devis.can_be_deleted():
-            messages.error(
-                request, "Ce devis ne peut pas être supprimé en raison de son statut."
-            )
-            return redirect("projects:devis_detail", pk=devis.pk)
-
-        # Validações especiais para devis aceitos
-        if devis.status == "accepte" and not request.user.is_superuser:
-            messages.error(
-                request,
-                "Les devis acceptés ne peuvent être supprimés que par un super-administrateur.",
-            )
-            return redirect("projects:devis_detail", pk=devis.pk)
-
-        # Obter informações para logging
-        devis_reference = devis.reference
-        devis_title = devis.title
-        project_title = devis.project.title
-        deletion_reason = request.POST.get("deletion_reason", "Non spécifiée")
-        deletion_comment = request.POST.get("deletion_comment", "")
-
-        try:
-            # Criar log de auditoria antes da exclusão
-            self._create_deletion_audit_log(
-                devis, deletion_reason, deletion_comment, request.user
-            )
-
-            # Notificar equipe para devis críticos
-            if devis.status in ["accepte", "envoye"]:
-                self._send_critical_deletion_notification(devis, request.user)
-
-            # Deletar devis
-            response = super().delete(request, *args, **kwargs)
-
-            messages.success(
-                request,
-                f"Devis '{devis_title}' ({devis_reference}) supprimé avec succès.",
-            )
-
-            return response
-
-        except Exception as e:
-            messages.error(request, f"Erreur lors de la suppression: {str(e)}")
-            return redirect("projects:devis_detail", pk=devis.pk)
-
-    def _create_deletion_audit_log(self, devis, reason, comment, user):
-        """Criar log de auditoria para a exclusão"""
-        try:
-            # Se você tiver um modelo de AuditLog
-            # AuditLog.objects.create(
-            #     action='DEVIS_DELETED',
-            #     object_type='Devis',
-            #     object_id=str(devis.pk),
-            #     object_repr=str(devis),
-            #     user=user,
-            #     changes={
-            #         'deleted_devis': {
-            #             'reference': devis.reference,
-            #             'title': devis.title,
-            #             'status': devis.status,
-            #             'total': float(devis.total),
-            #             'project': devis.project.title,
-            #             'deletion_reason': reason,
-            #             'deletion_comment': comment,
-            #         }
-            #     }
-            # )
-
-            # Por enquanto, usar logging do Django
-            import logging
-
-            logger = logging.getLogger("projects.devis.deletion")
-            logger.warning(
-                f"DEVIS DELETED - Reference: {devis.reference}, "
-                f"User: {user.username}, Reason: {reason}, "
-                f"Comment: {comment}"
-            )
-        except Exception as e:
-            print(f"Erro ao criar audit log: {e}")
-
-    def _send_critical_deletion_notification(self, devis, user):
-        """Enviar notificação para exclusões críticas"""
-        try:
-            # Implementar notificação por email
-            # send_mail(
-            #     subject=f"ALERTE: Suppression de devis critique - {devis.reference}",
-            #     message=f"Le devis {devis.reference} ({devis.status}) a été supprimé par {user.get_full_name()}",
-            #     from_email=settings.DEFAULT_FROM_EMAIL,
-            #     recipient_list=[settings.ADMIN_EMAIL],
-            # )
-            pass
-        except Exception as e:
-            print(f"Erro ao enviar notificação: {e}")
-
-    def get_success_url(self):
-        """Rediriger vers liste de devis après suppression"""
-        return reverse_lazy("projects:devis_list")
+# ====

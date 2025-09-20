@@ -1,0 +1,118 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Nouveau projet - Étape 1 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Barre de progression -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full font-medium">1</div>
+                    <span class="ml-2 text-sm font-medium text-blue-600">Informations générales</span>
+                </div>
+                <div class="w-12 h-0.5 bg-gray-300"></div>
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-500 rounded-full font-medium">2</div>
+                    <span class="ml-2 text-sm text-gray-500">Détails techniques</span>
+                </div>
+                <div class="w-12 h-0.5 bg-gray-300"></div>
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-500 rounded-full font-medium">3</div>
+                    <span class="ml-2 text-sm text-gray-500">Contact et budget</span>
+                </div>
+            </div>
+        </div>
+        <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-blue-600 h-2 rounded-full" style="width: 33.33%"></div>
+        </div>
+    </div>
+
+    <div class="card p-8">
+        <div class="text-center mb-8">
+            <div class="text-4xl mb-4">🏗️</div>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Nouveau projet</h1>
+            <p class="text-gray-600">Commencez par renseigner les informations générales de votre projet</p>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Titre du projet *
+                </label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <div class="mt-1 text-sm text-red-600">{{ form.title.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Description du projet
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <div class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.project_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Type de projet *
+                    </label>
+                    {{ form.project_type }}
+                    {% if form.project_type.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.project_type.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.surface_totale.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Surface totale (m²)
+                    </label>
+                    {{ form.surface_totale }}
+                    {% if form.surface_totale.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.surface_totale.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.nombre_pieces.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Nombre de pièces
+                    </label>
+                    {{ form.nombre_pieces }}
+                    {% if form.nombre_pieces.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.nombre_pieces.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.types_pieces.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Types de pièces
+                    </label>
+                    {{ form.types_pieces }}
+                    {% if form.types_pieces.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.types_pieces.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex justify-between pt-6">
+                <a href="{% url 'projects:projet_list' %}" class="btn-secondary">
+                    ← Annuler
+                </a>
+                <button type="submit" class="btn-primary">
+                    Suivant →
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Produits - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header avec actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Produits</h1>
+            <p class="text-gray-600">Gestion de votre catalogue de produits</p>
+        </div>
+        <a href="{% url 'projects:produit_create' %}" class="btn-primary flex items-center space-x-2">
+            <span>➕</span>
+            <span>Nouveau produit</span>
+        </a>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="card p-6">
+        <form method="get" class="space-y-4 sm:space-y-0 sm:flex sm:items-end sm:space-x-4">
+            <div class="flex-1">
+                <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Rechercher</label>
+                <input type="text" name="search" id="search" value="{{ search }}" 
+                       placeholder="Nom, code ou description..."
+                       class="form-input">
+            </div>
+            <div>
+                <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <select name="type" id="type" class="form-select">
+                    <option value="">Tous les types</option>
+                    <option value="peinture" {% if type_filter == 'peinture' %}selected{% endif %}>Peinture</option>
+                    <option value="sous_couche" {% if type_filter == 'sous_couche' %}selected{% endif %}>Sous-couche</option>
+                    <option value="materiel" {% if type_filter == 'materiel' %}selected{% endif %}>Matériel</option>
+                    <option value="main_oeuvre" {% if type_filter == 'main_oeuvre' %}selected{% endif %}>Main d'œuvre</option>
+                </select>
+            </div>
+            <div>
+                <label for="active" class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+                <select name="active" id="active" class="form-select">
+                    <option value="">Tous</option>
+                    <option value="true" {% if active_filter == 'true' %}selected{% endif %}>Actifs</option>
+                    <option value="false" {% if active_filter == 'false' %}selected{% endif %}>Inactifs</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary">🔍 Filtrer</button>
+        </form>
+    </div>
+
+    <!-- Liste des produits -->
+    <div class="grid gap-4">
+        {% for produit in produits %}
+            <div class="card p-6 hover:shadow-lg transition duration-200">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                <a href="{% url 'projects:produit_detail' produit.pk %}" class="hover:text-blue-600">
+                                    {{ produit.name }}
+                                </a>
+                            </h3>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {{ produit.get_type_produit_display }}
+                            </span>
+                            {% if produit.is_active %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Actif
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Inactif
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-600">
+                            <div class="flex items-center space-x-2">
+                                <span>🏷️</span>
+                                <span>{{ produit.code }}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span>💰</span>
+                                <span>{{ produit.price_unit|floatformat:2 }} € / {{ produit.get_unit_display }}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span>📅</span>
+                                <span>{{ produit.created_at|date:"d/m/Y" }}</span>
+                            </div>
+                        </div>
+                        {% if produit.description %}
+                        <p class="text-sm text-gray-500 mt-2">{{ produit.description|truncatechars:100 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <a href="{% url 'projects:produit_detail' produit.pk %}" class="btn-secondary text-center">
+                            👁️ Voir
+                        </a>
+                        <a href="{% url 'projects:produit_update' produit.pk %}" class="btn-primary text-center">
+                            ✏️ Modifier
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="card p-12 text-center">
+                <div class="text-6xl mb-4">📦</div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun produit trouvé</h3>
+                <p class="text-gray-500 mb-6">
+                    {% if search or type_filter or active_filter %}
+                        Aucun produit ne correspond à vos critères de recherche.
+                    {% else %}
+                        Commencez par créer votre premier produit.
+                    {% endif %}
+                </p>
+                <a href="{% url 'projects:produit_create' %}" class="btn-primary">
+                    ➕ Créer le premier produit
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

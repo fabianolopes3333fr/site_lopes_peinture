@@ -1,0 +1,275 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Nouveau produit - {{ block.super }}{% endblock %}
+
+{% block content %}
+
+<!-- DEBUG EXTREMO -->
+<div style="background: red; color: white; padding: 20px; margin: 20px; font-weight: bold; text-align: center;">
+    🚨 TEMPLATE CARREGADO - produit_create.html
+</div>
+
+<!-- JAVASCRIPT DEBUG -->
+<script>
+console.log("🚨 TEMPLATE JAVASCRIPT CARREGADO");
+console.log("📊 Form object:", {{ form|yesno:"'EXISTS','MISSING'" }});
+console.log("📊 Debug flag:", {{ debug|yesno:"'TRUE','FALSE'" }});
+
+// Interceptar submit do formulário
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("🚨 DOM LOADED");
+    
+    const form = document.querySelector('form');
+    if (form) {
+        console.log("✅ Form encontrado:", form);
+        
+        form.addEventListener('submit', function(e) {
+            console.log("🚨 FORM SUBMIT INTERCEPTADO!");
+            console.log("📊 Form data:");
+            
+            const formData = new FormData(form);
+            for (let [key, value] of formData.entries()) {
+                console.log(`   ${key}: ${value}`);
+            }
+            
+            console.log("🔄 Permitindo submit...");
+            // Não prevenir o submit, apenas loggar
+        });
+    } else {
+        console.log("❌ Form NÃO encontrado!");
+    }
+    
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        console.log("✅ Submit button encontrado:", submitBtn);
+        
+        submitBtn.addEventListener('click', function(e) {
+            console.log("🚨 BOTÃO SUBMIT CLICADO!");
+            console.log("📊 Event:", e);
+        });
+    } else {
+        console.log("❌ Submit button NÃO encontrado!");
+    }
+});
+</script>
+
+<!-- Resto do seu template aqui... -->
+<div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+    <div style="background: white; padding: 30px; border: 1px solid #ddd; border-radius: 8px;">
+        
+        <h1 style="text-align: center; color: #333; margin-bottom: 30px;">
+            📦 Nouveau produit
+        </h1>
+
+        <!-- DEBUG INFO -->
+        {% if debug %}
+        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+            <p><strong>DEBUG INFO:</strong></p>
+            <p>Form object: {{ form|yesno:"EXISTS,MISSING" }}</p>
+            <p>Form bound: {{ form.is_bound|yesno:"YES,NO" }}</p>
+            <p>Form fields count: {{ form.fields|length }}</p>
+            
+            <div style="margin-top: 10px;">
+                <strong>Form fields detail:</strong>
+                <ul style="margin-left: 20px;">
+                    {% for field in form %}
+                        <li>{{ field.name }}: {{ field.field.widget.input_type|default:"select" }}
+                            {% if field.name == "type_produit" %}
+                                - Choices: {{ field.field.choices|length }} options
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- FORM ERRORS -->
+        {% if form.errors %}
+        <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+            <p><strong>Erreurs:</strong></p>
+            {{ form.errors }}
+        </div>
+        {% endif %}
+
+        <!-- FORM -->
+        <form method="post" style="space-y: 20px;">
+            {% csrf_token %}
+            
+            <!-- Code produit -->
+            <div style="margin-bottom: 20px;">
+                <label for="{{ form.code.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 5px; color: #333;">
+                    Code produit *
+                </label>
+                <input type="text" 
+                       name="{{ form.code.name }}" 
+                       id="{{ form.code.id_for_label }}"
+                       value="{{ form.code.value|default:'' }}"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
+                       placeholder="Ex: PEIN-001"
+                       required>
+                {% if form.code.errors %}
+                    <div style="color: red; font-size: 14px; margin-top: 5px;">{{ form.code.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Nom du produit -->
+            <div style="margin-bottom: 20px;">
+                <label for="{{ form.name.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 5px; color: #333;">
+                    Nom du produit *
+                </label>
+                <input type="text" 
+                       name="{{ form.name.name }}" 
+                       id="{{ form.name.id_for_label }}"
+                       value="{{ form.name.value|default:'' }}"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
+                       placeholder="Nom du produit"
+                       required>
+                {% if form.name.errors %}
+                    <div style="color: red; font-size: 14px; margin-top: 5px;">{{ form.name.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Type de produit -->
+            <div style="margin-bottom: 20px;">
+                <label for="{{ form.type_produit.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 5px; color: #333;">
+                    Type de produit *
+                </label>
+                <select name="{{ form.type_produit.name }}" 
+                        id="{{ form.type_produit.id_for_label }}"
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
+                        required>
+                    <option value="">-- Sélectionner un type --</option>
+                    {% for value, label in form.type_produit.field.choices %}
+                        <option value="{{ value }}" {% if form.type_produit.value == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+                {% if form.type_produit.errors %}
+                    <div style="color: red; font-size: 14px; margin-top: 5px;">{{ form.type_produit.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Description -->
+            <div style="margin-bottom: 20px;">
+                <label for="{{ form.description.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 5px; color: #333;">
+                    Description
+                </label>
+                <textarea name="{{ form.description.name }}" 
+                          id="{{ form.description.id_for_label }}"
+                          style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; height: 80px;"
+                          placeholder="Description du produit">{{ form.description.value|default:'' }}</textarea>
+                {% if form.description.errors %}
+                    <div style="color: red; font-size: 14px; margin-top: 5px;">{{ form.description.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Prix et unité -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <label for="{{ form.price_unit.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 5px; color: #333;">
+                        Prix unitaire (€) *
+                    </label>
+                    <input type="number" 
+                           name="{{ form.price_unit.name }}" 
+                           id="{{ form.price_unit.id_for_label }}"
+                           value="{{ form.price_unit.value|default:'' }}"
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
+                           step="0.01"
+                           min="0"
+                           placeholder="0.00"
+                           required>
+                    {% if form.price_unit.errors %}
+                        <div style="color: red; font-size: 14px; margin-top: 5px;">{{ form.price_unit.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.unit.id_for_label }}" style="display: block; font-weight: bold; margin-bottom: 5px; color: #333;">
+                        Unité *
+                    </label>
+                    <select name="{{ form.unit.name }}" 
+                            id="{{ form.unit.id_for_label }}"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
+                            required>
+                        <option value="">-- Sélectionner une unité --</option>
+                        {% for value, label in form.unit.field.choices %}
+                            <option value="{{ value }}" {% if form.unit.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.unit.errors %}
+                        <div style="color: red; font-size: 14px; margin-top: 5px;">{{ form.unit.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Produit actif -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; font-weight: bold; color: #333;">
+                    <input type="checkbox" 
+                           name="{{ form.is_active.name }}" 
+                           id="{{ form.is_active.id_for_label }}"
+                           {% if form.is_active.value %}checked{% endif %}
+                           style="margin-right: 8px; width: 18px; height: 18px;">
+                    Produit actif
+                </label>
+                {% if form.is_active.errors %}
+                    <div style="color: red; font-size: 14px; margin-top: 5px;">{{ form.is_active.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Boutons -->
+            <div style="display: flex; justify-content: space-between; padding-top: 20px; border-top: 1px solid #ddd;">
+                <a href="{% url 'projects:produit_list' %}" 
+                   style="background: #6c757d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                    ← Retour
+                </a>
+                <button type="submit" 
+                        style="background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px;">
+                    ✅ Créer le produit
+                </button>
+            </div>
+        </form>
+
+        <!-- DEBUG: Show raw form -->
+        {% if debug %}
+        <hr style="margin: 30px 0;">
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">
+            <h3 style="margin-bottom: 15px; color: #333;">DEBUG: Raw form output</h3>
+            {{ form.as_p }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.btn-primary, .btn-secondary {
+    padding: 12px 24px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+</style>
+{% endblock %}
