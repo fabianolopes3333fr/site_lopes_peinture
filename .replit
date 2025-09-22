@@ -36,3 +36,8 @@ externalPort = 80
 [[ports]]
 localPort = 39211
 externalPort = 3000
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "core.wsgi:application"]
+build = ["bash", "-c", "cd tema_lopes_peinture_tailwind/static_src && npm run build && cd ../.. && python manage.py collectstatic --noinput"]
