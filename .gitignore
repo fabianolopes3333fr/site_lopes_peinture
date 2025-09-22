@@ -260,6 +260,7 @@ cache/
 profiles.log
 accounts.log
 django_requests.log
+/logs/
 
 # Database backups
 *.dump

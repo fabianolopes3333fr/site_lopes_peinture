@@ -197,7 +197,13 @@ if DJANGO_ENV == "production":
     DEBUG = config("DEBUG", default=False, cast=bool)
     # Permitir hosts do arquivo .env
     ALLOWED_HOSTS = config(
-        "ALLOWED_HOSTS", default="lopespeinture.fr,www.lopespeinture.fr"
+        "ALLOWED_HOSTS", default="lopespeinture.fr,www.lopespeinture.fr,*.repl.co,*.replit.dev"
+    ).split(",")
+    
+    # CSRF trusted origins
+    CSRF_TRUSTED_ORIGINS = config(
+        "CSRF_TRUSTED_ORIGINS", 
+        default="https://lopespeinture.fr,https://www.lopespeinture.fr,https://*.repl.co,https://*.replit.dev"
     ).split(",")
 
     # Database
@@ -232,7 +238,6 @@ if DJANGO_ENV == "production":
     DEFAULT_COUNTRY = "France"
 
     # Enhanced security settings
-    SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_SECONDS = 31536000  # 1 year
@@ -242,10 +247,10 @@ if DJANGO_ENV == "production":
     # CSRF and Session settings
     CSRF_COOKIE_SECURE = True
     CSRF_COOKIE_HTTPONLY = True
-    CSRF_COOKIE_SAMESITE = "Strict"
+    CSRF_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = "Strict"
+    SESSION_COOKIE_SAMESITE = "Lax"
 
     # Frame options
     X_FRAME_OPTIONS = "DENY"
@@ -259,11 +264,7 @@ if DJANGO_ENV == "production":
     ]
     MANAGERS = ADMINS
 
-    # Proteção contra ataques de força bruta
-    AXES_ENABLED = True
-    AXES_FAILURE_LIMIT = 5
-    AXES_LOCK_OUT_AT_FAILURE = True
-    AXES_COOLOFF_TIME = 1  # horas
+    # Note: django-axes is not installed, so these settings are removed
 
     # Static files storage
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
@@ -288,7 +289,7 @@ if DJANGO_ENV == "production":
     SEND_WELCOME_EMAIL = True
 
     # URL base do site para links nos emails
-    SITE_URL = "http://lopespeinture.fr"
+    SITE_URL = "https://lopespeinture.fr"
 
     # Criar diretório de logs se não existir
     LOGS_DIR = BASE_DIR / "logs"
