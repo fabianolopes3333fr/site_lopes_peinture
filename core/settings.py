@@ -409,13 +409,16 @@ else:
     # Development settings
 
     DEBUG = True
-    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1", "*"]
 
     # Configurações do CORS
     CORS_ALLOWED_ORIGINS = [
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
     ]
+    CORS_ALLOW_ALL_ORIGINS = True  # For development only
 
     CORS_ALLOW_METHODS = [
         "DELETE",
@@ -434,14 +437,9 @@ else:
         }
     }
 
-    # Email settings (base)
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = "mail.lopespeinture.fr"
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = config("EMAIL_HOST_USER")
-    EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
-    DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
+    # Email settings (base) - Use console backend for development
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEFAULT_FROM_EMAIL = "admin@lopespeinture.com"
 
     MIDDLEWARE = [
         "django_browser_reload.middleware.BrowserReloadMiddleware",
@@ -451,7 +449,7 @@ else:
 
     # Configuração do Tailwind para desenvolvimento
     TAILWIND_APP_NAME = "tema_lopes_peinture_tailwind"
-    NPM_BIN_PATH = "C:\\Program Files\\nodejs\\npm.cmd"  # Ajuste se necessário
+    NPM_BIN_PATH = "/nix/store/8y4ls7z2sfxbq6ch3yp45l28p29qswvx-nodejs-20.19.3-wrapped/bin/npm"
 
     # ✅ Configurações específicas para testes
     if "test" in sys.argv:
